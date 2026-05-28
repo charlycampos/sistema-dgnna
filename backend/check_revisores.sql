@@ -1,0 +1,29 @@
+-- Ver cuántos registros tienen revisor asignado
+SELECT
+    COUNT(*) AS total_con_revisor
+FROM APELACIONES_DB.APELACIONES
+WHERE REVISORID IS NOT NULL;
+
+-- Ver el detalle por revisor
+SELECT
+    r.NOMBRE AS revisor,
+    COUNT(a.ID) AS total_casos,
+    SUM(CASE WHEN a.ESTADO = 'Pendiente' THEN 1 ELSE 0 END) AS pendientes,
+    SUM(CASE WHEN a.ESTADO = 'Resuelto'  THEN 1 ELSE 0 END) AS resueltos,
+    SUM(CASE WHEN a.ESTADO = 'Atendido'  THEN 1 ELSE 0 END) AS atendidos
+FROM APELACIONES_DB.REVISORES r
+LEFT JOIN APELACIONES_DB.APELACIONES a ON a.REVISORID = r.ID
+WHERE r.ACTIVO = 1
+GROUP BY r.NOMBRE
+ORDER BY r.NOMBRE;
+
+-- Ver los primeros 10 registros con revisor asignado
+SELECT
+    a.NUMEROEXPEDIENTE,
+    a.ESTADO,
+    a.REVISORID,
+    r.NOMBRE AS nombre_revisor
+FROM APELACIONES_DB.APELACIONES a
+LEFT JOIN APELACIONES_DB.REVISORES r ON r.ID = a.REVISORID
+WHERE a.REVISORID IS NOT NULL
+FETCH FIRST 10 ROWS ONLY;

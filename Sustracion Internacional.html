@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sustracción Internacional — DGNNA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'DM Sans',system-ui,sans-serif;background:#EEF2F7;color:#0F172A;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.35)}
+.main-scroll::-webkit-scrollbar-thumb{background:#CBD5E1}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideU{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideR{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+.anim-u{animation:slideU .22s ease-out both}
+.anim-r{animation:slideR .2s ease-out both}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useMemo,useRef,useCallback}=React;
+
+/* ── TOKENS ──────────────────────────────────────── */
+const NK='#111827', N2='#1E3A5F', BL='#2563EB', BLH='#1D4ED8';
+const SURF='#FFFFFF', BG='#F9FAFB', BR='#E2E8F0';
+const TX='#0F172A', TX2='#475569', TX3='#94A3B8';
+
+/* ── CONSTANTS ───────────────────────────────────── */
+const ETAPAS_JUD=['Sin demanda','Demanda presentada','En audiencia','Sentencia 1ra instancia','Sentencia 2da instancia','Casación','Ejecución de sentencia','Archivado'];
+const PAISES=['Alemania','Argentina','Australia','Bolivia','Brasil','Canadá','Chile','Colombia','Ecuador','España','Estados Unidos','Francia','Italia','México','Países Bajos','Paraguay','Perú','Portugal','Reino Unido','Uruguay','Venezuela','Otro'];
+const PROFESIONALES=['EMMA','JANNY','CECILIA'];
+const SEXOS=['Hombre','Mujer'];
+const TIPO_EDAD=['Años','Meses','Días'];
+const ETAPAS=['Administrativo','Judicial'];
+const TIPO_SOL=['Restitución','Régimen de Visitas'];
+const AC_PERU=['Requirente','Requerida'];
+const RESULTADO_ENT=['Favorable','Desfavorable','Pendiente','No aplica'];
+const RETORNO=['SI','NO','Pendiente','No aplica'];
+const MOTIVOS_CIERRE=['Retorno voluntario','Retorno por sentencia judicial','Acuerdo entre las partes','Sentencia infundada','AC rechaza solicitud - Violencia familiar','No cumple requisitos del Convenio','Desistimiento del solicitante','Otro'];
+
+function estadoBadge(e){
+  if(e==='Tramite')return{bg:'#EFF6FF',color:'#1D4ED8',border:'#BFDBFE',label:'En trámite',accent:'#2563EB'};
+  if(e==='Pendiente')return{bg:'#FFFBEB',color:'#92400E',border:'#FDE68A',label:'Pendiente',accent:'#D97706'};
+  return{bg:'#F1F5F9',color:'#475569',border:'#CBD5E1',label:'Archivado',accent:'#64748B'};
+}
+
+const todayStr=()=>new Date().toISOString().split('T')[0];
+const diasDesde=f=>{if(!f)return 0;const diff=Date.now()-new Date(f).getTime();return Math.floor(diff/(1000*60*60*24))};
+const fmtFecha=f=>{if(!f)return'—';const[y,m,d]=f.split('-');const mes=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];return`${parseInt(d)} ${mes[parseInt(m)-1]} ${y}`};
+
+/* ── SAMPLE DATA ─────────────────────────────────── */
+let _nid=200;
+const SAMPLE_CASOS=[
+  {id:'c1',codigo:'SI-2024-0312',nnaNombre:'Valentina Ramos Torres',nnaSexo:'Mujer',nnaEdad:'7',nnaTipoEdad:'Años',nnaFechaNac:'2017-03-15',pais:'Argentina',etapa:'Judicial',tipoSolicitud:'Restitución',acPeru:'Requirente',fechaIngreso:'2024-02-10',fechaSalida:null,solicitanteNombre:'Carmen Torres Vega',solicitanteSexo:'Mujer',solicitanteTelefono:'987654321',solicitanteCorreo:'ctorres@gmail.com',solicitanteDomicilio:'Jr. Los Álamos 230, San Borja',requeridoNombre:'Luis Ramos Pérez',requeridoSexo:'Hombre',requeridoTelefono:null,requeridoCorreo:null,requeridoDomicilio:'Av. Rivadavia 1450, Buenos Aires',profesional:'EMMA',estado:'Tramite',fechaEntrevista:'2024-03-05',resultadoEntrevista:'Favorable',estadoJudicial:'En audiencia',fechaDemanda:'2024-04-20',numExpedienteJudicial:'00342-2024-0-1801-JR-FC-01',juzgado:'1er Juzgado de Familia - Lima',sentencia1ra:null,sentencia2da:null,casacion:null,motivoCierre:null,retorno:'Pendiente',observaciones:'Caso prioritario. Niña retornaría en vacaciones escolares.',creadoPor:'EMMA',bitacora:[{id:'b1',casoId:'c1',fecha:'2024-02-10',texto:'Ingreso del expediente. Se verifican documentos del solicitante.',creadoPor:'EMMA',createdAt:'2024-02-10'},{id:'b2',casoId:'c1',fecha:'2024-03-05',texto:'Entrevista con la madre solicitante. Resultado favorable. Se elabora informe social.',creadoPor:'EMMA',createdAt:'2024-03-05'},{id:'b3',casoId:'c1',fecha:'2024-04-15',texto:'Se remite nota diplomática a la AC Argentina solicitando localización de la menor.',creadoPor:'EMMA',createdAt:'2024-04-15'},{id:'b4',casoId:'c1',fecha:'2024-06-12',texto:'AC Argentina confirma domicilio del requerido. Se procede a notificación.',creadoPor:'EMMA',createdAt:'2024-06-12'}],historialJudicial:[]},
+  {id:'c2',codigo:'SI-2023-0187',nnaNombre:'Diego Morales Fuentes',nnaSexo:'Hombre',nnaEdad:'5',nnaTipoEdad:'Años',nnaFechaNac:'2019-08-22',pais:'España',etapa:'Judicial',tipoSolicitud:'Restitución',acPeru:'Requerida',fechaIngreso:'2023-11-15',fechaSalida:null,solicitanteNombre:'Miguel Morales Castro',solicitanteSexo:'Hombre',solicitanteTelefono:'+34 912 345 678',solicitanteCorreo:'mmorales@outlook.es',solicitanteDomicilio:'Calle Mayor 45, Madrid',requeridoNombre:'Patricia Fuentes Huanca',requeridoSexo:'Mujer',requeridoTelefono:'998877665',requeridoCorreo:null,requeridoDomicilio:'Av. Brasil 890, Jesús María',profesional:'JANNY',estado:'Tramite',fechaEntrevista:'2023-12-10',resultadoEntrevista:'Desfavorable',estadoJudicial:'Sentencia 1ra instancia',fechaDemanda:'2024-01-15',numExpedienteJudicial:'00019-2024-0-1801-JR-FC-03',juzgado:'3er Juzgado de Familia - Lima',sentencia1ra:'Infundada - Art. 13 B',sentencia2da:null,casacion:null,motivoCierre:null,retorno:'NO',observaciones:'Madre alega violencia familiar. Se adjunta pericia psicológica.',creadoPor:'JANNY',bitacora:[{id:'b5',casoId:'c2',fecha:'2023-11-15',texto:'Recepción del expediente de la AC española. Se revisan documentos acreditativos.',creadoPor:'JANNY',createdAt:'2023-11-15'},{id:'b6',casoId:'c2',fecha:'2023-12-10',texto:'Entrevista con la requerida Patricia Fuentes. Alega violencia doméstica. Se solicita pericia.',creadoPor:'JANNY',createdAt:'2023-12-10'},{id:'b7',casoId:'c2',fecha:'2024-03-28',texto:'Sentencia de primera instancia declara INFUNDADA la restitución por Art. 13 B (grave riesgo).',creadoPor:'JANNY',createdAt:'2024-03-28'}],historialJudicial:[]},
+  {id:'c3',codigo:'SI-2024-0421',nnaNombre:'Isabella Chávez Moreno',nnaSexo:'Mujer',nnaEdad:'9',nnaTipoEdad:'Años',nnaFechaNac:'2015-12-03',pais:'Estados Unidos',etapa:'Administrativo',tipoSolicitud:'Régimen de Visitas',acPeru:'Requirente',fechaIngreso:'2024-06-01',fechaSalida:null,solicitanteNombre:'Roberto Chávez Silva',solicitanteSexo:'Hombre',solicitanteTelefono:'+1 305 555 0123',solicitanteCorreo:'rchavez@email.com',solicitanteDomicilio:'1250 SW 27th Ave, Miami FL',requeridoNombre:'Ana Moreno Quispe',requeridoSexo:'Mujer',requeridoTelefono:'956342178',requeridoCorreo:'amoreno@yahoo.com',requeridoDomicilio:'Calle Las Flores 340, Surco',profesional:'CECILIA',estado:'Tramite',fechaEntrevista:'2024-07-10',resultadoEntrevista:'Pendiente',estadoJudicial:'Sin demanda',fechaDemanda:null,numExpedienteJudicial:null,juzgado:null,sentencia1ra:null,sentencia2da:null,casacion:null,motivoCierre:null,retorno:'No aplica',observaciones:null,creadoPor:'CECILIA',bitacora:[{id:'b8',casoId:'c3',fecha:'2024-06-01',texto:'Expediente recibido de la AC de EE.UU. (USCA). Se revisa documentación de la solicitud.',creadoPor:'CECILIA',createdAt:'2024-06-01'},{id:'b9',casoId:'c3',fecha:'2024-06-28',texto:'Se localiza a la NNA y a la progenitora requerida. Se comunica con ambas partes.',creadoPor:'CECILIA',createdAt:'2024-06-28'}],historialJudicial:[]},
+  {id:'c4',codigo:'SI-2022-0098',nnaNombre:'Sebastián Núñez Lazo',nnaSexo:'Hombre',nnaEdad:'12',nnaTipoEdad:'Años',nnaFechaNac:'2012-05-18',pais:'Chile',etapa:'Judicial',tipoSolicitud:'Restitución',acPeru:'Requerida',fechaIngreso:'2022-09-03',fechaSalida:'2023-08-15',solicitanteNombre:'Claudia Lazo Mendoza',solicitanteSexo:'Mujer',solicitanteTelefono:'+56 2 2345 6789',solicitanteCorreo:'clazo@gmail.cl',solicitanteDomicilio:'Av. Providencia 1240, Santiago',requeridoNombre:'Héctor Núñez Paredes',requeridoSexo:'Hombre',requeridoTelefono:'945321876',requeridoCorreo:null,requeridoDomicilio:'Av. Arequipa 2100, Lince',profesional:'EMMA',estado:'Archivado',fechaEntrevista:'2022-10-12',resultadoEntrevista:'Favorable',estadoJudicial:'Ejecución de sentencia',fechaDemanda:'2022-11-08',numExpedienteJudicial:'00876-2022-0-1801-JR-FC-02',juzgado:'2do Juzgado de Familia - Lima',sentencia1ra:'Fundada - Restitución ordenada',sentencia2da:'Confirma 1ra instancia',casacion:null,motivoCierre:'Retorno por sentencia judicial',retorno:'SI',observaciones:'Caso resuelto favorablemente. Niño retornó a Chile en agosto 2023.',creadoPor:'EMMA',bitacora:[{id:'b10',casoId:'c4',fecha:'2022-09-03',texto:'Ingreso del caso. Expediente completo. NNA localizado con el padre en Lima.',creadoPor:'EMMA',createdAt:'2022-09-03'},{id:'b11',casoId:'c4',fecha:'2023-08-15',texto:'Ejecutada la sentencia. Sebastián retornó a Chile con su madre el día de hoy.',creadoPor:'EMMA',createdAt:'2023-08-15'}],historialJudicial:[]},
+];
+
+/* ── ICONS ────────────────────────────────────────── */
+const IcoGlobe=({size=16,c='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>;
+const IcoPlus=({size=15,c='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+const IcoX=({size=14,c='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const IcoSearch=({size=14,c='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
+const IcoTrash=({size=13,c='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>;
+const IcoUser=({size=13,c='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+const IcoScale=({size=16,c='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="3" x2="12" y2="21"/><path d="M3 6l9-3 9 3"/><path d="M3 6l4 8c0 1.1-.9 2-2 2s-2-.9-2-2l4-8"/><path d="M21 6l-4 8c0 1.1.9 2 2 2s2-.9 2-2l-4-8"/><line x1="6" y1="21" x2="18" y2="21"/></svg>;
+const IcoFile=({size=13,c='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>;
+const IcoMsgSq=({size=13,c='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>;
+const IcoLayers=({size=13,c='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>;
+const IcoChart=({size=14,c='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>;
+const IcoChevD=({size=12,c='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>;
+const IcoFilter=({size=13,c='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>;
+const IcoDown=({size=13,c='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
+const IcoLogout=({size=14,c='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
+const IcoCheck=({size=12,c='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+const IcoTrend=({size=14,c='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>;
+
+/* ── JUDICIAL STEPPER ─────────────────────────────── */
+function JudicialStepper({currentStage}){
+  const idx=ETAPAS_JUD.indexOf(currentStage);
+  return(
+    <div style={{padding:'20px 24px 16px',borderBottom:`1px solid ${BR}`,background:'#FAFBFD'}}>
+      <div style={{fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Proceso judicial</div>
+      <div style={{position:'relative'}}>
+        <div style={{position:'absolute',top:14,left:14,right:14,height:2,background:BR,zIndex:0}}></div>
+        <div style={{position:'absolute',top:14,left:14,height:2,background:BL,zIndex:1,transition:'width .4s ease-out',width:idx<=0?0:`calc(${Math.min(idx/(ETAPAS_JUD.length-1),1)*100}% - 0px)`}}></div>
+        <div style={{display:'flex',justifyContent:'space-between',position:'relative',zIndex:2}}>
+          {ETAPAS_JUD.map((e,i)=>{
+            const done=i<idx, active=i===idx;
+            return(
+              <div key={e} style={{display:'flex',flexDirection:'column',alignItems:'center',flex:1,gap:6}}>
+                <div style={{width:28,height:28,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',border:`2px solid ${done||active?BL:BR}`,background:done?BL:active?'#EFF6FF':SURF,transition:'all .3s',boxShadow:active?`0 0 0 4px #EFF6FF`:'none'}}>
+                  {done?<IcoCheck size={11} c="#fff"/>:<span style={{width:8,height:8,borderRadius:'50%',background:active?BL:BR}}></span>}
+                </div>
+                <div style={{fontSize:9,fontWeight:active?700:500,color:active?BL:done?TX2:TX3,textAlign:'center',lineHeight:1.3,maxWidth:68,wordBreak:'break-word'}}>{e}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── FICHA TAB ────────────────────────────────────── */
+function FichaTab({caso,onChange}){
+  const inpS={width:'100%',padding:'7px 10px',border:`1.5px solid ${BR}`,borderRadius:7,fontSize:12,color:TX,background:'#FAFBFD',outline:'none'};
+  const selS={...inpS,cursor:'pointer'};
+  const Row=({label,field,type='text',opts,span=1,val})=>{
+    const v=val!==undefined?val:(caso[field]??'');
+    return(
+      <div style={{gridColumn:`span ${span}`,padding:'12px 14px',borderRight:`1px solid ${BR}`,borderBottom:`1px solid ${BR}`}}>
+        <div style={{fontSize:10,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.05em',marginBottom:5}}>{label}</div>
+        {type==='select'?(
+          <select value={v} onChange={e=>onChange(field,e.target.value)} style={selS}>
+            <option value="">—</option>
+            {opts.map(o=><option key={o} value={o}>{o}</option>)}
+          </select>
+        ):type==='textarea'?(
+          <textarea rows={2} value={v} onChange={e=>onChange(field,e.target.value)} style={{...inpS,resize:'none'}}/>
+        ):(
+          <input type={type} value={v} onChange={e=>onChange(field,e.target.value)} style={inpS}/>
+        )}
+      </div>
+    );
+  };
+  const Sec=({title,icon})=>(
+    <div style={{gridColumn:'span 4',background:'#F1F5F9',padding:'8px 14px',borderBottom:`1px solid ${BR}`,display:'flex',alignItems:'center',gap:8}}>
+      <span style={{color:N2}}>{icon}</span>
+      <span style={{fontSize:10,fontWeight:800,color:N2,textTransform:'uppercase',letterSpacing:'.06em'}}>{title}</span>
+    </div>
+  );
+  return(
+    <div style={{flex:1,overflowY:'auto'}} className="main-scroll">
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)'}}>
+        <Sec title="Datos del NNA" icon={<IcoUser size={13} c={N2}/>}/>
+        <Row label="Nombre completo" field="nnaNombre" span={2}/>
+        <Row label="Sexo" field="nnaSexo" type="select" opts={SEXOS}/>
+        <Row label="Fecha de nacimiento" field="nnaFechaNac" type="date"/>
+        <Row label="Edad" field="nnaEdad"/>
+        <Row label="Tipo edad" field="nnaTipoEdad" type="select" opts={TIPO_EDAD}/>
+        <Row label="País contraparte" field="pais" type="select" opts={PAISES}/>
+
+        <Sec title="Trámite" icon={<IcoFile size={13} c={N2}/>}/>
+        <Row label="Código / Hoja de trámite" field="codigo"/>
+        <Row label="Etapa" field="etapa" type="select" opts={ETAPAS}/>
+        <Row label="Tipo de solicitud" field="tipoSolicitud" type="select" opts={TIPO_SOL}/>
+        <Row label="AC Perú" field="acPeru" type="select" opts={AC_PERU}/>
+        <Row label="Profesional" field="profesional" type="select" opts={PROFESIONALES}/>
+        <Row label="Fecha ingreso" field="fechaIngreso" type="date"/>
+        <Row label="Fecha salida/cierre" field="fechaSalida" type="date"/>
+        <Row label="Fecha entrevista" field="fechaEntrevista" type="date"/>
+        <Row label="Resultado entrevista" field="resultadoEntrevista" type="select" opts={RESULTADO_ENT}/>
+        <Row label="Retorno" field="retorno" type="select" opts={RETORNO}/>
+        <Row label="Motivo de cierre" field="motivoCierre" type="select" opts={MOTIVOS_CIERRE} span={2}/>
+
+        <Sec title="Solicitante" icon={<IcoUser size={13} c={N2}/>}/>
+        <Row label="Nombre" field="solicitanteNombre" span={2}/>
+        <Row label="Sexo" field="solicitanteSexo" type="select" opts={SEXOS}/>
+        <Row label="Teléfono" field="solicitanteTelefono"/>
+        <Row label="Correo electrónico" field="solicitanteCorreo" span={2}/>
+        <Row label="Domicilio" field="solicitanteDomicilio" span={2}/>
+
+        <Sec title="Requerido / Presunto sustractor" icon={<IcoUser size={13} c={N2}/>}/>
+        <Row label="Nombre" field="requeridoNombre" span={2}/>
+        <Row label="Sexo" field="requeridoSexo" type="select" opts={SEXOS}/>
+        <Row label="Teléfono" field="requeridoTelefono"/>
+        <Row label="Correo electrónico" field="requeridoCorreo" span={2}/>
+        <Row label="Domicilio en el exterior" field="requeridoDomicilio" span={2}/>
+
+        <Sec title="Proceso judicial" icon={<IcoScale size={13} c={N2}/>}/>
+        <Row label="Estado judicial" field="estadoJudicial" type="select" opts={ETAPAS_JUD}/>
+        <Row label="Fecha de demanda" field="fechaDemanda" type="date"/>
+        <Row label="N° expediente" field="numExpedienteJudicial" span={2}/>
+        <Row label="Juzgado" field="juzgado" span={2}/>
+        <Row label="Sentencia 1ra instancia" field="sentencia1ra" span={2}/>
+        <Row label="Sentencia 2da instancia" field="sentencia2da" span={2}/>
+        <Row label="Casación" field="casacion" span={4}/>
+
+        <Sec title="Observaciones" icon={<IcoFile size={13} c={N2}/>}/>
+        <Row label="Observaciones generales" field="observaciones" type="textarea" span={4}/>
+      </div>
+    </div>
+  );
+}
+
+/* ── BITÁCORA TAB ────────────────────────────────── */
+function BitacoraTab({caso,addEntry,removeEntry}){
+  const [texto,setTexto]=useState('');
+  const entries=[...caso.bitacora].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  return(
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{flex:1,overflowY:'auto',padding:'20px 24px'}} className="main-scroll">
+        {entries.length===0&&<div style={{textAlign:'center',padding:'48px 0',color:TX3,fontSize:13}}>Sin entradas registradas.</div>}
+        <div style={{position:'relative',paddingLeft:32}}>
+          <div style={{position:'absolute',left:10,top:4,bottom:4,width:2,background:BR,borderRadius:99}}></div>
+          {entries.map((b,i)=>(
+            <div key={b.id} className="anim-u" style={{position:'relative',marginBottom:20}}>
+              <div style={{position:'absolute',left:-28,top:4,width:14,height:14,borderRadius:'50%',background:'#EEF2FF',border:`2px solid #A5B4FC`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <IcoMsgSq size={7} c="#6366F1"/>
+              </div>
+              <div style={{background:SURF,borderRadius:10,border:`1px solid ${BR}`,padding:'12px 14px',boxShadow:'0 1px 4px rgba(0,0,0,.04)'}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
+                  <div style={{fontSize:11,fontWeight:700,color:TX2}}>{fmtFecha(b.fecha)}</div>
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    {b.creadoPor&&<div style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color:TX3}}><IcoUser size={10} c={TX3}/>{b.creadoPor}</div>}
+                    <button onClick={()=>removeEntry(b.id)} style={{background:'none',border:'none',color:'#CBD5E1',padding:2,display:'flex',lineHeight:1}}><IcoTrash size={11} c="#CBD5E1"/></button>
+                  </div>
+                </div>
+                <div style={{fontSize:12,color:TX,lineHeight:1.6}}>{b.texto}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{padding:'14px 24px',borderTop:`1px solid ${BR}`,background:SURF,flexShrink:0}}>
+        <div style={{display:'flex',gap:8,alignItems:'flex-end'}}>
+          <textarea rows={2} value={texto} onChange={e=>setTexto(e.target.value)} placeholder="Escribe una nueva gestión o seguimiento…" style={{flex:1,padding:'10px 12px',border:`1.5px solid ${BR}`,borderRadius:8,fontSize:13,color:TX,background:BG,outline:'none',resize:'none'}}/>
+          <button onClick={()=>{if(texto.trim()){addEntry(texto.trim());setTexto('')}}} style={{padding:'10px 18px',borderRadius:8,border:'none',background:BL,color:'#fff',fontSize:13,fontWeight:700,boxShadow:'0 2px 8px rgba(37,99,235,.3)',height:60}}>Agregar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── JUDICIAL TAB ────────────────────────────────── */
+function JudicialTab({caso,onChange}){
+  const [etapa,setEtapa]=useState('');
+  const [fecha,setFecha]=useState(todayStr());
+  const [desc,setDesc]=useState('');
+  const inpS={width:'100%',padding:'8px 11px',border:`1.5px solid ${BR}`,borderRadius:8,fontSize:12,color:TX,background:BG,outline:'none'};
+  return(
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <JudicialStepper currentStage={caso.estadoJudicial||'Sin demanda'}/>
+      <div style={{flex:1,overflowY:'auto',padding:'20px 24px'}} className="main-scroll">
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:24}}>
+          {[['N° expediente','numExpedienteJudicial'],['Juzgado','juzgado'],['Fecha demanda','fechaDemanda','date'],['Sentencia 1ra instancia','sentencia1ra'],['Sentencia 2da instancia','sentencia2da'],['Casación','casacion']].map(([lbl,field,type='text'])=>(
+            <div key={field}>
+              <div style={{fontSize:10,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.05em',marginBottom:5}}>{lbl}</div>
+              <input type={type} value={caso[field]??''} onChange={e=>onChange(field,e.target.value)} style={inpS}/>
+            </div>
+          ))}
+        </div>
+        <div style={{borderTop:`1px solid ${BR}`,paddingTop:20}}>
+          <div style={{fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Registrar evento judicial</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
+            <div>
+              <div style={{fontSize:10,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.05em',marginBottom:5}}>Nueva etapa</div>
+              <select value={etapa} onChange={e=>setEtapa(e.target.value)} style={inpS}>
+                <option value="">Seleccionar etapa…</option>
+                {ETAPAS_JUD.map(e=><option key={e} value={e}>{e}</option>)}
+              </select>
+            </div>
+            <div>
+              <div style={{fontSize:10,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.05em',marginBottom:5}}>Fecha</div>
+              <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} style={inpS}/>
+            </div>
+          </div>
+          <div style={{marginBottom:10}}>
+            <div style={{fontSize:10,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.05em',marginBottom:5}}>Descripción (opcional)</div>
+            <input type="text" value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Detalles del evento judicial…" style={inpS}/>
+          </div>
+          <button onClick={()=>{if(etapa){onChange('estadoJudicial',etapa);setEtapa('');setDesc('')}}} style={{padding:'9px 20px',borderRadius:8,border:'none',background:N2,color:'#fff',fontSize:13,fontWeight:700}}>Registrar evento</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── DASHBOARD ───────────────────────────────────── */
+function DashTab({casos}){
+  const total=casos.length;
+  const byEstado={Tramite:casos.filter(c=>c.estado==='Tramite').length,Pendiente:casos.filter(c=>c.estado==='Pendiente').length,Archivado:casos.filter(c=>c.estado==='Archivado').length};
+  const byProf=PROFESIONALES.map(p=>({p,n:casos.filter(c=>c.profesional===p).length}));
+  const byPais=[...new Map(casos.map(c=>[c.pais,0])).keys()].map(pais=>({pais,n:casos.filter(c=>c.pais===pais).length})).sort((a,b)=>b.n-a.n).slice(0,8);
+  const maxPais=Math.max(...byPais.map(p=>p.n),1);
+  const byEtJud=ETAPAS_JUD.map(e=>({e,n:casos.filter(c=>c.estadoJudicial===e).length})).filter(x=>x.n>0);
+  const cardS={background:SURF,borderRadius:12,border:`1px solid ${BR}`,padding:'18px 20px',boxShadow:'0 1px 4px rgba(0,0,0,.05)'};
+  return(
+    <div style={{flex:1,overflowY:'auto',padding:'20px'}} className="main-scroll">
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:20}}>
+        {[{label:'Total casos',value:total,color:BL},{label:'En trámite',value:byEstado.Tramite,color:'#2563EB'},{label:'Archivados',value:byEstado.Archivado,color:'#64748B'}].map(s=>(
+          <div key={s.label} style={{...cardS,borderTop:`3px solid ${s.color}`}}>
+            <div style={{fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.05em',marginBottom:6}}>{s.label}</div>
+            <div style={{fontSize:36,fontWeight:800,color:s.color,lineHeight:1}}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+        <div style={cardS}>
+          <div style={{fontSize:13,fontWeight:700,color:TX,marginBottom:14}}>Casos por país</div>
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {byPais.map(({pais,n})=>(
+              <div key={pais} style={{display:'flex',alignItems:'center',gap:10}}>
+                <span style={{fontSize:11,color:TX2,fontWeight:600,width:120,flexShrink:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{pais}</span>
+                <div style={{flex:1,background:BG,borderRadius:99,height:18,overflow:'hidden'}}>
+                  <div style={{height:'100%',borderRadius:99,background:`linear-gradient(90deg,${BL},#7C3AED)`,width:`${Math.round((n/maxPais)*100)}%`,display:'flex',alignItems:'center',justifyContent:'flex-end',paddingRight:6}}>
+                    {n>0&&<span style={{fontSize:10,color:'#fff',fontWeight:700}}>{n}</span>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={cardS}>
+          <div style={{fontSize:13,fontWeight:700,color:TX,marginBottom:14}}>Estado judicial (activos)</div>
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {byEtJud.length===0&&<div style={{fontSize:12,color:TX3,textAlign:'center',padding:'20px 0'}}>Sin datos</div>}
+            {byEtJud.map(({e,n})=>{
+              const idx=ETAPAS_JUD.indexOf(e);
+              const pct=Math.round((idx+1)/ETAPAS_JUD.length*100);
+              return(
+                <div key={e} style={{display:'flex',alignItems:'center',gap:10}}>
+                  <span style={{fontSize:10,color:TX2,fontWeight:600,width:140,flexShrink:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{e}</span>
+                  <div style={{display:'flex',alignItems:'center',gap:6,fontSize:12,fontWeight:700,color:BL}}>{n}</div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{marginTop:16,borderTop:`1px solid ${BR}`,paddingTop:16}}>
+            <div style={{fontSize:13,fontWeight:700,color:TX,marginBottom:10}}>Por profesional</div>
+            {byProf.map(({p,n})=>(
+              <div key={p} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+                <div style={{width:28,height:28,borderRadius:'50%',background:'linear-gradient(135deg,#2563EB,#7C3AED)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,color:'#fff',flexShrink:0}}>{p[0]}</div>
+                <div style={{flex:1}}>
+                  <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
+                    <span style={{fontSize:12,fontWeight:600,color:TX2}}>{p}</span>
+                    <span style={{fontSize:11,color:TX3,fontWeight:700}}>{n}</span>
+                  </div>
+                  <div style={{height:5,background:BG,borderRadius:99,overflow:'hidden'}}>
+                    <div style={{height:'100%',borderRadius:99,background:'linear-gradient(90deg,#2563EB,#7C3AED)',width:`${total>0?Math.round((n/total)*100):0}%`}}></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── CASE CARD ───────────────────────────────────── */
+function CaseCard({caso,active,onClick}){
+  const b=estadoBadge(caso.estado);
+  const dias=diasDesde(caso.fechaIngreso);
+  return(
+    <div onClick={onClick} style={{padding:'12px 14px',marginBottom:2,borderRadius:8,cursor:'pointer',background:active?'rgba(255,255,255,.14)':'transparent',border:`1px solid ${active?'rgba(255,255,255,.2)':'transparent'}`,borderLeft:`3px solid ${active?b.accent:'transparent'}`,transition:'all .12s'}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:4}}>
+        <span style={{color:'#fff',fontSize:13,fontWeight:600,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginRight:8}}>{caso.nnaNombre}</span>
+        <span style={{fontSize:10,padding:'2px 8px',borderRadius:99,background:b.bg,color:b.color,fontWeight:700,flexShrink:0,whiteSpace:'nowrap'}}>{b.label}</span>
+      </div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:3}}>
+        <span style={{color:'rgba(255,255,255,.4)',fontSize:10,fontWeight:600}}>{caso.codigo}</span>
+        <span style={{display:'flex',alignItems:'center',gap:3,color:'rgba(255,255,255,.35)',fontSize:10}}><IcoGlobe size={9} c="rgba(255,255,255,.35)"/>{caso.pais}</span>
+      </div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+        <span style={{fontSize:10,color:'rgba(255,255,255,.3)'}}>{caso.profesional||'—'} · {caso.etapa||'Sin etapa'}</span>
+        {dias>0&&caso.estado!=='Archivado'&&<span style={{fontSize:10,padding:'1px 7px',borderRadius:99,background:'rgba(255,255,255,.08)',color:'rgba(255,255,255,.4)',fontWeight:600}}>{dias}d</span>}
+      </div>
+    </div>
+  );
+}
+
+/* ── NEW CASE MODAL ──────────────────────────────── */
+function NewCaseModal({onSave,onClose}){
+  const [f,setF]=useState({codigo:'',nnaNombre:'',pais:'',etapa:'',tipoSolicitud:'',fechaIngreso:todayStr(),profesional:'',estado:'Tramite',estadoJudicial:'Sin demanda'});
+  const set=k=>v=>setF(p=>({...p,[k]:v}));
+  const inpS={width:'100%',padding:'9px 12px',border:`1.5px solid ${BR}`,borderRadius:8,fontSize:13,color:TX,background:BG,outline:'none'};
+  const selS={...inpS,cursor:'pointer'};
+  return(
+    <div style={{position:'fixed',inset:0,zIndex:60,background:'rgba(10,20,40,.6)',display:'flex',alignItems:'center',justifyContent:'center',padding:16,backdropFilter:'blur(3px)'}} onClick={onClose}>
+      <div className="anim-u" style={{background:SURF,borderRadius:16,width:'100%',maxWidth:520,maxHeight:'90vh',overflowY:'auto',boxShadow:'0 32px 80px rgba(0,0,0,.3)'}} onClick={e=>e.stopPropagation()}>
+        <div style={{padding:'20px 24px 16px',borderBottom:`1px solid ${BR}`,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div>
+            <div style={{fontSize:16,fontWeight:700,color:TX}}>Nuevo caso</div>
+            <div style={{fontSize:12,color:TX3,marginTop:2}}>Sustracción Internacional · DGNNA</div>
+          </div>
+          <button onClick={onClose} style={{width:32,height:32,borderRadius:8,border:`1px solid ${BR}`,background:BG,display:'flex',alignItems:'center',justifyContent:'center',color:TX2}}><IcoX/></button>
+        </div>
+        <div style={{padding:'20px 24px',display:'flex',flexDirection:'column',gap:14}}>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+            {[['Código / Hoja trámite','codigo'],['Nombre del NNA','nnaNombre'],].map(([lbl,k])=>(
+              <div key={k}>
+                <label style={{display:'block',fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:5}}>{lbl}</label>
+                <input autoFocus={k==='codigo'} value={f[k]} onChange={e=>set(k)(e.target.value)} style={inpS}/>
+              </div>
+            ))}
+            <div>
+              <label style={{display:'block',fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:5}}>País contraparte</label>
+              <select value={f.pais} onChange={e=>set('pais')(e.target.value)} style={selS}>
+                <option value="">Seleccionar…</option>
+                {PAISES.map(p=><option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{display:'block',fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:5}}>Fecha de ingreso</label>
+              <input type="date" value={f.fechaIngreso} onChange={e=>set('fechaIngreso')(e.target.value)} style={inpS}/>
+            </div>
+            <div>
+              <label style={{display:'block',fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:5}}>Etapa</label>
+              <select value={f.etapa} onChange={e=>set('etapa')(e.target.value)} style={selS}>
+                <option value="">—</option>
+                {ETAPAS.map(e=><option key={e} value={e}>{e}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{display:'block',fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:5}}>Profesional</label>
+              <select value={f.profesional} onChange={e=>set('profesional')(e.target.value)} style={selS}>
+                <option value="">—</option>
+                {PROFESIONALES.map(p=><option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+        <div style={{padding:'0 24px 20px',display:'flex',gap:8}}>
+          <button onClick={onClose} style={{flex:1,padding:'10px',borderRadius:8,border:`1.5px solid ${BR}`,background:BG,color:TX2,fontSize:13,fontWeight:600}}>Cancelar</button>
+          <button onClick={()=>{if(!f.codigo||!f.nnaNombre||!f.pais)return;onSave(f)}} style={{flex:2,padding:'10px',borderRadius:8,border:'none',background:BL,color:'#fff',fontSize:13,fontWeight:700,boxShadow:'0 2px 8px rgba(37,99,235,.35)'}}>Registrar caso</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── APP ─────────────────────────────────────────── */
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{"sidebarWidth":340,"compactCards":false}/*EDITMODE-END*/;
+
+function App(){
+  const [tweaks,setTweak]=useTweaks(TWEAK_DEFAULTS);
+  const [casos,setCasos]=useState(SAMPLE_CASOS);
+  const [selected,setSelected]=useState(SAMPLE_CASOS[0]);
+  const [view,setView]=useState('casos'); // 'casos' | 'dashboard'
+  const [tab,setTab]=useState('ficha');
+  const [search,setSearch]=useState('');
+  const [fEstado,setFEstado]=useState('');
+  const [showFilters,setShowFilters]=useState(false);
+  const [pending,setPending]=useState({});
+  const [showNew,setShowNew]=useState(false);
+  const hasPending=Object.keys(pending).length>0;
+
+  const filtered=casos.filter(c=>{
+    if(search&&!c.nnaNombre.toLowerCase().includes(search.toLowerCase())&&!c.codigo.toLowerCase().includes(search.toLowerCase()))return false;
+    if(fEstado&&c.estado!==fEstado)return false;
+    return true;
+  });
+
+  const getVal=field=>{if(field in pending)return pending[field]??'';if(!selected)return'';return selected[field]??''};
+  const onChange=(field,val)=>setPending(p=>({...p,[field]:val}));
+
+  const guardar=()=>{
+    if(!selected||!hasPending)return;
+    const updated={...selected,...pending};
+    setCasos(cs=>cs.map(c=>c.id===selected.id?updated:c));
+    setSelected(updated);
+    setPending({});
+  };
+  const descartar=()=>setPending({});
+
+  const addBit=texto=>{
+    if(!selected)return;
+    const b={id:`b${++_nid}`,casoId:selected.id,fecha:todayStr(),texto,creadoPor:'Usuario actual',createdAt:todayStr()};
+    const up={...selected,bitacora:[...selected.bitacora,b]};
+    setSelected(up);setCasos(cs=>cs.map(c=>c.id===up.id?up:c));
+  };
+  const removeBit=bid=>{
+    if(!selected)return;
+    const up={...selected,bitacora:selected.bitacora.filter(b=>b.id!==bid)};
+    setSelected(up);setCasos(cs=>cs.map(c=>c.id===up.id?up:c));
+  };
+
+  const selEstBadge=estadoBadge(getVal('estado')||'Tramite');
+
+  return(
+    <div style={{display:'flex',flexDirection:'column',height:'100vh',background:BG}}>
+      {/* Header */}
+      <header style={{background:SURF,flexShrink:0,borderBottom:`1px solid ${BR}`,boxShadow:'0 1px 3px rgba(0,0,0,.05)'}}>
+        <div style={{padding:'0 20px',display:'flex',alignItems:'center',gap:12,height:56}}>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <div style={{width:32,height:32,borderRadius:9,background:BL,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <IcoGlobe size={15} c="#fff"/>
+            </div>
+            <div>
+              <div style={{fontSize:10,color:TX3,textTransform:'uppercase',letterSpacing:'.5px',lineHeight:1}}>DGNNA — MIMP</div>
+              <div style={{fontSize:14,fontWeight:800,color:TX,lineHeight:1.2,letterSpacing:'-.01em'}}>Sustracción Internacional</div>
+            </div>
+          </div>
+          <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:8}}>
+            <button onClick={()=>setView(view==='casos'?'dashboard':'casos')}
+              style={{display:'flex',alignItems:'center',gap:6,background:view==='dashboard'?BL:BG,color:view==='dashboard'?'#fff':TX2,border:`1px solid ${view==='dashboard'?BL:BR}`,borderRadius:8,padding:'7px 13px',fontSize:12,fontWeight:600}}>
+              {view==='casos'?<><IcoChart size={13} c={view==='dashboard'?'#fff':TX2}/> Estadísticas</>:<><IcoFile size={13} c={view==='dashboard'?'#fff':TX2}/> Registro</>}
+            </button>
+            <button onClick={()=>setShowNew(true)} style={{display:'flex',alignItems:'center',gap:5,background:BL,color:'#fff',border:'none',borderRadius:8,padding:'7px 13px',fontSize:12,fontWeight:700,boxShadow:'0 2px 8px rgba(37,99,235,.4)'}}>
+              <IcoPlus size={13}/> Nuevo caso
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div style={{display:'flex',flex:1,overflow:'hidden'}}>
+        {view==='dashboard'?<DashTab casos={casos}/>:(
+          <>
+            {/* Sidebar */}
+            <div style={{width:tweaks.sidebarWidth,background:N2,display:'flex',flexDirection:'column',overflow:'hidden',flexShrink:0}}>
+              <div style={{padding:'10px 12px',borderBottom:'1px solid rgba(255,255,255,.08)'}}>
+                <div style={{position:'relative',marginBottom:8}}>
+                  <span style={{position:'absolute',left:9,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}><IcoSearch c="rgba(255,255,255,.3)"/></span>
+                  <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar por nombre o código…"
+                    style={{width:'100%',background:'rgba(255,255,255,.1)',border:'1px solid rgba(255,255,255,.14)',borderRadius:8,padding:'7px 9px 7px 30px',color:'#fff',fontSize:12,outline:'none',boxSizing:'border-box'}}/>
+                </div>
+                <button onClick={()=>setShowFilters(v=>!v)} style={{display:'flex',alignItems:'center',justifyContent:'space-between',width:'100%',background:'none',border:'1px solid rgba(255,255,255,.15)',borderRadius:7,padding:'6px 10px',color:'rgba(255,255,255,.65)',fontSize:11}}>
+                  <span style={{display:'flex',alignItems:'center',gap:5}}><IcoFilter c="rgba(255,255,255,.5)"/>Filtros {fEstado&&<span style={{background:BL,color:'#fff',borderRadius:99,padding:'0 5px',fontSize:10,fontWeight:700}}>1</span>}</span>
+                  <IcoChevD c="rgba(255,255,255,.4)"/>
+                </button>
+                {showFilters&&(
+                  <div style={{marginTop:8}}>
+                    <select value={fEstado} onChange={e=>setFEstado(e.target.value)} style={{width:'100%',background:'rgba(255,255,255,.1)',border:'1px solid rgba(255,255,255,.14)',borderRadius:7,padding:'6px 9px',color:fEstado?'#fff':'rgba(255,255,255,.4)',fontSize:11,outline:'none'}}>
+                      <option value="">Estado: todos</option>
+                      <option value="Tramite">En trámite</option>
+                      <option value="Pendiente">Pendiente</option>
+                      <option value="Archivado">Archivado</option>
+                    </select>
+                  </div>
+                )}
+                <div style={{fontSize:10,color:'rgba(255,255,255,.28)',margin:'6px 1px 0',fontWeight:500}}>{filtered.length} caso{filtered.length!==1?'s':''}</div>
+              </div>
+              <div style={{flex:1,overflowY:'auto',padding:'6px 8px'}}>
+                {filtered.map(c=><CaseCard key={c.id} caso={c} active={selected?.id===c.id} onClick={()=>{if(hasPending&&!confirm('¿Descartar cambios no guardados?'))return;setSelected(c);setPending({});setTab('ficha')}}/>)}
+              </div>
+            </div>
+
+            {/* Main panel */}
+            {!selected?(
+              <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10,color:TX3}}>
+                <IcoScale size={40} c={BR}/>
+                <div style={{fontSize:13}}>Selecciona un caso del panel izquierdo</div>
+              </div>
+            ):(
+              <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}} className="anim-r">
+                {/* Case header */}
+                <div style={{background:SURF,padding:'12px 20px',borderBottom:`1px solid ${BR}`,display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0,gap:12}}>
+                  <div style={{flex:1,overflow:'hidden'}}>
+                    <div style={{fontSize:10,color:TX3,textTransform:'uppercase',letterSpacing:'.04em',fontWeight:700,marginBottom:1}}>{selected.codigo} · {selected.pais}</div>
+                    <div style={{fontSize:16,fontWeight:800,color:TX,lineHeight:1.2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{selected.nnaNombre}</div>
+                  </div>
+                  <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
+                    <select value={getVal('estado')||'Tramite'} onChange={e=>onChange('estado',e.target.value)}
+                      style={{fontSize:12,padding:'5px 10px',borderRadius:99,background:selEstBadge.bg,color:selEstBadge.color,border:`1px solid ${selEstBadge.border}`,fontWeight:700,outline:'none',cursor:'pointer'}}>
+                      <option value="Tramite">En trámite</option>
+                      <option value="Pendiente">Pendiente</option>
+                      <option value="Archivado">Archivado</option>
+                    </select>
+                    <button onClick={()=>{if(confirm(`¿Eliminar el caso ${selected.codigo}?`)){setCasos(cs=>cs.filter(c=>c.id!==selected.id));setSelected(null);setPending({})}}}
+                      style={{width:32,height:32,borderRadius:8,border:'1px solid #FECACA',background:'#FEF2F2',display:'flex',alignItems:'center',justifyContent:'center',color:'#DC2626'}}>
+                      <IcoTrash size={13} c="#DC2626"/>
+                    </button>
+                  </div>
+                </div>
+                {/* Pending bar */}
+                {hasPending&&(
+                  <div style={{background:'#FFFBEB',borderBottom:'1px solid #FDE68A',padding:'8px 20px',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+                    <span style={{fontSize:12,color:'#92400E',fontWeight:600}}>{Object.keys(pending).length} cambio{Object.keys(pending).length!==1?'s':''} sin guardar</span>
+                    <div style={{display:'flex',gap:8}}>
+                      <button onClick={descartar} style={{padding:'5px 12px',borderRadius:7,border:`1px solid ${BR}`,background:SURF,color:TX2,fontSize:12,fontWeight:600}}>Descartar</button>
+                      <button onClick={guardar} style={{padding:'5px 16px',borderRadius:7,border:'none',background:N2,color:'#fff',fontSize:12,fontWeight:700}}>Guardar</button>
+                    </div>
+                  </div>
+                )}
+                {/* Tabs */}
+                <div style={{background:SURF,display:'flex',borderBottom:`1px solid ${BR}`,padding:'0 20px',flexShrink:0}}>
+                  {[['ficha','Ficha del caso',<IcoFile size={12}/>],['bitacora','Historial de gestión',<IcoMsgSq size={12}/>],['judicial','Proceso judicial',<IcoScale size={12}/>]].map(([id,lbl,ico])=>(
+                    <button key={id} onClick={()=>setTab(id)}
+                      style={{display:'flex',alignItems:'center',gap:6,padding:'10px 14px',fontSize:12,background:'none',border:'none',borderBottom:`2px solid ${tab===id?N2:'transparent'}`,color:tab===id?N2:TX2,fontWeight:tab===id?700:500,marginBottom:-1,cursor:'pointer'}}>
+                      {ico}{lbl}
+                    </button>
+                  ))}
+                </div>
+                {/* Tab content */}
+                <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+                  {tab==='ficha'&&<FichaTab caso={{...selected,...pending}} onChange={onChange}/>}
+                  {tab==='bitacora'&&<BitacoraTab caso={selected} addEntry={addBit} removeEntry={removeBit}/>}
+                  {tab==='judicial'&&<JudicialTab caso={{...selected,...pending}} onChange={onChange}/>}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {showNew&&<NewCaseModal onSave={f=>{const nc={...f,id:`c${++_nid}`,bitacora:[],historialJudicial:[],creadoPor:'Usuario actual',estadoJudicial:'Sin demanda'};setCasos(cs=>[nc,...cs]);setSelected(nc);setPending({});setShowNew(false)}} onClose={()=>setShowNew(false)}/>}
+
+      <TweaksPanel>
+        <TweakSection title="Diseño">
+          <TweakSlider id="sidebarWidth" label="Ancho del panel" min={260} max={420} step={10} value={tweaks.sidebarWidth} onChange={v=>setTweak('sidebarWidth',v)}/>
+          <TweakToggle id="compactCards" label="Tarjetas compactas" value={tweaks.compactCards} onChange={v=>setTweak('compactCards',v)}/>
+        </TweakSection>
+      </TweaksPanel>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

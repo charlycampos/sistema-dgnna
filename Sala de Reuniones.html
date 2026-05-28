@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sala de Reuniones — DGNNA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'DM Sans',system-ui,sans-serif;background:#EEF2F7;color:#0F172A;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:99px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slideR{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.anim-r{animation:slideR .22s cubic-bezier(.2,.8,.4,1) both}
+.anim-u{animation:fadeUp .2s ease-out both}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useMemo,useRef,useCallback}=React;
+
+/* ── TOKENS ─────────────────────────────── */
+const NK='#111827', N2='#1E3A5F', BL='#2563EB', BG='#F9FAFB';
+const SURF='#FFFFFF', BR='#E2E8F0', TX='#0F172A', TX2='#475569', TX3='#94A3B8';
+
+const CC={'Reunión interna':{s:'#2563EB',l:'#EFF6FF',t:'#1E40AF'},'Reunión externa':{s:'#059669',l:'#ECFDF5',t:'#065F46'},'Capacitación':{s:'#D97706',l:'#FEF3C7',t:'#92400E'},'Coordinación':{s:'#7C3AED',l:'#EDE9FE',t:'#5B21B6'},'Directora':{s:'#DB2777',l:'#FCE7F3',t:'#9D174D'},'Otra':{s:'#64748B',l:'#F1F5F9',t:'#334155'}};
+const EC={'Programado':{s:'#2563EB',l:'#EFF6FF',t:'#1D4ED8',r:'#BFDBFE'},'Realizado':{s:'#059669',l:'#ECFDF5',t:'#047857',r:'#A7F3D0'},'Cancelado':{s:'#DC2626',l:'#FEF2F2',t:'#B91C1C',r:'#FECACA'},'Reprogramado':{s:'#D97706',l:'#FFFBEB',t:'#B45309',r:'#FDE68A'}};
+const gc=k=>CC[k]??CC['Otra'], ge=k=>EC[k]??EC['Programado'];
+
+const CATS=['Reunión interna','Reunión externa','Capacitación','Coordinación','Directora','Otra'];
+const ESTS=['Programado','Realizado','Cancelado','Reprogramado'];
+const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DIAS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const FERIADOS={'2026-01-01':'Año Nuevo','2026-04-02':'Jueves Santo','2026-04-03':'Viernes Santo','2026-05-01':'Día del Trabajo','2026-06-07':'Batalla de Arica','2026-06-29':'San Pedro y San Pablo','2026-07-28':'Fiestas Patrias','2026-07-29':'Fiestas Patrias','2026-08-30':'Santa Rosa de Lima','2026-10-08':'Combate de Angamos','2026-12-25':'Navidad'};
+
+const toKey=(y,m,d)=>`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+const todayKey=()=>{const t=new Date();return toKey(t.getFullYear(),t.getMonth(),t.getDate())};
+const dimM=(y,m)=>new Date(y,m+1,0).getDate();
+const fdow=(y,m)=>new Date(y,m,1).getDay();
+const mesP=(y,m)=>`${y}-${String(m+1).padStart(2,'0')}`;
+const fmtD=f=>{if(!f)return'';const[y,mo,d]=f.split('-');return`${d}/${mo}/${y}`};
+const tMin=t=>{const[h,m]=t.split(':').map(Number);return h*60+m};
+const TODAY=todayKey();
+
+let _nextId=100;
+const SAMPLE=[
+  {id:'1',fecha:'2026-05-20',titulo:'Coordinación POI',horaInicio:'09:00',horaFin:'10:30',categoria:'Coordinación',estado:'Realizado',descripcion:'Revisión del plan operativo institucional',creadoPor:'María García'},
+  {id:'2',fecha:'2026-05-21',titulo:'Equipo DGNNA — Seguimiento',horaInicio:'10:00',horaFin:'11:00',categoria:'Reunión interna',estado:'Programado',descripcion:null,creadoPor:'Carlos López'},
+  {id:'3',fecha:'2026-05-21',titulo:'Coordinación OEA',horaInicio:'15:00',horaFin:'17:00',categoria:'Reunión externa',estado:'Programado',descripcion:'Convenio bilateral 2026',creadoPor:'Ana Ríos'},
+  {id:'4',fecha:'2026-05-22',titulo:'Taller Convenio de La Haya',horaInicio:'08:30',horaFin:'12:00',categoria:'Capacitación',estado:'Programado',descripcion:'Formación para abogados',creadoPor:'María García'},
+  {id:'5',fecha:'2026-05-22',titulo:'Revisión presupuestal',horaInicio:'15:00',horaFin:'16:00',categoria:'Coordinación',estado:'Programado',descripcion:null,creadoPor:'Carlos López'},
+  {id:'6',fecha:'2026-05-25',titulo:'Despacho Directora',horaInicio:'09:00',horaFin:'09:30',categoria:'Directora',estado:'Cancelado',descripcion:null,creadoPor:'Ana Ríos'},
+  {id:'7',fecha:'2026-05-26',titulo:'Mesa interinstitucional',horaInicio:'14:00',horaFin:'16:00',categoria:'Coordinación',estado:'Programado',descripcion:'Mesa conjunta MINJUSDH-MIMP',creadoPor:'Carlos López'},
+  {id:'8',fecha:'2026-05-27',titulo:'Reunión UNICEF Lima',horaInicio:'10:30',horaFin:'12:00',categoria:'Reunión externa',estado:'Reprogramado',descripcion:'Evaluación programas 2026',creadoPor:'Ana Ríos'},
+  {id:'9',fecha:'2026-05-28',titulo:'Entrevistas NNA — Q2',horaInicio:'09:00',horaFin:'13:00',categoria:'Reunión interna',estado:'Programado',descripcion:'Entrevistas trimestrales',creadoPor:'María García'},
+  {id:'10',fecha:'2026-05-14',titulo:'Capacitación derechos NNA',horaInicio:'09:00',horaFin:'11:00',categoria:'Capacitación',estado:'Realizado',descripcion:null,creadoPor:'Carlos López'},
+  {id:'11',fecha:'2026-05-07',titulo:'Despacho semanal',horaInicio:'08:00',horaFin:'09:00',categoria:'Directora',estado:'Realizado',descripcion:null,creadoPor:'María García'},
+  {id:'12',fecha:'2026-05-29',titulo:'Capacitación TIC',horaInicio:'14:00',horaFin:'17:00',categoria:'Capacitación',estado:'Programado',descripcion:null,creadoPor:'Ana Ríos'},
+  {id:'13',fecha:'2026-05-19',titulo:'Reunión de cierre Q1',horaInicio:'11:00',horaFin:'12:30',categoria:'Reunión interna',estado:'Realizado',descripcion:'Cierre formal del primer trimestre',creadoPor:'María García'},
+];
+
+/* ── SVG ICONS ───────────────────────────── */
+const IcoCalendar=({size=16,color='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+const IcoList=({size=16,color='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>;
+const IcoChart=({size=16,color='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>;
+const IcoPlus=({size=16,color='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+const IcoX=({size=16,color='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const IcoChevL=({size=16,color='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>;
+const IcoChevR=({size=16,color='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
+const IcoArrowL=({size=16,color='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>;
+const IcoEdit=({size=14,color='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+const IcoTrash=({size=14,color='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>;
+const IcoClock=({size=13,color='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+const IcoSearch=({size=14,color='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
+const IcoDownload=({size=14,color='currentColor'})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
+
+/* ── MODAL ─────────────────────────────────── */
+function Modal({editData,defaultFecha,onSave,onDelete,onClose}){
+  const blank={fecha:defaultFecha||TODAY,titulo:'',horaInicio:'09:00',horaFin:'10:00',categoria:'Reunión interna',estado:'Programado',descripcion:''};
+  const [f,setF]=useState(editData?{...editData,descripcion:editData.descripcion??''}:blank);
+  const set=k=>v=>setF(p=>({...p,[k]:v}));
+  return(
+    <div style={{position:'fixed',inset:0,zIndex:60,background:'rgba(10,20,40,.55)',display:'flex',alignItems:'center',justifyContent:'center',padding:16,backdropFilter:'blur(3px)'}} onClick={onClose}>
+      <div className="anim-u" style={{background:SURF,borderRadius:16,width:'100%',maxWidth:480,maxHeight:'90vh',overflowY:'auto',boxShadow:'0 32px 80px rgba(0,0,0,.28)'}} onClick={e=>e.stopPropagation()}>
+        <div style={{padding:'20px 24px 16px',borderBottom:`1px solid ${BR}`,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div>
+            <div style={{fontSize:16,fontWeight:700,color:TX}}>{editData?'Editar reserva':'Nueva reserva'}</div>
+            <div style={{fontSize:12,color:TX3,marginTop:2}}>Sala de Reuniones · DGNNA</div>
+          </div>
+          <button onClick={onClose} style={{width:32,height:32,borderRadius:8,border:`1px solid ${BR}`,background:BG,display:'flex',alignItems:'center',justifyContent:'center',color:TX2}}><IcoX size={14}/></button>
+        </div>
+        <div style={{padding:'20px 24px',display:'flex',flexDirection:'column',gap:16}}>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+            <div style={{gridColumn:'span 2'}}>
+              <label style={{display:'block',fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:5}}>Responsable / Evento</label>
+              <input autoFocus value={f.titulo} onChange={e=>set('titulo')(e.target.value)} placeholder="Nombre de la reunión o responsable" style={{width:'100%',padding:'9px 12px',border:`1.5px solid ${BR}`,borderRadius:8,fontSize:13,color:TX,background:BG,outline:'none'}}/>
+            </div>
+            <div>
+              <label style={{display:'block',fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:5}}>Fecha</label>
+              <input type="date" value={f.fecha} onChange={e=>set('fecha')(e.target.value)} style={{width:'100%',padding:'9px 12px',border:`1.5px solid ${BR}`,borderRadius:8,fontSize:13,color:TX,background:BG,outline:'none'}}/>
+              {FERIADOS[f.fecha]&&<div style={{fontSize:11,color:'#EF4444',marginTop:3,fontWeight:600}}>★ {FERIADOS[f.fecha]}</div>}
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+              {[['horaInicio','Inicio'],['horaFin','Fin']].map(([k,lbl])=>(
+                <div key={k}>
+                  <label style={{display:'block',fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:5}}>{lbl}</label>
+                  <input type="time" value={f[k]} onChange={e=>set(k)(e.target.value)} style={{width:'100%',padding:'9px 8px',border:`1.5px solid ${BR}`,borderRadius:8,fontSize:13,color:TX,background:BG,outline:'none'}}/>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={{display:'block',fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:8}}>Tipo de reunión</label>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}}>
+              {CATS.map(c=>{const col=gc(c);const sel=f.categoria===c;return(
+                <button key={c} onClick={()=>set('categoria')(c)} style={{display:'flex',alignItems:'center',gap:8,padding:'9px 12px',borderRadius:8,border:`1.5px solid ${sel?col.s:BR}`,background:sel?col.l:BG,color:sel?col.t:TX2,fontSize:12,fontWeight:sel?700:500,textAlign:'left',transition:'all .12s'}}>
+                  <span style={{width:9,height:9,borderRadius:'50%',background:col.s,flexShrink:0}}></span>{c}
+                </button>
+              )})}
+            </div>
+          </div>
+          <div>
+            <label style={{display:'block',fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:8}}>Estado</label>
+            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+              {ESTS.map(e=>{const col=ge(e);const sel=f.estado===e;return(
+                <button key={e} onClick={()=>set('estado')(e)} style={{padding:'7px 16px',borderRadius:99,border:`1.5px solid ${sel?col.s:col.r}`,background:sel?col.s:col.l,color:sel?'#fff':col.t,fontSize:12,fontWeight:700,transition:'all .12s'}}>{e}</button>
+              )})}
+            </div>
+          </div>
+          <div>
+            <label style={{display:'block',fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:5}}>Notas <span style={{fontWeight:400,textTransform:'none'}}>(opcional)</span></label>
+            <textarea rows={2} value={f.descripcion} onChange={e=>set('descripcion')(e.target.value)} placeholder="Agenda, participantes u observaciones..." style={{width:'100%',padding:'9px 12px',border:`1.5px solid ${BR}`,borderRadius:8,fontSize:13,color:TX,background:BG,outline:'none',resize:'none'}}/>
+          </div>
+        </div>
+        <div style={{padding:'0 24px 20px',display:'flex',gap:8}}>
+          {editData&&<button onClick={onDelete} style={{padding:'10px 14px',borderRadius:8,border:'1px solid #FECACA',background:'#FEF2F2',color:'#DC2626',fontSize:13,fontWeight:600,display:'flex',alignItems:'center',gap:5}}><IcoTrash size={13}/> Eliminar</button>}
+          <button onClick={onClose} style={{flex:1,padding:'10px',borderRadius:8,border:`1.5px solid ${BR}`,background:BG,color:TX2,fontSize:13,fontWeight:600}}>Cancelar</button>
+          <button onClick={()=>{if(!f.titulo.trim())return;onSave(f)}} style={{flex:2,padding:'10px',borderRadius:8,border:'none',background:BL,color:'#fff',fontSize:13,fontWeight:700,boxShadow:'0 2px 8px rgba(37,99,235,.35)'}}>{editData?'Guardar cambios':'Registrar reserva'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── DAY PANEL ─────────────────────────────── */
+const HOUR_START=8, HOUR_END=20, HOUR_H=50;
+function DayPanel({fecha,events,onNew,onEdit,onClose}){
+  const [y,m,d]=fecha.split('-').map(Number);
+  const dow=new Date(y,m-1,d).getDay();
+  const dLabel=`${DIAS[dow]}, ${d} de ${MESES[m-1]}`;
+  const fer=FERIADOS[fecha];
+  const totalH=(HOUR_END-HOUR_START)*HOUR_H;
+  const getPos=t=>{const min=tMin(t);const offsetMin=min-HOUR_START*60;return Math.max(0,(offsetMin/60)*HOUR_H)};
+  const getH=((s,e)=>{const diff=(tMin(e)-tMin(s))/60;return Math.max(22,diff*HOUR_H)});
+  return(
+    <div className="anim-r" style={{width:340,flexShrink:0,background:SURF,borderLeft:`1px solid ${BR}`,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{padding:'16px 16px 12px',borderBottom:`1px solid ${BR}`,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+        <div>
+          <div style={{fontSize:13,fontWeight:800,color:TX}}>{dLabel}</div>
+          {fer&&<div style={{fontSize:11,color:'#EF4444',fontWeight:600,marginTop:2}}>★ {fer}</div>}
+          <div style={{fontSize:11,color:TX3,marginTop:1}}>{events.length} reserva{events.length!==1?'s':''}</div>
+        </div>
+        <div style={{display:'flex',gap:6}}>
+          <button onClick={()=>onNew(fecha)} style={{display:'flex',alignItems:'center',gap:5,padding:'7px 11px',borderRadius:8,border:'none',background:BL,color:'#fff',fontSize:12,fontWeight:600}}><IcoPlus size={12}/> Añadir</button>
+          <button onClick={onClose} style={{width:32,height:32,borderRadius:8,border:`1px solid ${BR}`,background:BG,display:'flex',alignItems:'center',justifyContent:'center',color:TX2}}><IcoX size={13}/></button>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:'auto',padding:'12px 12px'}}>
+        {events.length===0&&(
+          <div style={{textAlign:'center',padding:'48px 0',color:TX3}}>
+            <IcoCalendar size={32} color={BR}/>
+            <div style={{marginTop:10,fontSize:13}}>Sin reservas este día</div>
+            <button onClick={()=>onNew(fecha)} style={{marginTop:12,padding:'8px 16px',borderRadius:8,border:`1.5px solid ${BL}`,background:'#EFF6FF',color:BL,fontSize:12,fontWeight:600}}>Nueva reserva</button>
+          </div>
+        )}
+        {events.length>0&&(
+          <div style={{position:'relative',marginLeft:40}}>
+            {/* Hour lines */}
+            {Array.from({length:HOUR_END-HOUR_START+1},(_,i)=>{
+              const h=HOUR_START+i;
+              return(
+                <div key={h} style={{position:'absolute',left:-36,right:0,top:i*HOUR_H,display:'flex',alignItems:'center',gap:6,pointerEvents:'none'}}>
+                  <span style={{fontSize:10,color:TX3,width:28,textAlign:'right',fontWeight:500,letterSpacing:'.01em'}}>{String(h).padStart(2,'0')}:00</span>
+                  <div style={{flex:1,height:1,background:i===0?BR:`${BR}88`}}></div>
+                </div>
+              );
+            })}
+            {/* Event blocks */}
+            <div style={{position:'relative',height:totalH,marginTop:0}}>
+              {events.map(ev=>{
+                const col=ge(ev.estado);
+                const catCol=gc(ev.categoria);
+                const top=getPos(ev.horaInicio);
+                const h=getH(ev.horaInicio,ev.horaFin);
+                const canceled=ev.estado==='Cancelado';
+                return(
+                  <div key={ev.id} onClick={()=>onEdit(ev)} title={`${ev.titulo} · ${ev.horaInicio}–${ev.horaFin}`}
+                    style={{position:'absolute',left:0,right:0,top,height:h,borderRadius:8,background:canceled?col.l:catCol.l,borderLeft:`3px solid ${canceled?col.s:catCol.s}`,padding:'5px 10px',cursor:'pointer',opacity:canceled?.6:1,overflow:'hidden',transition:'all .1s',boxShadow:'0 1px 4px rgba(0,0,0,.07)'}}>
+                    <div style={{fontSize:11,fontWeight:700,color:canceled?col.t:catCol.t,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis',textDecoration:canceled?'line-through':'none'}}>{ev.titulo}</div>
+                    <div style={{fontSize:10,color:TX3,marginTop:1,display:'flex',alignItems:'center',gap:3}}><IcoClock size={9}/>{ev.horaInicio}–{ev.horaFin}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── CALENDAR VIEW ─────────────────────────── */
+function CalendarView({reservas,year,month,setYear,setMonth,onNew,onEdit}){
+  const [selDay,setSelDay]=useState(null);
+  const today=TODAY;
+  const daysNum=dimM(year,month), first=fdow(year,month);
+  const prevDim=dimM(year,month===0?11:month-1);
+  const totalCells=Math.ceil((first+daysNum)/7)*7;
+  const mesReservas=reservas.filter(r=>r.fecha.startsWith(mesP(year,month)));
+  const evMap={};
+  mesReservas.forEach(r=>{(evMap[r.fecha]??=[]).push(r)});
+  const diasOc=new Set(mesReservas.filter(r=>r.estado!=='Cancelado').map(r=>r.fecha)).size;
+  const disp=Math.round(Math.max(0,(22-diasOc)/22)*100);
+  const selEvs=selDay?((evMap[selDay]??[]).sort((a,b)=>a.horaInicio.localeCompare(b.horaInicio))):[];
+  const prevM=()=>{if(month===0){setYear(y=>y-1);setMonth(11)}else setMonth(m=>m-1)};
+  const nextM=()=>{if(month===11){setYear(y=>y+1);setMonth(0)}else setMonth(m=>m+1)};
+  const goT=()=>{const t=new Date();setYear(t.getFullYear());setMonth(t.getMonth());setSelDay(todayKey())};
+  return(
+    <div style={{display:'flex',flex:1,flexDirection:'column',overflow:'hidden'}}>
+      {/* Stats strip */}
+      <div style={{display:'flex',gap:2,padding:'14px 20px 10px',borderBottom:`1px solid ${BR}`,background:SURF,flexShrink:0}}>
+        {[
+          {label:'Este mes',value:mesReservas.length,color:BL},
+          {label:'Días ocupados',value:diasOc,color:'#7C3AED'},
+          {label:'Disponibilidad',value:`${disp}%`,color:'#059669'},
+          {label:'Canceladas',value:mesReservas.filter(r=>r.estado==='Cancelado').length,color:'#DC2626'},
+        ].map((s,i)=>(
+          <React.Fragment key={s.label}>
+            <div style={{flex:1,padding:'6px 16px',textAlign:'center'}}>
+              <div style={{fontSize:22,fontWeight:800,color:s.color,lineHeight:1}}>{s.value}</div>
+              <div style={{fontSize:11,color:TX3,marginTop:2,fontWeight:500}}>{s.label}</div>
+            </div>
+            {i<3&&<div style={{width:1,background:BR,alignSelf:'stretch',margin:'4px 0'}}></div>}
+          </React.Fragment>
+        ))}
+        <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:8,paddingLeft:16,borderLeft:`1px solid ${BR}`}}>
+          <button onClick={prevM} style={{width:30,height:30,borderRadius:7,border:`1px solid ${BR}`,background:BG,display:'flex',alignItems:'center',justifyContent:'center',color:TX2}}><IcoChevL size={14}/></button>
+          <div style={{fontSize:15,fontWeight:700,color:TX,minWidth:200,textAlign:'center'}}>{MESES[month]} <span style={{color:BL}}>{year}</span></div>
+          <button onClick={nextM} style={{width:30,height:30,borderRadius:7,border:`1px solid ${BR}`,background:BG,display:'flex',alignItems:'center',justifyContent:'center',color:TX2}}><IcoChevR size={14}/></button>
+          <button onClick={goT} style={{padding:'5px 12px',borderRadius:7,border:`1px solid ${BR}`,background:BG,fontSize:12,color:TX2,fontWeight:600}}>Hoy</button>
+        </div>
+      </div>
+      <div style={{display:'flex',flex:1,overflow:'hidden'}}>
+        {/* Calendar grid */}
+        <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',background:BL}}>
+            {DIAS.map((d,i)=><div key={d} style={{textAlign:'center',padding:'10px 0',fontSize:11,fontWeight:700,letterSpacing:'.07em',textTransform:'uppercase',color:i===0||i===6?'#FCA5A5':'rgba(255,255,255,.75)'}}>{d}</div>)}
+          </div>
+          <div style={{flex:1,overflowY:'auto'}}>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',height:'100%'}}>
+              {Array.from({length:totalCells},(_,i)=>{
+                const dow=i%7;
+                let dn,cy=year,cm=month,isOther=false;
+                if(i<first){cm=month===0?11:month-1;cy=month===0?year-1:year;dn=prevDim-first+i+1;isOther=true}
+                else if(i>=first+daysNum){dn=i-first-daysNum+1;cm=month===11?0:month+1;cy=month===11?year+1:year;isOther=true}
+                else dn=i-first+1;
+                const key=toKey(cy,cm,dn);
+                const isToday=key===today;
+                const isWknd=dow===0||dow===6;
+                const isFer=!isOther&&!!FERIADOS[key];
+                const dayEvs=evMap[key]??[];
+                const isSel=selDay===key;
+                const isLastRow=i>=totalCells-7, colIdx=i%7;
+                let bg=isOther?'#F8FAFC':isFer?'#FFF9F9':isWknd?'#FAFBFD':SURF;
+                if(isSel)bg='#EFF6FF';
+                return(
+                  <div key={i} onClick={()=>{if(!isOther){setSelDay(isSel?null:key)}}}
+                    style={{minHeight:110,padding:'8px 7px 5px',background:bg,cursor:isOther?'default':'pointer',borderRight:colIdx===6?'none':`1px solid ${BR}`,borderBottom:isLastRow?'none':`1px solid ${BR}`,transition:'background .1s',outline:isSel?`2px solid ${BL}`:isFer?'1.5px solid #FECACA':'none',outlineOffset:-1}}>
+                    <div style={{display:'flex',alignItems:'center',gap:4,marginBottom:5}}>
+                      <div style={{width:24,height:24,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:isToday?800:500,background:isToday?BL:'transparent',color:isToday?'#fff':isFer?'#EF4444':isOther?'#CBD5E1':TX2}}>{dn}</div>
+                      {isFer&&<span style={{fontSize:9,color:'#EF4444',fontWeight:700,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',maxWidth:64}}>★ {FERIADOS[key]}</span>}
+                    </div>
+                    {dayEvs.slice(0,3).map(ev=>{
+                      const col=gc(ev.categoria);const canceled=ev.estado==='Cancelado';
+                      return(
+                        <div key={ev.id} onClick={e=>{e.stopPropagation();onEdit(ev)}}
+                          style={{marginBottom:2,padding:'3px 7px',borderRadius:5,background:canceled?col.l:col.s,color:canceled?col.t:'#fff',fontSize:10,fontWeight:600,overflow:'hidden',whiteSpace:'nowrap',textOverflow:'ellipsis',display:'flex',alignItems:'center',gap:3,opacity:canceled?.65:1,textDecoration:canceled?'line-through':'none',borderLeft:`2px solid ${col.s}`}}>
+                          <span style={{fontSize:9,opacity:.8,flexShrink:0}}>{ev.horaInicio}</span>
+                          <span style={{overflow:'hidden',textOverflow:'ellipsis'}}>{ev.titulo}</span>
+                        </div>
+                      );
+                    })}
+                    {dayEvs.length>3&&<div style={{fontSize:10,color:BL,paddingLeft:2,fontWeight:700}}>+{dayEvs.length-3} más</div>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+        {/* Day panel slide-in */}
+        {selDay&&<DayPanel fecha={selDay} events={selEvs} onNew={onNew} onEdit={onEdit} onClose={()=>setSelDay(null)}/>}
+      </div>
+    </div>
+  );
+}
+
+/* ── BANDEJA VIEW ──────────────────────────── */
+function BandejaView({reservas,onEdit}){
+  const [q,setQ]=useState('');const [fm,setFm]=useState('');const [fe,setFe]=useState('');const [fc,setFc]=useState('');
+  const filtered=reservas.filter(r=>{
+    if(q&&!r.titulo.toLowerCase().includes(q.toLowerCase())&&!(r.creadoPor??'').toLowerCase().includes(q.toLowerCase()))return false;
+    if(fm&&!r.fecha.startsWith(fm))return false;
+    if(fe&&r.estado!==fe)return false;
+    if(fc&&r.categoria!==fc)return false;
+    return true;
+  }).sort((a,b)=>a.fecha<b.fecha?1:-1);
+  const inpS={padding:'8px 12px',border:`1.5px solid ${BR}`,borderRadius:8,fontSize:13,color:TX,background:BG,outline:'none'};
+  return(
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div style={{padding:'14px 20px',borderBottom:`1px solid ${BR}`,background:SURF,display:'flex',gap:10,flexWrap:'wrap',alignItems:'center',flexShrink:0}}>
+        <div style={{position:'relative',flex:'1 1 220px'}}>
+          <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}><IcoSearch color={TX3}/></span>
+          <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Buscar por título o responsable…" style={{...inpS,paddingLeft:32,width:'100%'}}/>
+        </div>
+        <input type="month" value={fm} onChange={e=>setFm(e.target.value)} style={{...inpS}}/>
+        <select value={fe} onChange={e=>setFe(e.target.value)} style={{...inpS}}>
+          <option value="">Todos los estados</option>
+          {ESTS.map(e=><option key={e} value={e}>{e}</option>)}
+        </select>
+        <select value={fc} onChange={e=>setFc(e.target.value)} style={{...inpS}}>
+          <option value="">Todas las categorías</option>
+          {CATS.map(c=><option key={c} value={c}>{c}</option>)}
+        </select>
+        {(q||fm||fe||fc)&&<button onClick={()=>{setQ('');setFm('');setFe('');setFc('')}} style={{padding:'8px 12px',borderRadius:8,border:`1.5px solid ${BR}`,background:BG,color:TX2,fontSize:12,fontWeight:600,display:'flex',alignItems:'center',gap:4}}><IcoX size={12}/> Limpiar</button>}
+        <button style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:5,padding:'8px 14px',borderRadius:8,border:`1.5px solid ${BR}`,background:BG,color:TX2,fontSize:12,fontWeight:600}}><IcoDownload size={13}/>Exportar</button>
+      </div>
+      <div style={{flex:1,overflowY:'auto',padding:'16px 20px'}}>
+        <div style={{fontSize:11,color:TX3,fontWeight:600,marginBottom:10}}>{filtered.length} reserva{filtered.length!==1?'s':''}</div>
+        <div style={{background:SURF,borderRadius:12,border:`1px solid ${BR}`,overflow:'hidden',boxShadow:'0 1px 4px rgba(0,0,0,.05)'}}>
+          <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
+            <thead>
+              <tr style={{background:'#F8FAFC'}}>
+                {['Fecha','Evento / Responsable','Horario','Categoría','Estado','Registrado por',''].map((h,i)=>(
+                  <th key={i} style={{padding:'11px 14px',textAlign:i===6?'right':'left',fontSize:10,fontWeight:700,color:TX2,textTransform:'uppercase',letterSpacing:'.06em',whiteSpace:'nowrap',borderBottom:`2px solid ${BR}`}}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length===0&&<tr><td colSpan={7} style={{textAlign:'center',padding:'48px',color:TX3,fontSize:13}}>Sin resultados</td></tr>}
+              {filtered.map((r,idx)=>{
+                const cat=gc(r.categoria);const est=ge(r.estado);const canceled=r.estado==='Cancelado';
+                return(
+                  <tr key={r.id} style={{borderBottom:`1px solid ${BR}`,background:idx%2===0?SURF:'#FAFBFC',opacity:canceled?.65:1}}>
+                    <td style={{padding:'12px 14px',whiteSpace:'nowrap'}}>
+                      <div style={{fontWeight:700,color:TX,fontSize:12}}>{fmtD(r.fecha)}</div>
+                      {FERIADOS[r.fecha]&&<div style={{fontSize:10,color:'#EF4444',fontWeight:600}}>★ {FERIADOS[r.fecha]}</div>}
+                    </td>
+                    <td style={{padding:'12px 14px',maxWidth:220}}>
+                      <div style={{fontWeight:600,color:TX,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',textDecoration:canceled?'line-through':'none'}}>{r.titulo}</div>
+                      {r.descripcion&&<div style={{fontSize:11,color:TX3,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginTop:1}}>{r.descripcion}</div>}
+                    </td>
+                    <td style={{padding:'12px 14px',whiteSpace:'nowrap'}}>
+                      <span style={{display:'inline-flex',alignItems:'center',gap:4,background:BG,borderRadius:6,padding:'4px 9px',fontSize:11,color:TX2,fontWeight:600}}><IcoClock/>{r.horaInicio} – {r.horaFin}</span>
+                    </td>
+                    <td style={{padding:'12px 14px'}}>
+                      <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:11,fontWeight:700,padding:'4px 9px',borderRadius:6,background:cat.l,color:cat.t}}>
+                        <span style={{width:6,height:6,borderRadius:'50%',background:cat.s,flexShrink:0}}></span>{r.categoria}
+                      </span>
+                    </td>
+                    <td style={{padding:'12px 14px'}}>
+                      <span style={{display:'inline-flex',fontSize:11,fontWeight:700,padding:'4px 10px',borderRadius:99,background:est.l,color:est.t,border:`1px solid ${est.r}`}}>{r.estado}</span>
+                    </td>
+                    <td style={{padding:'12px 14px',fontSize:12,color:TX2,whiteSpace:'nowrap'}}>{r.creadoPor??'—'}</td>
+                    <td style={{padding:'12px 14px',textAlign:'right'}}>
+                      <button onClick={()=>onEdit(r)} style={{display:'inline-flex',alignItems:'center',gap:4,padding:'5px 10px',borderRadius:6,border:`1px solid ${BR}`,background:SURF,color:TX2,fontSize:12,fontWeight:600}}><IcoEdit/> Editar</button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── DASHBOARD VIEW ────────────────────────── */
+function DashboardView({reservas,year}){
+  const total=reservas.length;
+  const porMes=MESES.map((m,i)=>{const p=`${year}-${String(i+1).padStart(2,'0')}`;return{m:m.slice(0,3),n:reservas.filter(r=>r.fecha.startsWith(p)).length}});
+  const maxMes=Math.max(...porMes.map(p=>p.n),1);
+  const cardS={background:SURF,borderRadius:12,border:`1px solid ${BR}`,padding:'18px 20px',boxShadow:'0 1px 4px rgba(0,0,0,.05)'};
+  return(
+    <div style={{flex:1,overflowY:'auto',padding:'20px'}}>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:20}}>
+        {[
+          {label:'Total reservas',value:total,color:'#2563EB',bg:'#EFF6FF'},
+          {label:'Programadas',value:reservas.filter(r=>r.estado==='Programado').length,color:'#2563EB',bg:'#EFF6FF'},
+          {label:'Realizadas',value:reservas.filter(r=>r.estado==='Realizado').length,color:'#059669',bg:'#ECFDF5'},
+          {label:'Canceladas',value:reservas.filter(r=>r.estado==='Cancelado').length,color:'#DC2626',bg:'#FEF2F2'},
+        ].map(s=>(
+          <div key={s.label} style={{...cardS,borderTop:`3px solid ${s.color}`}}>
+            <div style={{fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.05em',marginBottom:6}}>{s.label}</div>
+            <div style={{fontSize:34,fontWeight:800,color:s.color,lineHeight:1}}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+        <div style={cardS}>
+          <div style={{fontSize:13,fontWeight:700,color:TX,marginBottom:16}}>Reservas por mes — {year}</div>
+          <div style={{display:'flex',flexDirection:'column',gap:7}}>
+            {porMes.map(p=>(
+              <div key={p.m} style={{display:'flex',alignItems:'center',gap:10}}>
+                <span style={{fontSize:11,color:TX3,fontWeight:600,width:28,flexShrink:0}}>{p.m}</span>
+                <div style={{flex:1,background:BG,borderRadius:99,height:20,overflow:'hidden'}}>
+                  {p.n>0&&<div style={{height:'100%',borderRadius:99,background:`linear-gradient(90deg,${BL},#7C3AED)`,width:`${Math.round((p.n/maxMes)*100)}%`,display:'flex',alignItems:'center',justifyContent:'flex-end',paddingRight:8}}>
+                    <span style={{fontSize:10,color:'#fff',fontWeight:700}}>{p.n}</span>
+                  </div>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={cardS}>
+          <div style={{fontSize:13,fontWeight:700,color:TX,marginBottom:16}}>Por categoría</div>
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            {CATS.map(cat=>{
+              const n=reservas.filter(r=>r.categoria===cat).length;
+              const c=gc(cat);const pct=total>0?Math.round((n/total)*100):0;
+              if(!n)return null;
+              return(
+                <div key={cat}>
+                  <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
+                    <span style={{display:'flex',alignItems:'center',gap:6,fontSize:12,fontWeight:600,color:TX2}}><span style={{width:9,height:9,borderRadius:3,background:c.s,display:'inline-block'}}></span>{cat}</span>
+                    <span style={{fontSize:11,color:TX3,fontWeight:600}}>{n} · {pct}%</span>
+                  </div>
+                  <div style={{height:6,background:BG,borderRadius:99,overflow:'hidden'}}>
+                    <div style={{height:'100%',borderRadius:99,background:c.s,width:`${pct}%`,transition:'width .4s ease-out'}}></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── APP ───────────────────────────────────── */
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{"showLegend":true}/*EDITMODE-END*/;
+
+function App(){
+  const [tweaks,setTweak]=useTweaks(TWEAK_DEFAULTS);
+  const [tab,setTab]=useState('calendario');
+  const [reservas,setReservas]=useState(SAMPLE);
+  const [year,setYear]=useState(2026);
+  const [month,setMonth]=useState(4); // May
+  const [modal,setModal]=useState(null); // null | {data?:reserva, fecha?:string}
+
+  const openNew=f=>setModal({data:null,fecha:f||TODAY});
+  const openEdit=r=>setModal({data:r,fecha:r.fecha});
+  const closeModal=()=>setModal(null);
+
+  const handleSave=f=>{
+    if(modal.data){
+      setReservas(rs=>rs.map(r=>r.id===modal.data.id?{...r,...f}:r));
+    } else {
+      setReservas(rs=>[...rs,{...f,id:String(++_nextId),creadoPor:'Usuario actual',createdAt:TODAY}]);
+    }
+    closeModal();
+  };
+  const handleDelete=()=>{
+    if(modal.data)setReservas(rs=>rs.filter(r=>r.id!==modal.data.id));
+    closeModal();
+  };
+
+
+
+  const tabs=[
+    {id:'calendario',label:'Calendario',icon:<IcoCalendar size={13}/>},
+    {id:'bandeja',label:'Bandeja',icon:<IcoList size={13}/>},
+    {id:'dashboard',label:'Dashboard',icon:<IcoChart size={13}/>},
+  ];
+
+  return(
+    <div style={{display:'flex',flexDirection:'column',height:'100vh',background:BG}}>
+      {/* Header */}
+      <header style={{background:SURF,flexShrink:0,borderBottom:`1px solid ${BR}`,boxShadow:'0 1px 3px rgba(0,0,0,.05)'}}>
+        <div style={{maxWidth:'100%',padding:'0 20px',display:'flex',alignItems:'center',gap:12,height:58}}>
+          <a href="menu.html" style={{width:32,height:32,borderRadius:8,border:`1px solid ${BR}`,background:BG,display:'flex',alignItems:'center',justifyContent:'center',color:TX2,textDecoration:'none',flexShrink:0}}><IcoArrowL size={14}/></a>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <div style={{width:34,height:34,borderRadius:9,background:BL,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <IcoCalendar size={16} color="#fff"/>
+            </div>
+            <div>
+              <div style={{fontSize:14,fontWeight:800,color:TX,lineHeight:1.1,letterSpacing:'-.01em'}}>Sala de Reuniones</div>
+              <div style={{fontSize:10,color:TX3,lineHeight:1.3}}>DGNNA · Gestión de reservas</div>
+            </div>
+          </div>
+          {/* Tab pills */}
+          <div style={{display:'flex',gap:2,marginLeft:20,background:'#F1F5F9',borderRadius:10,padding:3}}>
+            {tabs.map(t=>(
+              <button key={t.id} onClick={()=>setTab(t.id)}
+                style={{display:'flex',alignItems:'center',gap:6,padding:'6px 14px',borderRadius:8,border:'none',fontSize:12,fontWeight:600,transition:'all .15s',background:tab===t.id?SURF:'transparent',color:tab===t.id?BL:TX2,boxShadow:tab===t.id?'0 1px 4px rgba(0,0,0,.12)':'none'}}>
+                {t.icon}{t.label}
+              </button>
+            ))}
+          </div>
+          {/* Leyenda mini */}
+          <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:12}}>
+            <div style={{display:'flex',gap:10,alignItems:'center'}}>
+              {ESTS.map(e=>{const c=ge(e);return(
+                <span key={e} style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color:TX3,fontWeight:500}}>
+                  <span style={{width:8,height:8,borderRadius:'50%',background:c.s}}></span>{e}
+                </span>
+              )})}
+            </div>
+            <button onClick={()=>openNew(null)} style={{display:'flex',alignItems:'center',gap:6,background:BL,color:'#fff',border:'none',borderRadius:8,padding:'8px 15px',fontSize:12,fontWeight:700,boxShadow:'0 2px 8px rgba(37,99,235,.4)',flexShrink:0}}>
+              <IcoPlus size={14}/> Nueva reserva
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main content */}
+      {tab==='calendario'&&<CalendarView reservas={reservas} year={year} month={month} setYear={setYear} setMonth={setMonth} onNew={openNew} onEdit={openEdit}/>}
+      {tab==='bandeja'&&<BandejaView reservas={reservas} onEdit={openEdit}/>}
+      {tab==='dashboard'&&<DashboardView reservas={reservas} year={year}/>}
+
+      {/* Modal */}
+      {modal&&<Modal editData={modal.data} defaultFecha={modal.fecha} onSave={handleSave} onDelete={handleDelete} onClose={closeModal}/>}
+
+      <TweaksPanel>
+        <TweakSection title="Apariencia">
+          <TweakToggle id="showLegend" label="Mostrar leyenda" value={tweaks.showLegend} onChange={v=>setTweak('showLegend',v)}/>
+        </TweakSection>
+      </TweaksPanel>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
