@@ -88,6 +88,24 @@ export interface ApelacionConRelaciones {
   observaciones: string | null
   createdAt: Date
   updatedAt: Date
+  apelantes?: Array<{
+    id?: string
+    tipo: 'natural' | 'institucion'
+    nombres?: string
+    apellidoPaterno?: string
+    apellidoMaterno?: string
+    institucion?: string
+    documento?: string
+  }>
+  nnas?: Array<{
+    id?: string
+    tipo: 'natural' | 'institucion'
+    nombres?: string
+    primerApellido?: string
+    segundoApellido?: string
+    edad?: number | string | null
+    institucion?: string
+  }>
 }
 
 // Para el formulario

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from domain.entities.apelacion import Apelacion
 from domain.ports.apelacion_repository import ApelacionRepository
-from infrastructure.db.models import ApelacionModel
+from infrastructure.db.models import ApelacionModel, ApelanteDetalleModel, NnaDetalleModel
 
 
 class ApelacionRepositoryImpl(ApelacionRepository):
@@ -70,6 +70,31 @@ class ApelacionRepositoryImpl(ApelacionRepository):
         model.revisorId         = apelacion.revisorId
         model.updatedAt         = datetime.utcnow()
 
+        # Update child tables by clearing and adding new ones
+        model.apelantes.clear()
+        model.apelantes = [
+            ApelanteDetalleModel(
+                tipo=x.get("tipo"),
+                nombres=x.get("nombres"),
+                apellidoPaterno=x.get("apellidoPaterno"),
+                apellidoMaterno=x.get("apellidoMaterno"),
+                institucion=x.get("institucion"),
+                documento=x.get("documento")
+            ) for x in (apelacion.apelantes or [])
+        ]
+
+        model.nnas.clear()
+        model.nnas = [
+            NnaDetalleModel(
+                tipo=x.get("tipo"),
+                nombres=x.get("nombres"),
+                primerApellido=x.get("primerApellido"),
+                segundoApellido=x.get("segundoApellido"),
+                edad=x.get("edad"),
+                institucion=x.get("institucion")
+            ) for x in (apelacion.nnas or [])
+        ]
+
         try:
             self._db.commit()
             self._db.refresh(model)
@@ -90,6 +115,31 @@ class ApelacionRepositoryImpl(ApelacionRepository):
 
     @staticmethod
     def _to_entity(m: ApelacionModel) -> Apelacion:
+        # Map child lists
+        apelantes_list = []
+        for x in (m.apelantes or []):
+            apelantes_list.append({
+                "id": x.id,
+                "tipo": x.tipo,
+                "nombres": x.nombres,
+                "apellidoPaterno": x.apellidoPaterno,
+                "apellidoMaterno": x.apellidoMaterno,
+                "institucion": x.institucion,
+                "documento": x.documento
+            })
+
+        nnas_list = []
+        for x in (m.nnas or []):
+            nnas_list.append({
+                "id": x.id,
+                "tipo": x.tipo,
+                "nombres": x.nombres,
+                "primerApellido": x.primerApellido,
+                "segundoApellido": x.segundoApellido,
+                "edad": x.edad,
+                "institucion": x.institucion
+            })
+
         return Apelacion(
             id                = m.id,
             numeroExpediente  = m.numeroExpediente,
@@ -114,13 +164,15 @@ class ApelacionRepositoryImpl(ApelacionRepository):
             cargos            = m.cargos,
             observaciones     = m.observaciones,
             revisorId         = m.revisorId,
+            apelantes         = apelantes_list,
+            nnas              = nnas_list,
             createdAt         = m.createdAt,
             updatedAt         = m.updatedAt,
         )
 
     @staticmethod
     def _to_model(e: Apelacion) -> ApelacionModel:
-        return ApelacionModel(
+        model = ApelacionModel(
             id                = e.id,
             numeroExpediente  = e.numeroExpediente,
             fechaIngreso      = e.fechaIngreso,
@@ -144,3 +196,25 @@ class ApelacionRepositoryImpl(ApelacionRepository):
             cargos            = e.cargos,
             observaciones     = e.observaciones,
         )
+        # Map child lists
+        model.apelantes = [
+            ApelanteDetalleModel(
+                tipo=x.get("tipo"),
+                nombres=x.get("nombres"),
+                apellidoPaterno=x.get("apellidoPaterno"),
+                apellidoMaterno=x.get("apellidoMaterno"),
+                institucion=x.get("institucion"),
+                documento=x.get("documento")
+            ) for x in (e.apelantes or [])
+        ]
+        model.nnas = [
+            NnaDetalleModel(
+                tipo=x.get("tipo"),
+                nombres=x.get("nombres"),
+                primerApellido=x.get("primerApellido"),
+                segundoApellido=x.get("segundoApellido"),
+                edad=x.get("edad"),
+                institucion=x.get("institucion")
+            ) for x in (e.nnas or [])
+        ]
+        return model

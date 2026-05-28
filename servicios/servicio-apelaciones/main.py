@@ -23,6 +23,9 @@ from infrastructure.api.router_dashboard  import router as router_dashboard
 from infrastructure.api.router_reportes    import router as router_reportes
 from infrastructure.api.router_procedencia import router as router_procedencia
 from infrastructure.api.router_revisores   import router as router_revisores
+from infrastructure.api.router_apelantes   import router as router_apelantes
+from infrastructure.api.router_nna         import router as router_nna
+
 
 # Crear tablas si no existen
 Base.metadata.create_all(bind=engine)
@@ -34,6 +37,8 @@ def run_migrations():
     import traceback
     migraciones = [
         "ALTER TABLE apelaciones ADD (revisorid VARCHAR2(36))",
+        "ALTER TABLE apelaciones MODIFY (apelante NULL)",
+        "ALTER TABLE apelaciones MODIFY (nnacar NULL)",
     ]
     with engine.connect() as conn:
         for sql in migraciones:
@@ -94,6 +99,8 @@ app.include_router(router_dashboard)
 app.include_router(router_reportes)
 app.include_router(router_procedencia)
 app.include_router(router_revisores)
+app.include_router(router_apelantes)
+app.include_router(router_nna)
 
 
 @app.get("/")

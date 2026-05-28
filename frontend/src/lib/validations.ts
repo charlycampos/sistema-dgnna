@@ -1,12 +1,35 @@
-import { z } from "zod"
+import { z } from "zod";
+
+const namePattern = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\.]*$/;
+
+const nombrePersonaSchema = z.string().optional().nullable().refine(
+    (val) => !val || namePattern.test(val),
+    "Solo letras, espacios y puntos (para iniciales)"
+);
 
 export const apelacionBaseSchema = z.object({
     numeroExpediente: z.string().min(1, "El número de expediente es obligatorio"),
     fechaIngreso: z.date({ message: "La fecha de ingreso es obligatoria" }),
     fechaIngresoMIMP: z.date().optional().nullable(),
     plazoVencimiento: z.date().optional().nullable(),
-    apelante: z.string().min(1, "El apelante es obligatorio"),
+    apelante: z.string().optional().nullable(),
     nnaCar: z.string().optional().nullable(),
+    apelantes: z.array(z.object({
+        tipo: z.enum(["natural", "institucion"]),
+        nombres: nombrePersonaSchema,
+        apellidoPaterno: nombrePersonaSchema,
+        apellidoMaterno: nombrePersonaSchema,
+        documento: z.string().optional(),
+        institucion: z.string().optional()
+    })).min(1, "Debe agregar al menos un apelante"),
+    nnas: z.array(z.object({
+        tipo: z.enum(["natural", "institucion"]),
+        nombres: nombrePersonaSchema,
+        primerApellido: nombrePersonaSchema,
+        segundoApellido: nombrePersonaSchema,
+        edad: z.string().or(z.number()).optional().nullable(),
+        institucion: z.string().optional()
+    })).optional().nullable(),
     procedencia: z.string().min(1, "La procedencia es obligatoria"),
     documento: z.string().min(1, "El documento es obligatorio"),
     asunto: z.string().min(1, "El asunto es obligatorio"),

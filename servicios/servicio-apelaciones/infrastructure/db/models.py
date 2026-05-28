@@ -69,6 +69,36 @@ class ProcedenciaModel(Base):
     activo = Column("activo", Boolean, default=True)
 
 
+class ApelanteDetalleModel(Base):
+    __tablename__ = "apelantes_detalle"
+
+    id              = Column("id", String(36), primary_key=True, default=_new_id)
+    apelacionId     = Column("apelacion_id", String(36), ForeignKey("apelaciones.id"), nullable=False)
+    tipo            = Column("tipo", String(20), nullable=False) # 'natural' o 'institucion'
+    nombres         = Column("nombres", String(150), nullable=True)
+    apellidoPaterno = Column("apellido_paterno", String(150), nullable=True)
+    apellidoMaterno = Column("apellido_materno", String(150), nullable=True)
+    institucion     = Column("institucion", String(300), nullable=True)
+    documento       = Column("documento", String(50), nullable=True)
+
+    apelacion = relationship("ApelacionModel", back_populates="apelantes")
+
+
+class NnaDetalleModel(Base):
+    __tablename__ = "nna_detalle"
+
+    id              = Column("id", String(36), primary_key=True, default=_new_id)
+    apelacionId     = Column("apelacion_id", String(36), ForeignKey("apelaciones.id"), nullable=False)
+    tipo            = Column("tipo", String(20), nullable=False) # 'natural' o 'institucion'
+    nombres         = Column("nombres", String(150), nullable=True)
+    primerApellido  = Column("primer_apellido", String(150), nullable=True)
+    segundoApellido = Column("segundo_apellido", String(150), nullable=True)
+    edad            = Column("edad", Integer, nullable=True)
+    institucion     = Column("institucion", String(300), nullable=True) # Nombre del CAR
+
+    apelacion = relationship("ApelacionModel", back_populates="nnas")
+
+
 class ApelacionModel(Base):
     __tablename__ = "apelaciones"
 
@@ -77,7 +107,7 @@ class ApelacionModel(Base):
     fechaIngreso      = Column("fechaingreso",      DateTime, nullable=False)
     fechaIngresoMIMP  = Column("fechaingresomimp",  DateTime, nullable=True)
     plazoVencimiento  = Column("plazovencimiento",  DateTime, nullable=True)
-    apelante          = Column("apelante",          String(300), nullable=False)
+    apelante          = Column("apelante",          String(300), nullable=True)
     nnaCar            = Column("nnacar",            String(300), nullable=True)
     procedencia       = Column("procedencia",       String(200), nullable=False)
     documento         = Column("documento",         String(300), nullable=False)
@@ -101,3 +131,5 @@ class ApelacionModel(Base):
     abogado     = relationship("AbogadoModel", back_populates="apelaciones")
     complejidad = relationship("ComplejidadModel", back_populates="apelaciones")
     revisor     = relationship("RevisorModel", back_populates="apelaciones")
+    apelantes   = relationship("ApelanteDetalleModel", back_populates="apelacion", cascade="all, delete-orphan")
+    nnas        = relationship("NnaDetalleModel", back_populates="apelacion", cascade="all, delete-orphan")

@@ -353,14 +353,32 @@ export default function ApelacionesPage() {
                                                     <td className="px-4 py-3 text-sm">{formatFecha(apelacion.fechaAsignacion)}</td>
                                                     <td className="px-4 py-3 text-sm">{formatFecha(apelacion.fechaIngreso)}</td>
                                                     <td className="px-4 py-3 text-sm">{formatFecha(apelacion.fechaIngresoMIMP)}</td>
-                                                    <td className="px-4 py-3 text-sm">
-                                                        <div className="flex flex-col">
-                                                            <span className="font-medium">{apelacion.apelante}</span>
-                                                            {apelacion.nnaCar && (
-                                                                <span className="text-xs text-muted-foreground">{apelacion.nnaCar}</span>
-                                                            )}
-                                                        </div>
-                                                    </td>
+                                                     <td className="px-4 py-3 text-sm">
+                                                         <div className="flex flex-col">
+                                                             <span className="font-medium">
+                                                                 {apelacion.apelantes && apelacion.apelantes.length > 0
+                                                                     ? apelacion.apelantes.map((ap: any) => 
+                                                                         ap.tipo === "institucion" 
+                                                                             ? ap.institucion 
+                                                                             : [ap.nombres, ap.apellidoPaterno, ap.apellidoMaterno].filter(Boolean).join(" ")
+                                                                       ).filter(Boolean).join(", ")
+                                                                     : apelacion.apelante
+                                                                 }
+                                                             </span>
+                                                             {apelacion.nnas && apelacion.nnas.length > 0 ? (
+                                                                 <span className="text-xs text-muted-foreground">
+                                                                     {apelacion.nnas.map((nna: any) => {
+                                                                         if (nna.tipo === "institucion") return nna.institucion;
+                                                                         const name = [nna.nombres, nna.primerApellido, nna.segundoApellido].filter(Boolean).join(" ");
+                                                                         const edadStr = nna.edad ? ` (${nna.edad} años)` : "";
+                                                                         return name + edadStr;
+                                                                     }).filter(Boolean).join(", ")}
+                                                                 </span>
+                                                             ) : apelacion.nnaCar ? (
+                                                                 <span className="text-xs text-muted-foreground">{apelacion.nnaCar}</span>
+                                                             ) : null}
+                                                         </div>
+                                                     </td>
                                                     <td className="px-4 py-3 text-sm">{apelacion.procedencia}</td>
                                                     <td className="px-4 py-3 text-sm">{apelacion.complejidad?.nombre}</td>
                                                     <td className="px-4 py-3 text-sm">{apelacion.abogado?.nombre}</td>

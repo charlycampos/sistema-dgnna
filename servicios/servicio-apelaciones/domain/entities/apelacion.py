@@ -16,7 +16,6 @@ def _new_id() -> str:
 class Apelacion:
     numeroExpediente:  str
     fechaIngreso:      datetime
-    apelante:          str
     procedencia:       str
     documento:         str
     asunto:            str
@@ -24,6 +23,7 @@ class Apelacion:
     complejidadId:     str
     abogadoId:         str
     fechaAsignacion:   datetime
+    apelante:          Optional[str] = None
     puntosExtension:   int = 0
     puntosComplejidad: int = 0
     puntosTotal:       int = 0
@@ -37,6 +37,8 @@ class Apelacion:
     cargos:            Optional[str] = None
     observaciones:     Optional[str] = None
     revisorId:         Optional[str] = None
+    apelantes:         list = field(default_factory=list)
+    nnas:              list = field(default_factory=list)
     createdAt:         datetime = field(default_factory=datetime.utcnow)
     updatedAt:         datetime = field(default_factory=datetime.utcnow)
 

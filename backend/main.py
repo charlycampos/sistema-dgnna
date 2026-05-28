@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text, inspect
 
 from database import engine, Base
-from routers import auth, abogados, complejidad, extension, apelaciones, usuarios, dashboard, reportes, sala_reuniones, sustracion, revisores, proyectos_ley, transparencia
+from routers import auth, abogados, complejidad, extension, apelaciones, usuarios, dashboard, reportes, sala_reuniones, sustracion, revisores, proyectos_ley, transparencia, apelantes
 
 # Crear tablas si no existen
 Base.metadata.create_all(bind=engine)
@@ -121,6 +121,7 @@ app.include_router(sustracion.router)
 app.include_router(revisores.router)
 app.include_router(proyectos_ley.router)
 app.include_router(transparencia.router)
+app.include_router(apelantes.router)
 
 
 @app.get("/")

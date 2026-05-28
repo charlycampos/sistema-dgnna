@@ -24,11 +24,13 @@ def get_service(db: Session = Depends(get_db)) -> ApelacionService:
 
 
 def _query_con_relaciones(db: Session):
-    """Query base que carga abogado, complejidad y revisor en el mismo SELECT."""
+    """Query base que carga abogado, complejidad, revisor, apelantes y nnas en el mismo SELECT."""
     return db.query(ApelacionModel).options(
         selectinload(ApelacionModel.abogado),
         selectinload(ApelacionModel.complejidad),
         selectinload(ApelacionModel.revisor),
+        selectinload(ApelacionModel.apelantes),
+        selectinload(ApelacionModel.nnas),
     )
 
 

@@ -38,7 +38,7 @@ class ApelacionService:
             fechaIngreso      = datos["fechaIngreso"],
             fechaIngresoMIMP  = datos.get("fechaIngresoMIMP"),
             plazoVencimiento  = datos.get("plazoVencimiento"),
-            apelante          = datos["apelante"],
+            apelante          = datos.get("apelante"),
             nnaCar            = datos.get("nnaCar"),
             procedencia       = datos["procedencia"],
             documento         = datos["documento"],
@@ -52,6 +52,8 @@ class ApelacionService:
             documentoAtencion = datos.get("documentoAtencion"),
             cargos            = datos.get("cargos"),
             observaciones     = datos.get("observaciones"),
+            apelantes         = datos.get("apelantes", []),
+            nnas              = datos.get("nnas", []),
         )
         apelacion.calcular_puntos(pts_ext, pts_comp)
         return self._apelaciones.guardar(apelacion)
@@ -65,7 +67,7 @@ class ApelacionService:
         apelacion.fechaIngreso      = datos["fechaIngreso"]
         apelacion.fechaIngresoMIMP  = datos.get("fechaIngresoMIMP")
         apelacion.plazoVencimiento  = datos.get("plazoVencimiento")
-        apelacion.apelante          = datos["apelante"]
+        apelacion.apelante          = datos.get("apelante")
         apelacion.nnaCar            = datos.get("nnaCar")
         apelacion.procedencia       = datos["procedencia"]
         apelacion.documento         = datos["documento"]
@@ -78,6 +80,15 @@ class ApelacionService:
         apelacion.documentoAtencion = datos.get("documentoAtencion")
         apelacion.cargos            = datos.get("cargos")
         apelacion.observaciones     = datos.get("observaciones")
+        
+        apelantes_list = datos.get("apelantes")
+        if apelantes_list is not None:
+            apelacion.apelantes = apelantes_list
+
+        nnas_list = datos.get("nnas")
+        if nnas_list is not None:
+            apelacion.nnas = nnas_list
+            
         apelacion.revisorId         = datos.get("revisorId")
         if datos.get("fechaAsignacion"):
             apelacion.fechaAsignacion = datos["fechaAsignacion"]

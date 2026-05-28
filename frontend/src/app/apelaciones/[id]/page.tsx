@@ -23,7 +23,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { ArrowLeft, Save, Trash2, FileText, CheckCircle2, Plus, User, Building } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, FileText, CheckCircle2, Plus, User, Building, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -75,9 +75,9 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
     const [appellants, setAppellants] = useState<Appellant[]>([
         { tipo: 'natural', nombres: '', apellidoPaterno: '', apellidoMaterno: '', documento: '' }
     ])
-
     useEffect(() => {
         form.setValue('apelante', serializeAppellants(appellants), { shouldValidate: true })
+        form.setValue('apelantes', appellants, { shouldValidate: true })
     }, [appellants, form])
 
     const handleTipoApelanteChange = (tipo: 'natural' | 'institucion') => {
@@ -119,6 +119,7 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
 
     useEffect(() => {
         form.setValue('nnaCar', serializeNnaCar(nnaItems), { shouldValidate: true })
+        form.setValue('nnas', nnaItems, { shouldValidate: true })
     }, [nnaItems, form])
 
     const handleTipoNnaChange = (tipo: 'natural' | 'institucion') => {
@@ -181,16 +182,43 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
             const revisorCargaData = await revisorCargaRes.json()
 
             setApelacion(apelacionData)
-            const deserialized = deserializeAppellants(apelacionData.apelante || '')
-            setAppellants(deserialized)
-            if (deserialized.length > 0) {
-                setTipoApelante(deserialized[0].tipo)
+
+            let loadedAppellants: Appellant[] = []
+            if (apelacionData.apelantes && apelacionData.apelantes.length > 0) {
+                loadedAppellants = apelacionData.apelantes.map((a: any) => ({
+                    tipo: a.tipo,
+                    nombres: a.nombres || '',
+                    apellidoPaterno: a.apellidoPaterno || '',
+                    apellidoMaterno: a.apellidoMaterno || '',
+                    institucion: a.institucion || '',
+                    documento: a.documento || ''
+                }))
+            } else {
+                loadedAppellants = deserializeAppellants(apelacionData.apelante || '')
             }
-            const deserializedNna = deserializeNnaCar(apelacionData.nnaCar || '')
-            setNnaItems(deserializedNna)
-            if (deserializedNna.length > 0) {
-                setTipoNna(deserializedNna[0].tipo)
+            setAppellants(loadedAppellants)
+            if (loadedAppellants.length > 0) {
+                setTipoApelante(loadedAppellants[0].tipo)
             }
+
+            let loadedNnas: NnaCarItem[] = []
+            if (apelacionData.nnas && apelacionData.nnas.length > 0) {
+                loadedNnas = apelacionData.nnas.map((n: any) => ({
+                    tipo: n.tipo,
+                    nombres: n.nombres || '',
+                    primerApellido: n.primerApellido || '',
+                    segundoApellido: n.segundoApellido || '',
+                    edad: n.edad !== null && n.edad !== undefined ? String(n.edad) : '',
+                    institucion: n.institucion || ''
+                }))
+            } else {
+                loadedNnas = deserializeNnaCar(apelacionData.nnaCar || '')
+            }
+            setNnaItems(loadedNnas)
+            if (loadedNnas.length > 0) {
+                setTipoNna(loadedNnas[0].tipo)
+            }
+
             setAbogados(abogadosData.filter((a: Abogado) => a.activo))
             setComplejidades(complejidadesData.filter((c: ComplejidadJuridica) => c.activo))
             setProcedencias(procedenciasData.filter((p: Procedencia) => p.activo))
@@ -205,6 +233,8 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                 plazoVencimiento: apelacionData.plazoVencimiento ? new Date(apelacionData.plazoVencimiento) : null,
                 apelante: apelacionData.apelante || '',
                 nnaCar: apelacionData.nnaCar || '',
+                apelantes: loadedAppellants,
+                nnas: loadedNnas,
                 procedencia: apelacionData.procedencia,
                 documento: apelacionData.documento || '',
                 asunto: apelacionData.asunto || '',
@@ -238,6 +268,11 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
         setShowConfirmGuardar(false)
         setSaving(true)
         try {
+            const cleanedNnas = pendingData.nnas?.map(nna => ({
+                ...nna,
+                edad: nna.edad !== undefined && nna.edad !== null && String(nna.edad).trim() !== "" ? Number(nna.edad) : null
+            })) || [];
+
             const response = await fetch(`/api/apelaciones/${id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -245,6 +280,7 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                     ...pendingData,
                     fechaIngreso: pendingData.fechaIngreso.toISOString(),
                     fechaAsignacion: pendingData.fechaAsignacion.toISOString(),
+                    nnas: cleanedNnas,
                 }),
             })
 
@@ -416,45 +452,84 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                         <div>
                                             <p className="text-sm text-muted-foreground mb-1">Apelante(s)</p>
                                             <div className="flex flex-wrap gap-1.5">
-                                                {deserializeAppellants(apelacion.apelante || '').map((app, idx) => (
-                                                    <div key={idx} className="text-xs font-medium bg-secondary text-secondary-foreground border rounded-full px-3 py-1 flex items-center gap-1.5 shadow-sm">
-                                                        {app.tipo === 'natural' ? (
-                                                            <>
-                                                                <User className="h-3.5 w-3.5 text-primary" />
-                                                                <span>{app.nombres} {app.apellidoPaterno} {app.apellidoMaterno}</span>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <Building className="h-3.5 w-3.5 text-primary" />
-                                                                <span>{app.institucion}</span>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        {apelacion.nnaCar && (
-                                            <div>
-                                                <p className="text-sm text-muted-foreground mb-1">NNA / CAR</p>
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    {deserializeNnaCar(apelacion.nnaCar).map((nna, idx) => (
+                                                {apelacion.apelantes && apelacion.apelantes.length > 0 ? (
+                                                    apelacion.apelantes.map((app, idx) => (
                                                         <div key={idx} className="text-xs font-medium bg-secondary text-secondary-foreground border rounded-full px-3 py-1 flex items-center gap-1.5 shadow-sm">
-                                                            {nna.tipo === 'natural' ? (
+                                                            {app.tipo === 'natural' ? (
                                                                 <>
                                                                     <User className="h-3.5 w-3.5 text-primary" />
-                                                                    <span>
-                                                                        {nna.nombres} {nna.primerApellido} {nna.segundoApellido}
-                                                                        {nna.edad ? ` (${nna.edad} años)` : ''}
-                                                                    </span>
+                                                                    <span>{app.nombres} {app.apellidoPaterno} {app.apellidoMaterno}</span>
                                                                 </>
                                                             ) : (
                                                                 <>
                                                                     <Building className="h-3.5 w-3.5 text-primary" />
-                                                                    <span>{nna.institucion}</span>
+                                                                    <span>{app.institucion}</span>
                                                                 </>
                                                             )}
                                                         </div>
-                                                    ))}
+                                                    ))
+                                                ) : (
+                                                    deserializeAppellants(apelacion.apelante || '').map((app, idx) => (
+                                                        <div key={idx} className="text-xs font-medium bg-secondary text-secondary-foreground border rounded-full px-3 py-1 flex items-center gap-1.5 shadow-sm">
+                                                            {app.tipo === 'natural' ? (
+                                                                <>
+                                                                    <User className="h-3.5 w-3.5 text-primary" />
+                                                                    <span>{app.nombres} {app.apellidoPaterno} {app.apellidoMaterno}</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Building className="h-3.5 w-3.5 text-primary" />
+                                                                    <span>{app.institucion}</span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </div>
+                                        {((apelacion.nnas && apelacion.nnas.length > 0) || apelacion.nnaCar) && (
+                                            <div>
+                                                <p className="text-sm text-muted-foreground mb-1">NNA / CAR</p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {apelacion.nnas && apelacion.nnas.length > 0 ? (
+                                                        apelacion.nnas.map((nna, idx) => (
+                                                            <div key={idx} className="text-xs font-medium bg-secondary text-secondary-foreground border rounded-full px-3 py-1 flex items-center gap-1.5 shadow-sm">
+                                                                {nna.tipo === 'natural' ? (
+                                                                    <>
+                                                                        <User className="h-3.5 w-3.5 text-primary" />
+                                                                        <span>
+                                                                            {nna.nombres} {nna.primerApellido} {nna.segundoApellido}
+                                                                            {nna.edad ? ` (${nna.edad} años)` : ''}
+                                                                        </span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Building className="h-3.5 w-3.5 text-primary" />
+                                                                        <span>{nna.institucion}</span>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        deserializeNnaCar(apelacion.nnaCar || '').map((nna, idx) => (
+                                                            <div key={idx} className="text-xs font-medium bg-secondary text-secondary-foreground border rounded-full px-3 py-1 flex items-center gap-1.5 shadow-sm">
+                                                                {nna.tipo === 'natural' ? (
+                                                                    <>
+                                                                        <User className="h-3.5 w-3.5 text-primary" />
+                                                                        <span>
+                                                                            {nna.nombres} {nna.primerApellido} {nna.segundoApellido}
+                                                                            {nna.edad ? ` (${nna.edad} años)` : ''}
+                                                                        </span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Building className="h-3.5 w-3.5 text-primary" />
+                                                                        <span>{nna.institucion}</span>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        ))
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
@@ -814,7 +889,7 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                                         render={({ field }) => (
                                                             <FormItem className="hidden">
                                                                 <FormControl>
-                                                                    <Input {...field} />
+                                                                    <Input {...field} value={field.value ?? ''} />
                                                                 </FormControl>
                                                                 <FormMessage />
                                                             </FormItem>
@@ -963,8 +1038,6 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                                                 </div>
                                                             ))}
                                                         </div>
-
-                                                        {/* Botón de Agregar al final de la grilla */}
                                                         <div className="flex justify-end pt-2 border-t mt-2">
                                                             <Button
                                                                 type="button"
@@ -1423,7 +1496,7 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>No, cancelar</AlertDialogCancel>
+                    <AlertDialogCancel onClick={() => setShowConfirmGuardar(false)}>No, cancelar</AlertDialogCancel>
                     <AlertDialogAction onClick={confirmarGuardado}>
                         Sí, guardar
                     </AlertDialogAction>

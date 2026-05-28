@@ -6,12 +6,53 @@ from pydantic import BaseModel
 
 # ── Apelaciones ───────────────────────────────────────────────────────────────
 
+class ApelanteDetalleCreate(BaseModel):
+    tipo:            str
+    nombres:         Optional[str] = None
+    apellidoPaterno: Optional[str] = None
+    apellidoMaterno: Optional[str] = None
+    institucion:     Optional[str] = None
+    documento:       Optional[str] = None
+
+class ApelanteDetalleOut(BaseModel):
+    id:              str
+    tipo:            str
+    nombres:         Optional[str] = None
+    apellidoPaterno: Optional[str] = None
+    apellidoMaterno: Optional[str] = None
+    institucion:     Optional[str] = None
+    documento:       Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class NnaDetalleCreate(BaseModel):
+    tipo:            str
+    nombres:         Optional[str] = None
+    primerApellido:  Optional[str] = None
+    segundoApellido: Optional[str] = None
+    edad:            Optional[int] = None
+    institucion:     Optional[str] = None
+
+class NnaDetalleOut(BaseModel):
+    id:              str
+    tipo:            str
+    nombres:         Optional[str] = None
+    primerApellido:  Optional[str] = None
+    segundoApellido: Optional[str] = None
+    edad:            Optional[int] = None
+    institucion:     Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 class ApelacionCreate(BaseModel):
     numeroExpediente:  str
     fechaIngreso:      datetime
     fechaIngresoMIMP:  Optional[datetime] = None
     plazoVencimiento:  Optional[datetime] = None
-    apelante:          str
+    apelante:          Optional[str] = None
     nnaCar:            Optional[str] = None
     procedencia:       str
     documento:         str
@@ -26,6 +67,8 @@ class ApelacionCreate(BaseModel):
     cargos:            Optional[str] = None
     observaciones:     Optional[str] = None
     revisorId:         Optional[str] = None
+    apelantes:         Optional[List[ApelanteDetalleCreate]] = None
+    nnas:              Optional[List[NnaDetalleCreate]] = None
 
 
 class ApelacionUpdate(ApelacionCreate):
@@ -66,7 +109,7 @@ class ApelacionOut(BaseModel):
     fechaIngreso:      datetime
     fechaIngresoMIMP:  Optional[datetime] = None
     plazoVencimiento:  Optional[datetime] = None
-    apelante:          str
+    apelante:          Optional[str] = None
     nnaCar:            Optional[str] = None
     procedencia:       str
     documento:         str
@@ -89,6 +132,8 @@ class ApelacionOut(BaseModel):
     observaciones:     Optional[str] = None
     createdAt:         datetime
     updatedAt:         datetime
+    apelantes:         Optional[List[ApelanteDetalleOut]] = []
+    nnas:              Optional[List[NnaDetalleOut]] = []
 
     class Config:
         from_attributes = True

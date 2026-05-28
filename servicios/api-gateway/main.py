@@ -37,6 +37,8 @@ ROUTE_MAP = [
     ("/api/auth",           "auth"),
     ("/api/usuarios",       "auth"),
     ("/api/apelaciones",    "apelaciones"),
+    ("/api/apelantes",      "apelaciones"),
+    ("/api/nna",            "apelaciones"),
     ("/api/abogados",       "apelaciones"),
     ("/api/complejidad",    "apelaciones"),
     ("/api/extension",      "apelaciones"),
