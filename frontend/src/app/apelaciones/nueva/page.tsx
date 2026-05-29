@@ -656,9 +656,6 @@ export default function NuevaApelacionPage() {
                 setExpedientesExistentes(apelacionesData.map((a: { numeroExpediente?: string }) => a.numeroExpediente ? a.numeroExpediente.toLowerCase() : ''))
                 setListaApelacionesCompleta(apelacionesData)
             }
-            if (complejidadesActivas.length > 0) {
-                form.setValue('complejidadId', complejidadesActivas[0].id)
-            }
         } catch (error) {
             console.error('Error al cargar catálogos:', error)
         }

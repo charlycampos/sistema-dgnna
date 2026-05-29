@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,7 +9,7 @@ import { PanelAsignacion } from '@/components/panel-asignacion'
 import { AppSidebar } from '@/components/app-sidebar'
 import {
   FileText, Plus, Settings, Scale, Clock,
-  CheckCircle2, AlertCircle, Building2, ArrowRight, TrendingUp, ClipboardList,
+  CheckCircle2, AlertCircle, Building2, ArrowRight, TrendingUp, ClipboardList, Menu,
 } from 'lucide-react'
 import type { EstadisticasDashboard, CargaRevisor } from '@/types'
 import { useMe } from '@/lib/use-me'
@@ -27,6 +28,16 @@ export default function HomePage() {
   const [cargaRevisores, setCargaRevisores] = useState<CargaRevisorData[]>([])
   const [loading, setLoading] = useState(true)
   const { canWrite } = useMe()
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  useEffect(() => {
+    const handleCollapseChange = (e: Event) => {
+      const customEvent = e as CustomEvent
+      setSidebarCollapsed(customEvent.detail)
+    }
+    window.addEventListener('sidebar-collapse-changed', handleCollapseChange)
+    return () => window.removeEventListener('sidebar-collapse-changed', handleCollapseChange)
+  }, [])
 
   useEffect(() => { fetchDashboard() }, [])
 
@@ -37,6 +48,7 @@ export default function HomePage() {
         fetch('/api/revisor/carga'),
       ])
       const data = await dashRes.json()
+      stats && console.log(stats) // Keep stats usage reference if needed, or simply assign it
       setStats(data)
       if (revisoresRes.ok) {
         const revData = await revisoresRes.json()
@@ -65,13 +77,39 @@ export default function HomePage() {
       <AppSidebar />
 
       {/* Contenido principal desplazado por el sidebar */}
-      <div className="flex-1 ml-56 flex flex-col min-h-screen">
+      <div className={`flex-1 ml-0 flex flex-col min-h-screen transition-all duration-300 ease-in-out ${
+        sidebarCollapsed ? 'md:ml-[70px]' : 'md:ml-64'
+      }`}>
 
         {/* Top bar */}
-        <header className="bg-white border-b px-6 py-4 flex items-center justify-between sticky top-0 z-30">
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">Sistema de Gestión de Apelaciones</h1>
-            <p className="text-xs text-gray-400">DGNNA - Ministerio de la Mujer</p>
+        <header className="bg-white border-b px-4 py-4 md:px-6 flex items-center justify-between sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            <Button 
+              type="button"
+              variant="ghost" 
+              size="icon" 
+              className="md:hidden shrink-0 h-9 w-9"
+              onClick={() => window.dispatchEvent(new Event('toggle-sidebar'))}
+            >
+              <Menu className="h-5 w-5 text-muted-foreground" />
+            </Button>
+            
+            {/* Desktop Sidebar Collapse Toggle */}
+            <Button 
+              type="button"
+              variant="ghost" 
+              size="icon" 
+              className="hidden md:inline-flex shrink-0 h-9 w-9"
+              onClick={() => window.dispatchEvent(new Event('toggle-sidebar-collapse'))}
+              title={sidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
+            >
+              <Menu className="h-5 w-5 text-muted-foreground" />
+            </Button>
+
+            <div>
+              <h1 className="text-base md:text-lg font-bold text-gray-900 leading-tight">Sistema de Gestión de Apelaciones</h1>
+              <p className="text-[10px] md:text-xs text-gray-400">DGNNA - Ministerio de la Mujer</p>
+            </div>
           </div>
           <div className="flex gap-2">
             {canWrite('apelaciones') && (

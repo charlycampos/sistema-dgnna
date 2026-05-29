@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -15,7 +15,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ApelacionConRelaciones, Abogado } from '@/types'
-import { Search, Filter, Eye, Pencil, Download, X } from 'lucide-react'
+import { Search, Filter, Eye, Pencil, Download, X, Menu, Plus, Minus } from 'lucide-react'
 import Link from 'next/link'
 import { AppSidebar } from '@/components/app-sidebar'
 import { format } from 'date-fns'
@@ -36,6 +36,21 @@ export default function ApelacionesPage() {
     const [fechaHasta, setFechaHasta] = useState<string>('')
     const [abogados, setAbogados] = useState<Abogado[]>([])
     const { canWrite, loading: meLoading, me, hasAccess } = useMe()
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+    const [expandedRowId, setExpandedRowId] = useState<string | null>(null)
+
+    const toggleRow = (id: string) => {
+        setExpandedRowId(prev => prev === id ? null : id)
+    }
+
+    useEffect(() => {
+        const handleCollapseChange = (e: Event) => {
+            const customEvent = e as CustomEvent
+            setSidebarCollapsed(customEvent.detail)
+        }
+        window.addEventListener('sidebar-collapse-changed', handleCollapseChange)
+        return () => window.removeEventListener('sidebar-collapse-changed', handleCollapseChange)
+    }, [])
 
     // Guard de acceso: solo admins y usuarios con módulo 'apelaciones'
     useEffect(() => {
@@ -176,15 +191,38 @@ export default function ApelacionesPage() {
     }
 
     return (
-        <div className="flex min-h-screen bg-background">
+        <div className="flex min-h-screen bg-background overflow-hidden w-full">
             <AppSidebar />
-            <div className="flex-1 ml-56 flex flex-col min-h-screen">
+            <div className={`flex-1 ml-0 flex flex-col min-h-screen max-w-full overflow-hidden transition-all duration-300 ease-in-out ${
+                sidebarCollapsed ? 'md:ml-[70px]' : 'md:ml-64'
+            }`}>
                 {/* Header */}
                 <header className="border-b bg-card sticky top-0 z-30">
-                    <div className="px-6 py-4">
-                        <div className="flex items-center gap-4">
-                            <div className="flex-1">
-                                <h1 className="text-2xl font-bold">Apelaciones</h1>
+                    <div className="px-4 py-4 md:px-6">
+                        <div className="flex items-center gap-3 md:gap-4">
+                            <Button 
+                                type="button"
+                                variant="ghost" 
+                                size="icon" 
+                                className="md:hidden shrink-0 h-9 w-9"
+                                onClick={() => window.dispatchEvent(new Event('toggle-sidebar'))}
+                            >
+                                <Menu className="h-5 w-5 text-muted-foreground" />
+                            </Button>
+                            
+                            {/* Desktop Sidebar Collapse Toggle */}
+                            <Button 
+                                type="button"
+                                variant="ghost" 
+                                size="icon" 
+                                className="hidden md:inline-flex shrink-0 h-9 w-9"
+                                onClick={() => window.dispatchEvent(new Event('toggle-sidebar-collapse'))}
+                                title={sidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
+                            >
+                                <Menu className="h-5 w-5 text-muted-foreground" />
+                            </Button>
+                            <div className="flex-1 min-w-0">
+                                <h1 className="text-xl md:text-2xl font-bold truncate">Apelaciones</h1>
                                 <p className="text-muted-foreground text-sm">Gestión de todos los expedientes</p>
                             </div>
                             <div className="flex gap-2">
@@ -226,7 +264,7 @@ export default function ApelacionesPage() {
                     </div>
                 </header>
 
-                <main className="px-6 py-6">
+                <main className="px-2 sm:px-4 md:px-6 py-6 overflow-hidden">
                     {/* Filtros */}
                     <Card className="mb-6">
                         <CardHeader className="pb-3">
@@ -319,7 +357,7 @@ export default function ApelacionesPage() {
                                 {filteredApelaciones.length === 0 ? 'No hay apelaciones que coincidan con los filtros' : `${filteredApelaciones.length} apelaciones encontradas`}
                             </CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="px-2 sm:px-4 md:px-6">
                             {filteredApelaciones.length === 0 ? (
                                 <div className="py-12 text-center">
                                     <p className="text-muted-foreground mb-4">No se encontraron apelaciones</p>
@@ -330,81 +368,160 @@ export default function ApelacionesPage() {
                                     )}
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead>
+                                <div className="overflow-auto max-h-[600px] relative border rounded-md w-full">
+                                    <table className="w-full border-collapse table-fixed md:table-auto">
+                                        <thead className="sticky top-0 bg-background z-10 shadow-[0_1.5px_0_0_rgba(0,0,0,0.1)]">
                                             <tr className="border-b">
-                                                <th className="px-4 py-3 text-left text-sm font-semibold">Expediente</th>
-                                                <th className="px-4 py-3 text-left text-sm font-semibold">F. Asignación</th>
-                                                <th className="px-4 py-3 text-left text-sm font-semibold">F. Ingreso</th>
-                                                <th className="px-4 py-3 text-left text-sm font-semibold">F. Ingreso MIMP</th>
-                                                <th className="px-4 py-3 text-left text-sm font-semibold">Apelante / NNA o CAR</th>
-                                                <th className="px-4 py-3 text-left text-sm font-semibold">Procedencia</th>
-                                                <th className="px-4 py-3 text-left text-sm font-semibold">Complejidad</th>
-                                                <th className="px-4 py-3 text-left text-sm font-semibold">Abogado</th>
-                                                <th className="px-4 py-3 text-left text-sm font-semibold">Estado</th>
-                                                <th className="px-4 py-3 text-left text-sm font-semibold">Acciones</th>
+                                                <th className="px-2 py-3 text-center md:hidden w-[40px] shrink-0"></th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold w-[45%] md:w-auto">Expediente</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold hidden md:table-cell">F. Asignación</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold hidden md:table-cell">F. Ingreso</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold hidden lg:table-cell">F. Ingreso MIMP</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold hidden md:table-cell">Apelante / NNA o CAR</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold hidden lg:table-cell">Procedencia</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold hidden lg:table-cell">Complejidad</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold hidden md:table-cell">Abogado</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold w-[90px] md:w-auto">Estado</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold w-[80px] md:w-auto">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredApelaciones.map((apelacion) => (
-                                                <tr key={apelacion.id} className="border-b hover:bg-muted/50 transition-colors">
-                                                    <td className="px-4 py-3 text-sm font-medium">{apelacion.numeroExpediente}</td>
-                                                    <td className="px-4 py-3 text-sm">{formatFecha(apelacion.fechaAsignacion)}</td>
-                                                    <td className="px-4 py-3 text-sm">{formatFecha(apelacion.fechaIngreso)}</td>
-                                                    <td className="px-4 py-3 text-sm">{formatFecha(apelacion.fechaIngresoMIMP)}</td>
-                                                     <td className="px-4 py-3 text-sm">
-                                                         <div className="flex flex-col">
-                                                             <span className="font-medium">
-                                                                 {apelacion.apelantes && apelacion.apelantes.length > 0
-                                                                     ? apelacion.apelantes.map((ap: any) => 
-                                                                         ap.tipo === "institucion" 
-                                                                             ? ap.institucion 
-                                                                             : [ap.nombres, ap.apellidoPaterno, ap.apellidoMaterno].filter(Boolean).join(" ")
-                                                                       ).filter(Boolean).join(", ")
-                                                                     : apelacion.apelante
-                                                                 }
-                                                             </span>
-                                                             {apelacion.nnas && apelacion.nnas.length > 0 ? (
-                                                                 <span className="text-xs text-muted-foreground">
-                                                                     {apelacion.nnas.map((nna: any) => {
-                                                                         if (nna.tipo === "institucion") return nna.institucion;
-                                                                         const name = [nna.nombres, nna.primerApellido, nna.segundoApellido].filter(Boolean).join(" ");
-                                                                         const edadStr = nna.edad ? ` (${nna.edad} años)` : "";
-                                                                         return name + edadStr;
-                                                                     }).filter(Boolean).join(", ")}
-                                                                 </span>
-                                                             ) : apelacion.nnaCar ? (
-                                                                 <span className="text-xs text-muted-foreground">{apelacion.nnaCar}</span>
-                                                             ) : null}
-                                                         </div>
-                                                     </td>
-                                                    <td className="px-4 py-3 text-sm">{apelacion.procedencia}</td>
-                                                    <td className="px-4 py-3 text-sm">{apelacion.complejidad?.nombre}</td>
-                                                    <td className="px-4 py-3 text-sm">{apelacion.abogado?.nombre}</td>
-                                                    <td className="px-4 py-3 text-sm">
-                                                        <Badge variant={getEstadoBadgeVariant(apelacion.estado)}>
-                                                            {apelacion.estado}
-                                                        </Badge>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-sm">
-                                                        <div className="flex gap-1">
-                                                            <Link href={`/apelaciones/${apelacion.id}`}>
-                                                                <Button variant="ghost" size="sm" title="Ver detalle">
-                                                                    <Eye className="h-4 w-4" />
+                                            {filteredApelaciones.map((apelacion) => {
+                                                const isExpanded = expandedRowId === apelacion.id
+                                                return (
+                                                    <Fragment key={apelacion.id}>
+                                                        <tr className="border-b hover:bg-muted/50 transition-colors">
+                                                            <td className="px-2 py-3 text-center md:hidden w-[40px]">
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-8 w-8 hover:bg-muted rounded-full"
+                                                                    onClick={() => toggleRow(apelacion.id || '')}
+                                                                >
+                                                                    {isExpanded ? (
+                                                                        <Minus className="h-4 w-4 text-muted-foreground transition-transform duration-200" />
+                                                                    ) : (
+                                                                        <Plus className="h-4 w-4 text-muted-foreground transition-transform duration-200" />
+                                                                    )}
                                                                 </Button>
-                                                            </Link>
-                                                            {canWrite('apelaciones') && (
-                                                                <Link href={`/apelaciones/${apelacion.id}?edit=true`}>
-                                                                    <Button variant="ghost" size="sm" title="Editar">
-                                                                        <Pencil className="h-4 w-4" />
-                                                                    </Button>
-                                                                </Link>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-sm font-medium break-all max-w-[130px] md:max-w-none">{apelacion.numeroExpediente}</td>
+                                                            <td className="px-4 py-3 text-sm hidden md:table-cell">{formatFecha(apelacion.fechaAsignacion)}</td>
+                                                            <td className="px-4 py-3 text-sm hidden md:table-cell">{formatFecha(apelacion.fechaIngreso)}</td>
+                                                            <td className="px-4 py-3 text-sm hidden lg:table-cell">{formatFecha(apelacion.fechaIngresoMIMP)}</td>
+                                                            <td className="px-4 py-3 text-sm hidden md:table-cell">
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-medium text-xs md:text-sm">
+                                                                        {apelacion.apelantes && apelacion.apelantes.length > 0
+                                                                            ? apelacion.apelantes.map((ap: any) => 
+                                                                                ap.tipo === "institucion" 
+                                                                                    ? ap.institucion 
+                                                                                    : [ap.nombres, ap.apellidoPaterno, ap.apellidoMaterno].filter(Boolean).join(" ")
+                                                                              ).filter(Boolean).join(", ")
+                                                                            : apelacion.apelante
+                                                                        }
+                                                                    </span>
+                                                                    {apelacion.nnas && apelacion.nnas.length > 0 ? (
+                                                                        <span className="text-[10px] md:text-xs text-muted-foreground mt-0.5">
+                                                                            {apelacion.nnas.map((nna: any) => {
+                                                                                if (nna.tipo === "institucion") return nna.institucion;
+                                                                                const name = [nna.nombres, nna.primerApellido, nna.segundoApellido].filter(Boolean).join(" ");
+                                                                                const edadStr = nna.edad ? ` (${nna.edad} años)` : "";
+                                                                                return name + edadStr;
+                                                                            }).filter(Boolean).join(", ")}
+                                                                        </span>
+                                                                    ) : apelacion.nnaCar ? (
+                                                                        <span className="text-[10px] md:text-xs text-muted-foreground mt-0.5">{apelacion.nnaCar}</span>
+                                                                    ) : null}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-3 text-sm hidden lg:table-cell">{apelacion.procedencia}</td>
+                                                            <td className="px-4 py-3 text-sm hidden lg:table-cell">{apelacion.complejidad?.nombre}</td>
+                                                            <td className="px-4 py-3 text-sm hidden md:table-cell">{apelacion.abogado?.nombre}</td>
+                                                            <td className="px-4 py-3 text-sm">
+                                                                <Badge variant={getEstadoBadgeVariant(apelacion.estado)}>
+                                                                    {apelacion.estado}
+                                                                </Badge>
+                                                            </td>
+                                                            <td className="px-4 py-3 text-sm">
+                                                                <div className="flex gap-1">
+                                                                    <Link href={`/apelaciones/${apelacion.id}`}>
+                                                                        <Button variant="ghost" size="sm" title="Ver detalle">
+                                                                            <Eye className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </Link>
+                                                                    {canWrite('apelaciones') && (
+                                                                        <Link href={`/apelaciones/${apelacion.id}?edit=true`}>
+                                                                            <Button variant="ghost" size="sm" title="Editar">
+                                                                                <Pencil className="h-4 w-4" />
+                                                                            </Button>
+                                                                        </Link>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        {isExpanded && (
+                                                            <tr className="md:hidden bg-muted/20 border-b animate-in slide-in-from-top-2 duration-200">
+                                                                <td colSpan={4} className="px-4 py-3 text-sm">
+                                                                    <div className="flex flex-col gap-3 p-4 bg-muted/40 rounded-lg border">
+                                                                        <div>
+                                                                            <span className="font-semibold text-[10px] text-muted-foreground uppercase tracking-wider block mb-0.5">Fecha de Ingreso / Asignación:</span>
+                                                                            <span className="text-xs">
+                                                                                Ingreso: {formatFecha(apelacion.fechaIngreso)} | Asignación: {formatFecha(apelacion.fechaAsignacion)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="font-semibold text-[10px] text-muted-foreground uppercase tracking-wider block mb-0.5">Apelante:</span>
+                                                                            <span className="text-xs">
+                                                                                {apelacion.apelantes && apelacion.apelantes.length > 0
+                                                                                    ? apelacion.apelantes.map((ap: any) => 
+                                                                                        ap.tipo === "institucion" 
+                                                                                            ? ap.institucion 
+                                                                                            : [ap.nombres, ap.apellidoPaterno, ap.apellidoMaterno].filter(Boolean).join(" ")
+                                                                                      ).filter(Boolean).join(", ")
+                                                                                    : apelacion.apelante || '-'
+                                                                                }
+                                                                            </span>
+                                                                        </div>
+                                                                        {(apelacion.nnas && apelacion.nnas.length > 0) || apelacion.nnaCar ? (
+                                                                            <div>
+                                                                                <span className="font-semibold text-[10px] text-muted-foreground uppercase tracking-wider block mb-0.5">NNA o CAR:</span>
+                                                                                <span className="text-xs">
+                                                                                    {apelacion.nnas && apelacion.nnas.length > 0 ? (
+                                                                                        apelacion.nnas.map((nna: any) => {
+                                                                                            if (nna.tipo === "institucion") return nna.institucion;
+                                                                                            const name = [nna.nombres, nna.primerApellido, nna.segundoApellido].filter(Boolean).join(" ");
+                                                                                            const edadStr = nna.edad ? ` (${nna.edad} años)` : "";
+                                                                                            return name + edadStr;
+                                                                                        }).filter(Boolean).join(", ")
+                                                                                    ) : apelacion.nnaCar || '-'}
+                                                                                </span>
+                                                                            </div>
+                                                                        ) : null}
+                                                                        <div>
+                                                                            <span className="font-semibold text-[10px] text-muted-foreground uppercase tracking-wider block mb-0.5">Abogado Asignado:</span>
+                                                                            <span className="text-xs">{apelacion.abogado?.nombre || 'No asignado'}</span>
+                                                                        </div>
+                                                                        {apelacion.procedencia && (
+                                                                            <div>
+                                                                                <span className="font-semibold text-[10px] text-muted-foreground uppercase tracking-wider block mb-0.5">Procedencia:</span>
+                                                                                <span className="text-xs">{apelacion.procedencia}</span>
+                                                                            </div>
+                                                                        )}
+                                                                        {apelacion.complejidad?.nombre && (
+                                                                            <div>
+                                                                                <span className="font-semibold text-[10px] text-muted-foreground uppercase tracking-wider block mb-0.5">Complejidad Jurídica:</span>
+                                                                                <span className="text-xs">{apelacion.complejidad.nombre}</span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                    </Fragment>
+                                                )
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>

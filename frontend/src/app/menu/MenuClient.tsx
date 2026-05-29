@@ -28,7 +28,7 @@ export default function MenuClient({ session }: Props) {
       titulo: 'Módulo Apelaciones',
       descripcion: 'Gestión y asignación de recursos de apelación',
       icono: <Scale className="w-8 h-8" />,
-      ruta: '/',
+      ruta: '/apelaciones',
       disponible: true,
     },
     {
@@ -184,7 +184,7 @@ export default function MenuClient({ session }: Props) {
         </div>
 
         {/* Grid de módulos */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {modulos.map((modulo) => {
             const esVisible = !modulo.soloAdmin || session.rol === 'admin'
             if (!esVisible) return null

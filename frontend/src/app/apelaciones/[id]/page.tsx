@@ -364,12 +364,37 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
         )
     }
 
+    const getFormattedApelantesText = () => {
+        const apps = isEditing
+            ? appellants
+            : (apelacion?.apelantes && apelacion.apelantes.length > 0)
+                ? apelacion.apelantes
+                : deserializeAppellants(apelacion?.apelante || '')
+
+        if (!apps || apps.length === 0) return ''
+
+        const insts = apps.filter(a => a.tipo === 'institucion').map(a => a.institucion).filter(Boolean)
+        const nats = apps.filter(a => a.tipo === 'natural').map(a => 
+            [a.nombres, a.apellidoPaterno, a.apellidoMaterno].filter(Boolean).join(' ')
+        ).filter(Boolean)
+
+        if (insts.length === 0 && nats.length === 0) return ''
+
+        if (insts.length > 0 && nats.length > 0) {
+            return `Institución: ${insts.join(', ')} | Apelante(s): ${nats.join(', ')}`
+        } else if (insts.length > 0) {
+            return `Institución: ${insts.join(', ')}`
+        } else {
+            return `Apelante(s): ${nats.join(', ')}`
+        }
+    }
+
     return (
         <>
         <div className="min-h-screen bg-background">
             {/* Header */}
             <header className="border-b bg-card">
-                <div className="container mx-auto px-4 py-6">
+                <div className={`container mx-auto px-4 transition-all duration-200 ${isEditing ? 'py-4' : 'py-6'}`}>
                     <div className="flex items-center gap-4">
                         <Link href="/apelaciones">
                             <Button variant="outline" size="icon">
@@ -381,7 +406,11 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                 <FileText className="h-8 w-8 text-primary" />
                                 <div>
                                     <h1 className="text-3xl font-bold">{apelacion.numeroExpediente}</h1>
-                                    <p className="text-muted-foreground">{apelacion.apelante}</p>
+                                    {getFormattedApelantesText() ? (
+                                        <p className="text-sm text-muted-foreground font-medium tracking-wide mt-1">
+                                            {getFormattedApelantesText()}
+                                        </p>
+                                    ) : null}
                                 </div>
                                 <Badge variant={getEstadoBadgeVariant(apelacion.estado)}>
                                     {apelacion.estado}
@@ -1489,7 +1518,9 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                             <p>Está a punto de actualizar el expediente:</p>
                             <div className="rounded-lg border bg-muted/50 px-4 py-3">
                                 <p className="font-semibold text-foreground">{apelacion?.numeroExpediente}</p>
-                                <p className="text-xs mt-0.5">{apelacion?.apelante}</p>
+                                {getFormattedApelantesText() ? (
+                                    <p className="text-xs text-muted-foreground mt-0.5">{getFormattedApelantesText()}</p>
+                                ) : null}
                             </div>
                             <p>Esta acción actualizará los datos en el sistema. ¿Desea continuar?</p>
                         </div>
