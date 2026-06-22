@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text, inspect
 
 from database import engine, Base
-from routers import auth, abogados, complejidad, extension, apelaciones, usuarios, dashboard, reportes, sala_reuniones, sustracion, revisores, proyectos_ley, transparencia, apelantes
+from routers import auth, abogados, complejidad, extension, apelaciones, usuarios, dashboard, reportes, sala_reuniones, sustracion, revisores, proyectos_ley, transparencia, apelantes, poi_pp117
 
 # Crear tablas si no existen
 Base.metadata.create_all(bind=engine)
@@ -59,6 +59,10 @@ def run_migrations():
         "ALTER TABLE casos_sustracion ADD (estadoJudicial VARCHAR2(100))",
         "ALTER TABLE bitacora_sustracion ADD (creadoPor VARCHAR2(200))",
         "ALTER TABLE historial_judicial ADD (creadoPor VARCHAR2(200))",
+        # poi_datos — campos nuevos
+        "ALTER TABLE poi_datos ADD (categoria VARCHAR2(500))",
+        "ALTER TABLE poi_datos ADD (actPresup VARCHAR2(500))",
+        "ALTER TABLE poi_datos ADD (fnReTotal FLOAT)",
         # revisores — tabla nueva
         """CREATE TABLE revisores (
             id        VARCHAR2(36)  PRIMARY KEY,
@@ -122,6 +126,7 @@ app.include_router(revisores.router)
 app.include_router(proyectos_ley.router)
 app.include_router(transparencia.router)
 app.include_router(apelantes.router)
+app.include_router(poi_pp117.router)
 
 
 @app.get("/")

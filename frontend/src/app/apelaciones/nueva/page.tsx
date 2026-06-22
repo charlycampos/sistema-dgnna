@@ -1338,6 +1338,7 @@ export default function NuevaApelacionPage() {
                                                                     <SelectItem value="Pendiente">Pendiente</SelectItem>
                                                                     <SelectItem value="Resuelto">Resuelto</SelectItem>
                                                                     <SelectItem value="Atendido">Atendido</SelectItem>
+                                                                    <SelectItem value="Observado">Observado</SelectItem>
                                                                 </SelectContent>
                                                             </Select>
                                                             <FormMessage />
@@ -1519,6 +1520,7 @@ export default function NuevaApelacionPage() {
                                                                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
                                                                     coincidencia.estado === 'Pendiente' ? 'bg-amber-100 text-amber-800 font-bold border border-amber-200' :
                                                                     coincidencia.estado === 'Resuelto' ? 'bg-green-100 text-green-800 font-bold border border-green-200' :
+                                                                    coincidencia.estado === 'Observado' ? 'bg-orange-100 text-orange-800 font-bold border border-orange-200' :
                                                                     'bg-blue-100 text-blue-800 font-bold border border-blue-200'
                                                                 }`}>
                                                                     {coincidencia.estado}
@@ -1638,6 +1640,7 @@ export default function NuevaApelacionPage() {
                                                 <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
                                                     coincidenciaDetails.estado === 'Pendiente' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
                                                     coincidenciaDetails.estado === 'Resuelto' ? 'bg-green-100 text-green-800 border border-green-200' :
+                                                    coincidenciaDetails.estado === 'Observado' ? 'bg-orange-100 text-orange-800 border border-orange-200' :
                                                     'bg-blue-100 text-blue-800 border border-blue-200'
                                                 }`}>
                                                     {coincidenciaDetails.estado}

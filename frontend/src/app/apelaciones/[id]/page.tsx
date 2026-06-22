@@ -248,6 +248,9 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                 cargos: apelacionData.cargos || '',
                 observaciones: apelacionData.observaciones || '',
                 revisorId: apelacionData.revisorId || null,
+                fechaAsignacionRevisor: apelacionData.fechaRevisor
+                    ? new Date(apelacionData.fechaRevisor)
+                    : null,
             })
         } catch (error) {
             console.error('Error al cargar datos:', error)
@@ -339,6 +342,8 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
             case 'Resuelto':
                 return 'default'
             case 'Atendido':
+                return 'outline'
+            case 'Observado':
                 return 'outline'
             default:
                 return 'default'
@@ -1279,6 +1284,7 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                                                         <SelectItem value="Pendiente">Pendiente</SelectItem>
                                                                         <SelectItem value="Resuelto">Resuelto</SelectItem>
                                                                         <SelectItem value="Atendido">Atendido</SelectItem>
+                                                                        <SelectItem value="Observado">Observado</SelectItem>
                                                                     </SelectContent>
                                                                 </Select>
                                                                 <FormMessage />
@@ -1293,7 +1299,24 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                                             <FormItem>
                                                                 <FormLabel>Revisado por</FormLabel>
                                                                 <Select
-                                                                    onValueChange={(v) => field.onChange(v === '__ninguno__' ? null : v)}
+                                                                    onValueChange={(v) => {
+                                                                        const finalVal = v === '__ninguno__' ? null : v;
+                                                                        field.onChange(finalVal);
+                                                                        if (!finalVal) {
+                                                                            form.setValue('fechaAsignacionRevisor', null, { shouldValidate: true });
+                                                                        } else if (finalVal === apelacion?.revisorId) {
+                                                                            // Mismo revisor: restaurar fecha original de la BD
+                                                                            form.setValue('fechaAsignacionRevisor',
+                                                                                apelacion?.fechaRevisor
+                                                                                    ? new Date(apelacion.fechaRevisor)
+                                                                                    : new Date(),
+                                                                                { shouldValidate: true }
+                                                                            );
+                                                                        } else {
+                                                                            // Revisor diferente: nueva asignación hoy
+                                                                            form.setValue('fechaAsignacionRevisor', new Date(), { shouldValidate: true });
+                                                                        }
+                                                                    }}
                                                                     value={field.value ?? '__ninguno__'}
                                                                 >
                                                                     <FormControl>
@@ -1317,6 +1340,39 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
+                                                    />
+
+                                                    <FormField
+                                                    	control={form.control}
+                                                    	name="fechaAsignacionRevisor"
+                                                    	render={({ field }) => {
+                                                    		const hasRevisor = !!form.watch('revisorId');
+                                                    		const displayVal = field.value 
+                                                    			? (field.value instanceof Date 
+                                                    				? field.value.toISOString().split('T')[0] 
+                                                    				: typeof field.value === 'string' 
+                                                    					? (field.value as string).split('T')[0] 
+                                                    					: '')
+                                                    			: '';
+                                                    		
+                                                    		return (
+                                                    			<FormItem>
+                                                    				<FormLabel>Fecha Asignación Revisor</FormLabel>
+                                                    				<FormControl>
+                                                    					<Input
+                                                    						type="date"
+                                                    						disabled={true}
+                                                    						value={displayVal}
+                                                    						onChange={(e) => {
+                                                    							const d = e.target.value ? new Date(e.target.value + 'T00:00:00') : null;
+                                                    							field.onChange(d);
+                                                    						}}
+                                                    					/>
+                                                    				</FormControl>
+                                                    				<FormMessage />
+                                                    			</FormItem>
+                                                    		);
+                                                    	}}
                                                     />
                                                 </div>
                                             </div>

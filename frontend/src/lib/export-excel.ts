@@ -10,8 +10,21 @@ export function descargarExcelApelaciones(apelaciones: ApelacionConRelaciones[])
         'Plazo Vencimiento': a.plazoVencimiento ? format(new Date(a.plazoVencimiento), 'dd/MM/yyyy') : '',
         'Fecha Ingreso': format(new Date(a.fechaIngreso), 'dd/MM/yyyy'),
         'N° Expediente': a.numeroExpediente,
-        'Apelante': a.apelante,
-        'NNA o CAR': a.nnaCar || '',
+        'Apelante': a.apelantes && a.apelantes.length > 0
+            ? a.apelantes.map((ap: any) => 
+                ap.tipo === "institucion" 
+                    ? ap.institucion 
+                    : [ap.nombres, ap.apellidoPaterno, ap.apellidoMaterno].filter(Boolean).join(" ")
+              ).filter(Boolean).join(", ")
+            : '',
+        'NNA o CAR': a.nnas && a.nnas.length > 0
+            ? a.nnas.map((nna: any) => {
+                if (nna.tipo === "institucion") return nna.institucion;
+                const name = [nna.nombres, nna.primerApellido, nna.segundoApellido].filter(Boolean).join(" ");
+                const edadStr = nna.edad ? ` (${nna.edad} años)` : "";
+                return name + edadStr;
+              }).filter(Boolean).join(", ")
+            : '',
         'Procedencia': a.procedencia,
         'Documento': a.documento,
         'Asunto': a.asunto,

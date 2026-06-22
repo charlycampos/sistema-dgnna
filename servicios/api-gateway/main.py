@@ -24,6 +24,7 @@ SERVICES = {
     "sala":            os.getenv("SALA_SERVICE_URL",            "http://localhost:8004"),
     "proyectos-ley":   os.getenv("PROYECTOS_LEY_SERVICE_URL",   "http://localhost:8005"),
     "transparencia":   os.getenv("TRANSPARENCIA_SERVICE_URL",   "http://localhost:8006"),
+    "poi-pp117":       os.getenv("POI_PP117_SERVICE_URL",       "http://localhost:8007"),
 }
 
 SECRET_KEY = os.getenv("SESSION_SECRET", "auth-service-secret-2026")
@@ -50,6 +51,7 @@ ROUTE_MAP = [
     ("/api/sala-reuniones", "sala"),
     ("/api/proyectos-ley",  "proyectos-ley"),
     ("/api/transparencia",  "transparencia"),
+    ("/api/poi-pp117",      "poi-pp117"),
 ]
 
 app = FastAPI(

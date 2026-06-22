@@ -38,7 +38,7 @@ export interface Revisor {
   updatedAt: Date
 }
 
-export type Estado = 'Pendiente' | 'Resuelto' | 'Atendido'
+export type Estado = 'Pendiente' | 'Resuelto' | 'Atendido' | 'Observado'
 
 // Para el dashboard
 export interface CargaAbogado {
@@ -80,6 +80,7 @@ export interface ApelacionConRelaciones {
   revisorId: string | null
   revisor: Revisor | null
   fechaRevisor: Date | string | null
+  fechaAsignacionRevisor?: Date | string | null
   fechaAsignacion: Date
   estado: string
   numeroResolucion: string | null

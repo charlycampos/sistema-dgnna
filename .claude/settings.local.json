@@ -3,7 +3,14 @@
     "allow": [
       "Bash(curl -s -X PUT http://localhost:3000/api/sustracion/74c54c5b-fe35-47e9-92ce-2d087ce0ebd3 -H 'Content-Type: application/json' -H 'Cookie: dgnna_session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbW93MmZ6dXQwMDAwdWt5OGFnYTY2bGV4Iiwibm9tYnJlIjoiQWRtaW5pc3RyYWRvciIsImVtYWlsIjoiYWRtaW5AZGdubmEuZ29iLnBlIiwicm9sIjoiYWRtaW4iLCJtb2R1bG9zIjpbXSwiZXhwIjoxNzc4NTU4ODc3fQ.wFhCVu15pm9HRHBkfC4FZmY97SJCRnjp3u46go5sbkE' -d '{\"estado\":\"Pendiente\",\"profesional\":\"JANNY\"}')",
       "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('Restored - estado:', d.get\\('estado'\\), '/ profesional:', d.get\\('profesional'\\)\\)\")",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "Bash(Get-ChildItem \"D:\\\\Usuarios\\\\ccampos\\\\Documents\\\\Python Scripts\\\\asigna_apelaciones\\\\sistema-dgnna\" -Recurse -Filter \"*.xlsx\")",
+      "Bash(Select-Object FullName)",
+      "PowerShell(python -c \"import openpyxl; print\\('openpyxl OK'\\)\")",
+      "PowerShell(python -c \"import pandas; print\\('pandas OK'\\)\")",
+      "PowerShell(New-Item *)",
+      "Bash(grep -o '\"\\\\/api\\\\/poi[^\"]*\"')",
+      "Bash(venvScriptspython.exe -c ' *)"
     ]
   }
 }

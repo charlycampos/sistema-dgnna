@@ -112,8 +112,18 @@ export default function ApelacionesPage() {
             filtered = filtered.filter(
                 (a) =>
                     (a.numeroExpediente && a.numeroExpediente.toLowerCase().includes(lowerTerm)) ||
-                    (a.apelante && a.apelante.toLowerCase().includes(lowerTerm)) ||
-                    (a.nnaCar && a.nnaCar.toLowerCase().includes(lowerTerm)) ||
+                    (a.apelantes && a.apelantes.some(ap => {
+                        const fullName = ap.tipo === 'institucion'
+                            ? ap.institucion
+                            : [ap.nombres, ap.apellidoPaterno, ap.apellidoMaterno].filter(Boolean).join(" ");
+                        return fullName && fullName.toLowerCase().includes(lowerTerm);
+                    })) ||
+                    (a.nnas && a.nnas.some(nna => {
+                        const fullName = nna.tipo === 'institucion'
+                            ? nna.institucion
+                            : [nna.nombres, nna.primerApellido, nna.segundoApellido].filter(Boolean).join(" ");
+                        return fullName && fullName.toLowerCase().includes(lowerTerm);
+                    })) ||
                     (a.procedencia && a.procedencia.toLowerCase().includes(lowerTerm)) ||
                     (a.abogado?.nombre && a.abogado.nombre.toLowerCase().includes(lowerTerm)) ||
                     (a.estado && a.estado.toLowerCase().includes(lowerTerm)) ||
@@ -167,6 +177,7 @@ export default function ApelacionesPage() {
             case 'Pendiente': return 'secondary'
             case 'Resuelto': return 'default'
             case 'Atendido': return 'outline'
+            case 'Observado': return 'outline'
             default: return 'default'
         }
     }
@@ -191,13 +202,13 @@ export default function ApelacionesPage() {
     }
 
     return (
-        <div className="flex min-h-screen bg-background overflow-hidden w-full">
+        <div className="flex h-screen bg-background overflow-hidden w-full">
             <AppSidebar />
-            <div className={`flex-1 ml-0 flex flex-col min-h-screen max-w-full overflow-hidden transition-all duration-300 ease-in-out ${
+            <div className={`flex-1 ml-0 flex flex-col h-full max-h-screen max-w-full overflow-hidden transition-all duration-300 ease-in-out ${
                 sidebarCollapsed ? 'md:ml-[70px]' : 'md:ml-64'
             }`}>
                 {/* Header */}
-                <header className="border-b bg-card sticky top-0 z-30">
+                <header className="border-b bg-card sticky top-0 z-30 flex-shrink-0">
                     <div className="px-4 py-4 md:px-6">
                         <div className="flex items-center gap-3 md:gap-4">
                             <Button 
@@ -264,9 +275,9 @@ export default function ApelacionesPage() {
                     </div>
                 </header>
 
-                <main className="px-2 sm:px-4 md:px-6 py-6 overflow-hidden">
+                <main className="px-2 sm:px-4 md:px-6 py-4 flex-1 min-h-0 flex flex-col overflow-hidden">
                     {/* Filtros */}
-                    <Card className="mb-6">
+                    <Card className="mb-6 flex-shrink-0">
                         <CardHeader className="pb-3">
                             <div className="flex items-center justify-between">
                                 <div>
@@ -303,6 +314,7 @@ export default function ApelacionesPage() {
                                         <SelectItem value="Pendiente">Pendiente</SelectItem>
                                         <SelectItem value="Resuelto">Resuelto</SelectItem>
                                         <SelectItem value="Atendido">Atendido</SelectItem>
+                                        <SelectItem value="Observado">Observado</SelectItem>
                                     </SelectContent>
                                 </Select>
 
@@ -350,14 +362,14 @@ export default function ApelacionesPage() {
                     </Card>
 
                     {/* Tabla */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Lista de Apelaciones</CardTitle>
+                    <Card className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                        <CardHeader className="flex-shrink-0 py-3">
+                            <CardTitle className="text-base md:text-lg">Lista de Apelaciones</CardTitle>
                             <CardDescription>
                                 {filteredApelaciones.length === 0 ? 'No hay apelaciones que coincidan con los filtros' : `${filteredApelaciones.length} apelaciones encontradas`}
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="px-2 sm:px-4 md:px-6">
+                        <CardContent className="px-2 sm:px-4 md:px-6 flex-1 min-h-0 flex flex-col overflow-hidden pb-4">
                             {filteredApelaciones.length === 0 ? (
                                 <div className="py-12 text-center">
                                     <p className="text-muted-foreground mb-4">No se encontraron apelaciones</p>
@@ -368,7 +380,7 @@ export default function ApelacionesPage() {
                                     )}
                                 </div>
                             ) : (
-                                <div className="overflow-auto max-h-[600px] relative border rounded-md w-full">
+                                <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto relative border rounded-md w-full scrollbar-thin scrollbar-thumb-muted">
                                     <table className="w-full border-collapse table-fixed md:table-auto">
                                         <thead className="sticky top-0 bg-background z-10 shadow-[0_1.5px_0_0_rgba(0,0,0,0.1)]">
                                             <tr className="border-b">
@@ -419,7 +431,7 @@ export default function ApelacionesPage() {
                                                                                     ? ap.institucion 
                                                                                     : [ap.nombres, ap.apellidoPaterno, ap.apellidoMaterno].filter(Boolean).join(" ")
                                                                               ).filter(Boolean).join(", ")
-                                                                            : apelacion.apelante
+                                                                            : ''
                                                                         }
                                                                     </span>
                                                                     {apelacion.nnas && apelacion.nnas.length > 0 ? (
@@ -431,8 +443,6 @@ export default function ApelacionesPage() {
                                                                                 return name + edadStr;
                                                                             }).filter(Boolean).join(", ")}
                                                                         </span>
-                                                                    ) : apelacion.nnaCar ? (
-                                                                        <span className="text-[10px] md:text-xs text-muted-foreground mt-0.5">{apelacion.nnaCar}</span>
                                                                     ) : null}
                                                                 </div>
                                                             </td>
@@ -484,18 +494,16 @@ export default function ApelacionesPage() {
                                                                                 }
                                                                             </span>
                                                                         </div>
-                                                                        {(apelacion.nnas && apelacion.nnas.length > 0) || apelacion.nnaCar ? (
+                                                                        {(apelacion.nnas && apelacion.nnas.length > 0) ? (
                                                                             <div>
                                                                                 <span className="font-semibold text-[10px] text-muted-foreground uppercase tracking-wider block mb-0.5">NNA o CAR:</span>
                                                                                 <span className="text-xs">
-                                                                                    {apelacion.nnas && apelacion.nnas.length > 0 ? (
-                                                                                        apelacion.nnas.map((nna: any) => {
-                                                                                            if (nna.tipo === "institucion") return nna.institucion;
-                                                                                            const name = [nna.nombres, nna.primerApellido, nna.segundoApellido].filter(Boolean).join(" ");
-                                                                                            const edadStr = nna.edad ? ` (${nna.edad} años)` : "";
-                                                                                            return name + edadStr;
-                                                                                        }).filter(Boolean).join(", ")
-                                                                                    ) : apelacion.nnaCar || '-'}
+                                                                                    {apelacion.nnas.map((nna: any) => {
+                                                                                        if (nna.tipo === "institucion") return nna.institucion;
+                                                                                        const name = [nna.nombres, nna.primerApellido, nna.segundoApellido].filter(Boolean).join(" ");
+                                                                                        const edadStr = nna.edad ? ` (${nna.edad} años)` : "";
+                                                                                        return name + edadStr;
+                                                                                    }).filter(Boolean).join(", ")}
                                                                                 </span>
                                                                             </div>
                                                                         ) : null}

@@ -37,12 +37,13 @@ export const apelacionBaseSchema = z.object({
     complejidadId: z.string().min(1, "La complejidad jurídica es obligatoria"),
     abogadoId: z.string().min(1, "El abogado asignado es obligatorio"),
     fechaAsignacion: z.date({ message: "La fecha de asignación es obligatoria" }),
-    estado: z.enum(["Pendiente", "Resuelto", "Atendido"]),
+    estado: z.enum(["Pendiente", "Resuelto", "Atendido", "Observado"]),
     numeroResolucion: z.string().optional(),
     documentoAtencion: z.string().optional(),
     cargos: z.string().optional(),
     observaciones: z.string().optional(),
     revisorId: z.string().optional().nullable(),
+    fechaAsignacionRevisor: z.date().optional().nullable(),
 })
 
 export const apelacionSchema = apelacionBaseSchema.refine((data) => {
@@ -54,6 +55,17 @@ export const apelacionSchema = apelacionBaseSchema.refine((data) => {
 }, {
     message: "Cuando el estado es Resuelto o Atendido se requiere el número de resolución",
     path: ["numeroResolucion"],
+}).refine((data) => {
+    // Si se selecciona un revisor, la fecha de asignación del revisor es obligatoria,
+    // excepto para registros anteriores al 02/06/2026 donde el campo puede estar vacío
+    if (data.revisorId && !data.fechaAsignacionRevisor) {
+        const corte = new Date('2026-06-02T00:00:00')
+        return data.fechaIngreso < corte;
+    }
+    return true;
+}, {
+    message: "La fecha de asignación del revisor es obligatoria cuando se selecciona un revisor",
+    path: ["fechaAsignacionRevisor"],
 });
 
 export type ApelacionFormValues = z.infer<typeof apelacionBaseSchema>

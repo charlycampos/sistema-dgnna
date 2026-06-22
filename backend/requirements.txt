@@ -17,3 +17,8 @@ bcrypt==4.2.1
 
 # ─── Variables de entorno ────────────────────────────────────────
 python-dotenv==1.0.1
+
+# ─── Archivos Excel / POI ────────────────────────────────────────
+pandas==2.2.3
+openpyxl==3.1.5
+python-multipart==0.0.20

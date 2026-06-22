@@ -6,7 +6,7 @@ Compatibles con SQLite (desarrollo) y Oracle (producción).
 import uuid
 from datetime import datetime
 from sqlalchemy import (
-    Column, String, Integer, Boolean, DateTime,
+    Column, String, Integer, Boolean, DateTime, Float,
     ForeignKey, UniqueConstraint
 )
 from sqlalchemy.orm import relationship
@@ -392,3 +392,64 @@ class PlEventoProfesional(Base):
     profesionalId = Column(String(36), ForeignKey(f"{PL_SCHEMA}.pl_profesionales.id"), nullable=False)
     evento        = relationship("PlEvento", back_populates="profesionales")
     profesional   = relationship("PlProfesional", back_populates="eventos")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  MÓDULO POI - PP117
+# ─────────────────────────────────────────────────────────────────────────────
+
+class PoiCarga(Base):
+    """Encabezado de cada carga mensual del archivo DATA-POI."""
+    __tablename__ = "poi_cargas"
+
+    id            = Column(String(36), primary_key=True, default=new_id)
+    mes           = Column(Integer, nullable=False)
+    anio          = Column(Integer, nullable=False)
+    nombreArchivo = Column(String(300), nullable=True)
+    totalFilas    = Column(Integer, nullable=True)
+    cargadoPor    = Column(String(200), nullable=True)
+    createdAt     = Column(DateTime, default=datetime.utcnow)
+
+    datos = relationship("PoiDato", back_populates="carga", cascade="all, delete-orphan")
+
+    __table_args__ = (UniqueConstraint("mes", "anio", name="uq_poi_mes_anio"),)
+
+
+class PoiDato(Base):
+    """Una fila del Excel DATA-POI (nivel Actividad Operativa x Departamento)."""
+    __tablename__ = "poi_datos"
+
+    id           = Column(String(36), primary_key=True, default=new_id)
+    cargaId      = Column(String(36), ForeignKey("poi_cargas.id", ondelete="CASCADE"), nullable=False)
+    centroCosto  = Column(String(300), nullable=True)
+    categoriaId  = Column(String(100), nullable=True)
+    categoria    = Column(String(500), nullable=True)   # nombre del producto/categoría
+    actPresupId  = Column(String(100), nullable=True)
+    actPresup    = Column(String(500), nullable=True)   # nombre de la actividad presupuestal
+    codAO        = Column(String(100), nullable=True)
+    actividadOp  = Column(String(1000), nullable=True)
+    unidadMedida = Column(String(100), nullable=True)
+    departamento = Column(String(200), nullable=True)
+    consPIM      = Column(Float, nullable=True)
+    fnReTotal    = Column(Float, nullable=True)         # Fn(RE) Total — prog financiera anual
+    # Programación física F(RE) 01-12
+    fRe01 = Column(Float, nullable=True); fRe02 = Column(Float, nullable=True)
+    fRe03 = Column(Float, nullable=True); fRe04 = Column(Float, nullable=True)
+    fRe05 = Column(Float, nullable=True); fRe06 = Column(Float, nullable=True)
+    fRe07 = Column(Float, nullable=True); fRe08 = Column(Float, nullable=True)
+    fRe09 = Column(Float, nullable=True); fRe10 = Column(Float, nullable=True)
+    fRe11 = Column(Float, nullable=True); fRe12 = Column(Float, nullable=True)
+    fReTotal = Column(Float, nullable=True)
+    # Ejecución física F(SE) 01-12
+    fSe01 = Column(Float, nullable=True); fSe02 = Column(Float, nullable=True)
+    fSe03 = Column(Float, nullable=True); fSe04 = Column(Float, nullable=True)
+    fSe05 = Column(Float, nullable=True); fSe06 = Column(Float, nullable=True)
+    fSe07 = Column(Float, nullable=True); fSe08 = Column(Float, nullable=True)
+    fSe09 = Column(Float, nullable=True); fSe10 = Column(Float, nullable=True)
+    fSe11 = Column(Float, nullable=True); fSe12 = Column(Float, nullable=True)
+    fSeTotal = Column(Float, nullable=True)
+    # Ejecución financiera Fn(SE) total acumulada
+    fnSeTotal = Column(Float, nullable=True)
+    motivoMes = Column(String(2000), nullable=True)
+
+    carga = relationship("PoiCarga", back_populates="datos")

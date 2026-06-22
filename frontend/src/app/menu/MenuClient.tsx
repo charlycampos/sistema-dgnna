@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { LogOut, Scale, Globe, BookOpen, Users, ChevronRight, Lock, Landmark, CalendarDays, FileText, Eye } from 'lucide-react'
+import { LogOut, Scale, Globe, BookOpen, Users, ChevronRight, Lock, Landmark, CalendarDays, FileText, Eye, BarChart3 } from 'lucide-react'
 import type { SessionPayload } from '@/lib/auth'
 
 interface Props {
@@ -75,6 +75,14 @@ export default function MenuClient({ session }: Props) {
       descripcion: 'Gestión y seguimiento de solicitudes de acceso a la información pública',
       icono: <Eye className="w-8 h-8" />,
       ruta: '/transparencia',
+      disponible: true,
+    },
+    {
+      id: 'poi-pp117',
+      titulo: 'Módulo POI - PP117',
+      descripcion: 'Carga mensual y reportes de ejecución del POI y Programa Presupuestal 0117',
+      icono: <BarChart3 className="w-8 h-8" />,
+      ruta: '/poi-pp117',
       disponible: true,
     },
     {
