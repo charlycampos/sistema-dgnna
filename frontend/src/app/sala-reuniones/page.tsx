@@ -23,6 +23,8 @@ interface Reserva {
   estado: string
   descripcion?: string | null
   creadoPor?: string | null
+  direccionResponsable?: string | null
+  nombreResponsable?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -35,6 +37,8 @@ interface FormReserva {
   categoria: string
   estado: string
   descripcion: string
+  direccionResponsable: string
+  nombreResponsable: string
 }
 
 type Tab = 'calendario' | 'bandeja' | 'dashboard'
@@ -103,8 +107,8 @@ const fmtD = (f: string) => { if (!f) return ''; const [y, mo, d] = f.split('-')
 const tMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m }
 
 function downloadCSV(data: Reserva[]) {
-  const h = ['Fecha', 'Título', 'Hora Inicio', 'Hora Fin', 'Categoría', 'Estado', 'Creado por', 'Descripción']
-  const rows = data.map(r => [r.fecha, r.titulo, r.horaInicio, r.horaFin, r.categoria, r.estado, r.creadoPor ?? '', r.descripcion ?? ''])
+  const h = ['Fecha', 'Título', 'Hora Inicio', 'Hora Fin', 'Categoría', 'Estado', 'Creado por', 'Descripción', 'Dirección Responsable', 'Nombre Responsable']
+  const rows = data.map(r => [r.fecha, r.titulo, r.horaInicio, r.horaFin, r.categoria, r.estado, r.creadoPor ?? '', r.descripcion ?? '', r.direccionResponsable ?? '', r.nombreResponsable ?? ''])
   const csv = [h, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n')
   const a = document.createElement('a')
   a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }))
@@ -175,7 +179,7 @@ export default function SalaReunionesPage() {
   const [saving, setSaving] = useState(false)
   const [conflicto, setConflicto] = useState<string | null>(null)
 
-  const fi: FormReserva = { fecha: TODAY, titulo: '', horaInicio: '09:00', horaFin: '10:00', categoria: 'Reunión interna', estado: 'Programado', descripcion: '' }
+  const fi: FormReserva = { fecha: TODAY, titulo: '', horaInicio: '09:00', horaFin: '10:00', categoria: 'Reunión interna', estado: 'Programado', descripcion: '', direccionResponsable: '', nombreResponsable: '' }
   const [form, setForm] = useState<FormReserva>(fi)
 
   const [bs, setBs] = useState('')
@@ -256,7 +260,9 @@ export default function SalaReunionesPage() {
       horaFin: r.horaFin,
       categoria: r.categoria,
       estado: r.estado,
-      descripcion: r.descripcion ?? ''
+      descripcion: r.descripcion ?? '',
+      direccionResponsable: r.direccionResponsable ?? '',
+      nombreResponsable: r.nombreResponsable ?? ''
     })
     setShowModal(true)
   }
@@ -435,6 +441,9 @@ export default function SalaReunionesPage() {
         
         .event-pill { transition: transform .12s, filter .12s; }
         .event-pill:hover { transform: translateY(-0.5px); filter: brightness(0.96); }
+
+        .cell-container .add-btn { opacity: 0; pointer-events: none; transition: all .15s; }
+        .cell-container:hover .add-btn { opacity: 1; pointer-events: auto; }
       `}} />
 
       {/* ── HEADER (Estilo Google Calendar) ───────────────────────── */}
@@ -671,6 +680,7 @@ export default function SalaReunionesPage() {
 
                         return (
                           <div key={i} onClick={() => { if (!isOther) setSelDay(isSel ? null : key) }}
+                            className="cell-container"
                             style={{
                               minHeight: 118,
                               padding: '6px 4px 4px',
@@ -684,6 +694,19 @@ export default function SalaReunionesPage() {
                               position: 'relative'
                             }}>
                             
+                            {!isOther && (
+                              <button 
+                                className="add-btn hover-circle"
+                                onClick={(e) => { e.stopPropagation(); openNew(key) }}
+                                style={{
+                                  position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: '#EFF6FF', border: 'none', color: '#1A73E8', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10
+                                }}
+                                title="Añadir reserva"
+                              >
+                                <Plus size={14} strokeWidth={3} />
+                              </button>
+                            )}
+
                             {/* Número del día */}
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 6 }}>
                               <div style={{
@@ -901,6 +924,11 @@ export default function SalaReunionesPage() {
                             <div style={{ fontWeight: 600, color: '#3C4043', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: canceled ? 'line-through' : 'none' }}>
                               {r.titulo}
                             </div>
+                            {(r.direccionResponsable || r.nombreResponsable) && (
+                              <div style={{ fontSize: 11, color: TX2, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {r.direccionResponsable ? `${r.direccionResponsable} - ` : ''}{r.nombreResponsable || ''}
+                              </div>
+                            )}
                             {r.descripcion && (
                               <div style={{ fontSize: 11, color: TX3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 1 }}>
                                 {r.descripcion}
@@ -1075,8 +1103,24 @@ export default function SalaReunionesPage() {
               
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div style={{ gridColumn: 'span 2' }}>
-                  <label style={S.label}>Responsable / Evento</label>
-                  <input autoFocus value={form.titulo} onChange={e => setForm({ ...form, titulo: e.target.value })} placeholder="Nombre de la reunión o responsable" style={S.input} />
+                  <label style={S.label}>Nombre del Evento</label>
+                  <input autoFocus value={form.titulo} onChange={e => setForm({ ...form, titulo: e.target.value })} placeholder="Nombre de la reunión o evento" style={S.input} />
+                </div>
+                <div>
+                  <label style={S.label}>Dirección Responsable</label>
+                  <select value={form.direccionResponsable} onChange={e => setForm({ ...form, direccionResponsable: e.target.value })} style={S.input}>
+                    <option value="">Seleccione...</option>
+                    <option value="DGNNA">DGNNA</option>
+                    <option value="DPNNA">DPNNA</option>
+                    <option value="DSLD">DSLD</option>
+                    <option value="DPE">DPE</option>
+                    <option value="DA">DA</option>
+                    <option value="OTROS">OTROS</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={S.label}>Nombre del Responsable</label>
+                  <input value={form.nombreResponsable} onChange={e => setForm({ ...form, nombreResponsable: e.target.value })} placeholder="Ej. Erika Reupo" style={S.input} />
                 </div>
                 <div>
                   <label style={S.label}>Fecha</label>

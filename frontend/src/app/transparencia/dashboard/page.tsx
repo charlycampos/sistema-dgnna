@@ -112,7 +112,7 @@ export default function TransparenciaDashboardPage() {
   return (
     <div className="flex min-h-screen bg-background">
       <AppSidebar />
-      <div className="flex-1 ml-56 flex flex-col min-h-screen">
+      <div className="flex-1 ml-0 md:ml-64 flex flex-col min-h-screen">
 
         <header className="border-b bg-card sticky top-0 z-30">
           <div className="px-6 py-4 flex items-center gap-4">

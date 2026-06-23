@@ -23,5 +23,7 @@ class ReservaSalaModel(Base):
     estado      = Column("estado",      String(20),  default="Programado")
     descripcion = Column("descripcion", String(500), nullable=True)
     creadoPor   = Column("creadopor",   String(200), nullable=True)
+    direccionResponsable = Column("direccionresponsable", String(100), nullable=True)
+    nombreResponsable    = Column("nombreresponsable",    String(200), nullable=True)
     createdAt   = Column("createdat",   DateTime, default=datetime.utcnow)
     updatedAt   = Column("updatedat",   DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

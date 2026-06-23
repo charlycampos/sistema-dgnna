@@ -198,6 +198,8 @@ export default function MenuClient({ session }: Props) {
             if (!esVisible) return null
 
             const acceso = tieneAcceso(modulo)
+            if (!acceso) return null
+
             const proximamente = !modulo.disponible
             const sinPermiso = modulo.disponible && !acceso
 

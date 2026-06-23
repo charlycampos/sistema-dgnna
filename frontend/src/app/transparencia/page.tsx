@@ -75,11 +75,11 @@ export default function TransparenciaPage() {
         r.numeroExpediente?.toLowerCase().includes(t) ||
         r.asunto?.toLowerCase().includes(t) ||
         r.documentoIngreso?.toLowerCase().includes(t) ||
-        r.categoria?.toLowerCase().includes(t)
+        (Array.isArray(r.categoria) ? r.categoria.join(' ') : r.categoria)?.toLowerCase().includes(t)
       )
     }
     if (estadoFilter !== 'todos') result = result.filter(r => r.estado === estadoFilter)
-    if (dirFilter    !== 'todos') result = result.filter(r => r.direccion === dirFilter)
+    if (dirFilter    !== 'todos') result = result.filter(r => getDireccionesArray(r.direccion).includes(dirFilter))
     if (fechaDesde) {
       const desde = new Date(fechaDesde); desde.setHours(0,0,0,0)
       result = result.filter(r => new Date(r.fechaIngreso) >= desde)
@@ -109,41 +109,53 @@ export default function TransparenciaPage() {
     return 'outline'
   }
 
+  const getDireccionesArray = (dir: any): string[] => {
+    if (!dir) return []
+    if (Array.isArray(dir)) return dir
+    if (typeof dir === 'string') return dir.split(',').map(s => s.trim()).filter(Boolean)
+    return []
+  }
+
   // Renderiza el indicador de alerta de plazo
   const AlertaPlazoCell = ({ registro }: { registro: TransparenciaRegistro }) => {
     const alerta = clasificarAlerta(registro.plazoVencimiento, registro.estado)
-    if (!alerta || alerta === 'normal') {
-      if (!registro.plazoVencimiento) return <span className="text-muted-foreground">—</span>
-      const dias = diasHabilesRestantes(new Date(registro.plazoVencimiento))
+
+    const renderPlazoLegal = () => {
+      if (!alerta || alerta === 'normal') {
+        if (!registro.plazoVencimiento) return <span className="text-muted-foreground">—</span>
+        const dias = diasHabilesRestantes(new Date(registro.plazoVencimiento))
+        return (
+          <span className="text-sm text-green-600">
+            {formatFecha(registro.plazoVencimiento)}
+            <span className="block text-xs text-muted-foreground">{dias}d háb.</span>
+          </span>
+        )
+      }
+      if (alerta === 'vencido') return (
+        <span className="flex items-center gap-1 text-red-600 font-semibold text-xs">
+          <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+          Vencido
+          <span className="block">{formatFecha(registro.plazoVencimiento)}</span>
+        </span>
+      )
+      if (alerta === 'urgente') return (
+        <span className="flex items-center gap-1 text-red-500 font-semibold text-xs">
+          <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+          ¡Hoy vence!
+        </span>
+      )
+      // proximo
+      const dias = diasHabilesRestantes(new Date(registro.plazoVencimiento!))
       return (
-        <span className="text-sm text-green-600">
-          {formatFecha(registro.plazoVencimiento)}
-          <span className="block text-xs text-muted-foreground">{dias}d háb.</span>
+        <span className="flex items-center gap-1 text-amber-600 font-semibold text-xs">
+          <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+          {dias}d háb.
+          <span className="block font-normal">{formatFecha(registro.plazoVencimiento)}</span>
         </span>
       )
     }
-    if (alerta === 'vencido') return (
-      <span className="flex items-center gap-1 text-red-600 font-semibold text-xs">
-        <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-        Vencido
-        <span className="block">{formatFecha(registro.plazoVencimiento)}</span>
-      </span>
-    )
-    if (alerta === 'urgente') return (
-      <span className="flex items-center gap-1 text-red-500 font-semibold text-xs">
-        <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-        ¡Hoy vence!
-      </span>
-    )
-    // proximo
-    const dias = diasHabilesRestantes(new Date(registro.plazoVencimiento!))
-    return (
-      <span className="flex items-center gap-1 text-amber-600 font-semibold text-xs">
-        <Clock className="h-3.5 w-3.5 flex-shrink-0" />
-        {dias}d háb.
-        <span className="block font-normal">{formatFecha(registro.plazoVencimiento)}</span>
-      </span>
-    )
+
+    return renderPlazoLegal()
   }
 
   if (loading) return (
@@ -158,7 +170,7 @@ export default function TransparenciaPage() {
   return (
     <div className="flex min-h-screen bg-background">
       <AppSidebar />
-      <div className="flex-1 ml-56 flex flex-col min-h-screen">
+      <div className="flex-1 ml-0 md:ml-64 flex flex-col min-h-screen">
 
         {/* Header */}
         <header className="border-b bg-card sticky top-0 z-30">
@@ -300,6 +312,7 @@ export default function TransparenciaPage() {
                         <th className="px-4 py-3 text-left text-sm font-semibold">Categoría</th>
                         <th className="px-4 py-3 text-left text-sm font-semibold">Asunto</th>
                         <th className="px-4 py-3 text-left text-sm font-semibold">Estado</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Plazo Interno</th>
                         <th className="px-4 py-3 text-left text-sm font-semibold">Plazo / Alerta</th>
                         <th className="px-4 py-3 text-left text-sm font-semibold">Acciones</th>
                       </tr>
@@ -317,14 +330,29 @@ export default function TransparenciaPage() {
                           <td className="px-4 py-3 text-sm font-medium">{r.numeroExpediente}</td>
                           <td className="px-4 py-3 text-sm">{formatFecha(r.fechaIngreso)}</td>
                           <td className="px-4 py-3 text-sm">
-                            <Badge variant="outline">{r.direccion}</Badge>
+                            <div className="flex flex-wrap gap-1">
+                              {getDireccionesArray(r.direccion).map(d => (
+                                <Badge key={d} variant="outline" className="text-xs">{d}</Badge>
+                              ))}
+                            </div>
                           </td>
-                          <td className="px-4 py-3 text-sm text-muted-foreground">{r.categoria || '—'}</td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            <div className="flex flex-wrap gap-1">
+                              {getDireccionesArray(r.categoria).length > 0 ? (
+                                getDireccionesArray(r.categoria).map(c => (
+                                  <Badge key={c} variant="secondary" className="text-xs font-normal">{c}</Badge>
+                                ))
+                              ) : '—'}
+                            </div>
+                          </td>
                           <td className="px-4 py-3 text-sm max-w-xs">
                             <span className="line-clamp-2">{r.asunto}</span>
                           </td>
                           <td className="px-4 py-3 text-sm">
                             <Badge variant={getBadgeEstado(r.estado)}>{r.estado}</Badge>
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {r.plazoInterno ? formatFecha(r.plazoInterno) : <span className="text-muted-foreground">—</span>}
                           </td>
                           <td className="px-4 py-3 text-sm">
                             <AlertaPlazoCell registro={r} />

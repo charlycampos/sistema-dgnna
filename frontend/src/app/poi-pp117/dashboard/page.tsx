@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useMe } from '@/lib/use-me'
+import { AppSidebar } from '@/components/app-sidebar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
@@ -93,7 +94,10 @@ export default function DashboardPOIPage() {
   ] : []
 
   return (
-    <div className="flex flex-col gap-6 p-6 max-w-7xl mx-auto">
+    <div className="flex min-h-screen bg-background">
+      <AppSidebar />
+      <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
+        <div className="flex-1 w-full max-w-7xl mx-auto p-6 flex flex-col gap-6">
 
       {/* ── Encabezado + Selectores ─────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -363,6 +367,8 @@ export default function DashboardPOIPage() {
           </Card>
         </>
       )}
+        </div>
+      </div>
     </div>
   )
 }

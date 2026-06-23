@@ -14,6 +14,8 @@ class ReservaSala:
     estado:     str = "Programado"  # Programado | Realizado | Cancelado | Reprogramado
     descripcion: Optional[str] = None
     creadoPor:   Optional[str] = None
+    direccionResponsable: Optional[str] = None
+    nombreResponsable:    Optional[str] = None
     id:          str = field(default_factory=lambda: str(uuid.uuid4()))
     createdAt:   datetime = field(default_factory=datetime.utcnow)
     updatedAt:   datetime = field(default_factory=datetime.utcnow)

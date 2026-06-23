@@ -136,14 +136,19 @@ def dashboard(
     # Por dirección
     dir_map: dict = {}
     for t in todos:
-        dir_map[t.direccion] = dir_map.get(t.direccion, 0) + 1
+        dirs = [d.strip() for d in t.direccion.split(',')] if t.direccion else []
+        for d in dirs:
+            if d:
+                dir_map[d] = dir_map.get(d, 0) + 1
     por_direccion = [ItemNombreCantidad(nombre=k, cantidad=v) for k, v in dir_map.items()]
 
     # Por categoría
     cat_map: dict = {}
     for t in todos:
-        key = t.categoria or "Sin categoría"
-        cat_map[key] = cat_map.get(key, 0) + 1
+        cats = [c.strip() for c in t.categoria.split(',')] if t.categoria else ["Sin categoría"]
+        for c in cats:
+            if c:
+                cat_map[c] = cat_map.get(c, 0) + 1
     por_categoria = [ItemNombreCantidad(nombre=k, cantidad=v) for k, v in cat_map.items()]
 
     return TransparenciaDashboardOut(
@@ -186,13 +191,14 @@ def crear(
         numeroExpediente   = body.numeroExpediente,
         fechaIngreso       = body.fechaIngreso,
         documentoIngreso   = body.documentoIngreso,
-        direccion          = body.direccion,
+        direccion          = ", ".join(body.direccion) if body.direccion else "",
         estado             = body.estado or "Pendiente",
         fechaAtencion      = body.fechaAtencion,
         asunto             = body.asunto,
         documentoRespuesta = body.documentoRespuesta,
-        categoria          = body.categoria,
+        categoria          = ", ".join(body.categoria) if body.categoria else None,
         plazoVencimiento   = plazo,
+        plazoInterno       = body.plazoInterno,
         observaciones      = body.observaciones,
         creadoPor          = body.creadoPor or current.get("nombre"),
     )
@@ -216,7 +222,10 @@ def actualizar(
         raise HTTPException(status_code=404, detail="Registro no encontrado")
 
     for campo, valor in body.model_dump(exclude_unset=True).items():
-        setattr(registro, campo, valor)
+        if campo in ["direccion", "categoria"] and valor is not None:
+            setattr(registro, campo, ", ".join(valor))
+        else:
+            setattr(registro, campo, valor)
 
     # Si cambia la fecha de ingreso, recalcular el plazo
     if body.fechaIngreso is not None:

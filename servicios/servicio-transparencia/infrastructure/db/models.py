@@ -25,13 +25,14 @@ class TransparenciaModel(Base):
     numeroExpediente   = Column(String(100),  nullable=False)
     fechaIngreso       = Column(DateTime,     nullable=False)
     documentoIngreso   = Column(String(300),  nullable=True)
-    direccion          = Column(String(20),   nullable=False)   # DPNNA|DSLD|DA|DPE|DGNNA
+    direccion          = Column(String(100),  nullable=False)   # una o más, separadas por ", "
     estado             = Column(String(30),   default="Pendiente")  # Pendiente|En Proceso|Atendido
     fechaAtencion      = Column(DateTime,     nullable=True)
     asunto             = Column(String(1000), nullable=False)
     documentoRespuesta = Column(String(300),  nullable=True)
-    categoria          = Column(String(100),  nullable=True)
+    categoria          = Column(String(200),  nullable=True)
     plazoVencimiento   = Column(DateTime,     nullable=True)
+    plazoInterno       = Column("PLAZOINTERNO", DateTime, nullable=True)
     observaciones      = Column(String(1000), nullable=True)
     creadoPor          = Column(String(200),  nullable=True)
     createdAt          = Column(DateTime,     default=datetime.utcnow)

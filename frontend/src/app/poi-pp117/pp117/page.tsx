@@ -5,7 +5,8 @@ import { useMe } from '@/lib/use-me'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Download, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react'
+import { Download, AlertTriangle, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 
 const MESES_NOMBRES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SET','OCT','NOV','DIC']
 
@@ -49,60 +50,70 @@ function fmt(n: number | null | undefined, dec = 1) {
   return n.toLocaleString('es-PE', { minimumFractionDigits: dec, maximumFractionDigits: dec })
 }
 
-function FilaProducto({ cat, mes, mesNombre, abierto, onToggle }: {
-  cat: Categoria; mes: number; mesNombre: string
+function StatusDot({ pct }: { pct: number | null | undefined }) {
+  if (pct === null || pct === undefined) return null;
+  const color = pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-400' : 'bg-red-500';
+  return <div className={`inline-block w-2.5 h-2.5 rounded-full ml-1.5 ${color}`} title={`${pct}%`} />
+}
+
+function FilaProducto({ cat, mes, abierto, onToggle }: {
+  cat: Categoria; mes: number;
   abierto: boolean; onToggle: () => void
 }) {
   return (
     <tr
       onClick={onToggle}
-      className="cursor-pointer bg-gradient-to-r from-blue-900 to-blue-800 text-white hover:from-blue-800 select-none"
+      className="cursor-pointer bg-[#5A6C82] text-white hover:bg-[#4A5C72] select-none border-b border-gray-400"
     >
-      <td className="px-3 py-2 font-bold text-xs border-r border-blue-700 w-8">
+      <td className="px-3 py-2 font-bold text-xs border-r border-gray-500 w-8 text-center">
         {abierto ? <ChevronDown className="h-3.5 w-3.5 inline" /> : <ChevronRight className="h-3.5 w-3.5 inline" />}
       </td>
-      <td className="px-3 py-2 font-bold text-xs" colSpan={2 + mes}>
-        {cat.categoriaId} — {cat.categoria || cat.categoriaId}
+      <td className="px-3 py-2 font-bold text-[11px]" colSpan={15}>
+        {cat.categoriaId}. {cat.categoria || cat.categoriaId}
       </td>
-      <td className="text-right px-2 py-2 text-xs font-bold border-l border-blue-700">
+      <td className="text-right px-2 py-2 text-[11px] font-bold border-l border-gray-500">
         {fmt(cat.totalProg, 0)}
       </td>
-      <td className="text-right px-2 py-2 text-xs font-bold">
+      <td colSpan={1 + mes} />
+      <td className="text-right px-2 py-2 text-[11px] font-bold border-l border-gray-500">
         {fmt(cat.totalEjec, 0)}
       </td>
-      <td className={`text-center px-2 py-2 text-xs font-bold ${pctColor(cat.pctAvance)}`}>
+      <td className="text-center px-2 py-2 text-[11px] font-bold">
         {cat.pctAvance !== null ? `${fmt(cat.pctAvance)}%` : '—'}
+        <StatusDot pct={cat.pctAvance} />
       </td>
-      <td colSpan={3} />
+      <td colSpan={3} className="border-l border-gray-500" />
     </tr>
   )
 }
 
-function FilaAP({ ap, mes, mesNombre, abierto, onToggle }: {
-  ap: Ap; mes: number; mesNombre: string
+function FilaAP({ ap, mes, abierto, onToggle }: {
+  ap: Ap; mes: number;
   abierto: boolean; onToggle: () => void
 }) {
   return (
     <tr
       onClick={onToggle}
-      className="cursor-pointer bg-blue-50 hover:bg-blue-100 select-none"
+      className="cursor-pointer bg-[#E9EDF4] hover:bg-[#D6DCE4] select-none border-b border-gray-300"
     >
-      <td className="px-3 py-1.5 text-xs text-blue-600 border-r border-blue-100 pl-6">
+      <td className="px-3 py-1.5 text-xs text-slate-600 border-r border-gray-300 text-center">
         {abierto ? <ChevronDown className="h-3 w-3 inline" /> : <ChevronRight className="h-3 w-3 inline" />}
       </td>
-      <td className="px-3 py-1.5 text-xs font-semibold text-blue-800" colSpan={2 + mes}>
+      <td className="px-3 py-1.5 text-[10px] font-bold text-slate-800" colSpan={15}>
         {ap.actPresupId}. {ap.actPresup || ap.actPresupId}
       </td>
-      <td className="text-right px-2 py-1.5 text-xs font-semibold text-blue-800 border-l border-blue-200">
+      <td className="text-right px-2 py-1.5 text-[11px] font-bold text-slate-800 border-l border-gray-300">
         {fmt(ap.totalProg, 0)}
       </td>
-      <td className="text-right px-2 py-1.5 text-xs font-semibold text-blue-800">
+      <td colSpan={1 + mes} />
+      <td className="text-right px-2 py-1.5 text-[11px] font-bold text-slate-800 border-l border-gray-300">
         {fmt(ap.totalEjec, 0)}
       </td>
-      <td className={`text-center px-2 py-1.5 text-xs font-semibold ${pctColor(ap.pctAvance)}`}>
+      <td className="text-center px-2 py-1.5 text-[11px] font-bold text-slate-800">
         {ap.pctAvance !== null ? `${fmt(ap.pctAvance)}%` : '—'}
+        <StatusDot pct={ap.pctAvance} />
       </td>
-      <td colSpan={3} />
+      <td colSpan={3} className="border-l border-gray-300" />
     </tr>
   )
 }
@@ -125,32 +136,54 @@ function TablaPP117({ data }: { data: Pp117Data }) {
   const toggleCat = (id: string) => setAbiertoCat(p => ({ ...p, [id]: !p[id] }))
   const toggleAp  = (id: string) => setAbiertoAp(p => ({ ...p, [id]: !p[id] }))
 
-  const colSpanMeses = mes
-
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-100 shadow-sm">
-      <table className="w-full text-xs min-w-[900px]">
+    <div className="overflow-x-auto rounded-xl border border-gray-300 shadow-sm">
+      <table className="w-full text-xs min-w-[1200px] border-collapse">
         <thead>
+          {/* Fila Superior (Macro-Cabeceras) */}
           <tr>
-            <th className="bg-blue-900 text-white text-center px-2 py-2 w-8" />
-            <th className="bg-blue-900 text-white text-left px-3 py-2 w-20">CC</th>
-            <th className="bg-blue-900 text-white text-left px-3 py-2 min-w-[220px]">Producto / AP / Actividad</th>
-            {MESES_NOMBRES.slice(0, mes).map(m => (
-              <th key={m} className="bg-blue-700 text-white text-center px-2 py-2 w-14">{m}</th>
+            <th colSpan={3} className="bg-[#1e3a5f] text-white px-2 py-1 border border-gray-400"></th>
+            <th colSpan={14} className="bg-[#1e3a5f] text-white text-center px-2 py-1 text-[11px] uppercase tracking-wider border border-gray-400">
+              PROGRAMACIÓN FÍSICA
+            </th>
+            <th colSpan={mes + 2} className="bg-[#2E75B6] text-white text-center px-2 py-1 text-[11px] uppercase tracking-wider border border-gray-400">
+              EJECUCIÓN FÍSICA
+            </th>
+            <th colSpan={3} className="bg-[#538135] text-white text-center px-2 py-1 text-[11px] uppercase tracking-wider border border-gray-400">
+              EJECUCIÓN FINANCIERA
+            </th>
+          </tr>
+          {/* Fila Inferior (Columnas detalle) */}
+          <tr className="bg-[#1e3a5f] text-white text-[10px] uppercase">
+            <th className="px-2 py-2 w-10 text-center border border-gray-400">CC</th>
+            <th className="px-3 py-2 text-left min-w-[250px] border border-gray-400">PRODUCTO/ACTIVIDAD</th>
+            <th className="px-2 py-2 w-20 text-center border border-gray-400">UNIDAD DE<br/>MEDIDA</th>
+            
+            {/* 12 Meses de Programación */}
+            {MESES_NOMBRES.map(m => (
+              <th key={`p-${m}`} className="px-1 py-2 w-12 text-center border border-gray-400">{m}</th>
             ))}
-            <th className="bg-blue-800 text-white text-center px-2 py-2 w-20">Prog. Acum.</th>
-            <th className="bg-blue-800 text-white text-center px-2 py-2 w-20">Ejec. Acum.</th>
-            <th className="bg-blue-800 text-white text-center px-2 py-2 w-16">% Fís.</th>
-            <th className="bg-gray-700 text-white text-center px-2 py-2 w-22">PIM</th>
-            <th className="bg-gray-700 text-white text-center px-2 py-2 w-22">Devengado</th>
-            <th className="bg-gray-700 text-white text-center px-2 py-2 w-16">% Fin.</th>
+            <th className="px-2 py-2 w-16 text-center border border-gray-400 bg-[#162b47]">PROG.<br/>ENE-{mesNombre.substring(0,3).toUpperCase()}</th>
+            <th className="px-2 py-2 w-16 text-center border border-gray-400 bg-[#162b47]">TOTAL<br/>PROG.<br/>ANUAL</th>
+            
+            {/* Meses de Ejecución hasta el mes actual */}
+            {MESES_NOMBRES.slice(0, mes).map(m => (
+              <th key={`e-${m}`} className="px-1 py-2 w-12 text-center border border-gray-400 bg-[#245D91]">{m}</th>
+            ))}
+            <th className="px-2 py-2 w-16 text-center border border-gray-400 bg-[#245D91]">EJEC.<br/>ACUM.<br/>ENE-{mesNombre.substring(0,3).toUpperCase()}</th>
+            <th className="px-2 py-2 w-16 text-center border border-gray-400 bg-[#245D91]">AVANCE<br/>(%)<br/>ENE-{mesNombre.substring(0,3).toUpperCase()}</th>
+            
+            {/* Financiero */}
+            <th className="px-2 py-2 w-20 text-center border border-gray-400 bg-[#42672A]">PIM</th>
+            <th className="px-2 py-2 w-20 text-center border border-gray-400 bg-[#42672A]">DEVENGADO<br/>(A LA FECHA)</th>
+            <th className="px-2 py-2 w-14 text-center border border-gray-400 bg-[#42672A]">(%)<br/>EJEC.</th>
           </tr>
         </thead>
         <tbody>
           {categorias.map(cat => (
             <Fragment key={`cat-${cat.categoriaId}`}>
               <FilaProducto
-                cat={cat} mes={mes} mesNombre={mesNombre}
+                cat={cat} mes={mes}
                 abierto={!!abiertoCat[cat.categoriaId]}
                 onToggle={() => toggleCat(cat.categoriaId)}
               />
@@ -159,30 +192,50 @@ function TablaPP117({ data }: { data: Pp117Data }) {
                 return (
                   <Fragment key={`ap-${apKey}`}>
                     <FilaAP
-                      ap={ap} mes={mes} mesNombre={mesNombre}
+                      ap={ap} mes={mes}
                       abierto={!!abiertoAp[apKey]}
                       onToggle={() => toggleAp(apKey)}
                     />
                     {abiertoAp[apKey] && ap.centros.map((d, i) => (
-                      <tr key={`d-${apKey}-${i}`} className={`border-b border-gray-100 hover:bg-blue-50/20 ${pctBg(d.pctAvance)}`}>
-                        <td className="border-r border-gray-100" />
-                        <td className="px-3 py-1.5 text-blue-600 font-semibold text-[10px]">{d.ccAlias}</td>
-                        <td className="px-3 py-1.5 text-gray-700">
-                          <span className="font-mono text-[10px] text-gray-400 mr-1">{d.codAO}</span>
-                          {d.actividadOp}
+                      <tr key={`d-${apKey}-${i}`} className={`border-b border-gray-200 hover:bg-blue-50/50 ${pctBg(d.pctAvance)}`}>
+                        <td className="px-2 py-2 text-slate-800 font-bold text-[10px] border-r border-gray-200 text-center">{d.ccAlias}</td>
+                        <td className="px-3 py-2 text-slate-700 leading-tight">
+                          <span className="font-mono text-[9px] text-gray-400 mr-1 block sm:inline">{d.codAO}</span>
+                          <span className="text-[10px]">{d.actividadOp}</span>
                         </td>
-                        {d.progMeses.slice(0, mes).map((v, j) => (
-                          <td key={j} className="text-right px-2 py-1.5 text-gray-500 border-l border-gray-100">{fmt(v, 0)}</td>
+                        <td className="px-2 py-2 text-[10px] text-slate-600 text-center border-r border-gray-200">{d.unidadMedida}</td>
+                        
+                        {/* 12 Meses Prog */}
+                        {Array.from({length: 12}).map((_, j) => (
+                          <td key={`p-${j}`} className="text-right px-1.5 py-2 text-[10px] text-slate-500 border-r border-gray-100 bg-gray-50/30">
+                            {d.progMeses && d.progMeses[j] !== undefined ? fmt(d.progMeses[j], 0) : '—'}
+                          </td>
                         ))}
-                        <td className="text-right px-2 py-1.5 text-gray-700 font-medium border-l border-gray-200">{fmt(d.progAcum, 0)}</td>
-                        <td className="text-right px-2 py-1.5 text-gray-700 font-medium">{fmt(d.ejecAcum, 0)}</td>
-                        <td className={`text-center px-2 py-1.5 font-bold ${pctColor(d.pctAvance)}`}>
-                          {d.pctAvance !== null ? `${fmt(d.pctAvance)}%` : '—'}
+                        <td className="text-right px-2 py-2 text-[10px] font-bold text-slate-700 bg-gray-50/50 border-r border-gray-200">{fmt(d.progAcum, 0)}</td>
+                        <td className="text-right px-2 py-2 text-[10px] font-bold text-slate-700 bg-gray-50/50 border-r border-gray-300">{fmt(d.progAnual, 0)}</td>
+                        
+                        {/* Meses Ejecución */}
+                        {Array.from({length: mes}).map((_, j) => (
+                          <td key={`e-${j}`} className="text-right px-1.5 py-2 text-[10px] text-slate-600 border-r border-gray-100">
+                            {d.ejecMeses && d.ejecMeses[j] !== undefined ? fmt(d.ejecMeses[j], 0) : '—'}
+                          </td>
+                        ))}
+                        <td className="text-right px-2 py-2 text-[10px] font-bold text-slate-800 border-r border-gray-200">{fmt(d.ejecAcum, 0)}</td>
+                        <td className={`text-center px-2 py-2 text-[11px] font-bold border-r border-gray-300 ${pctColor(d.pctAvance)}`}>
+                          <div className="flex items-center justify-center gap-1">
+                            {d.pctAvance !== null ? `${fmt(d.pctAvance)}%` : '—'}
+                            <StatusDot pct={d.pctAvance} />
+                          </div>
                         </td>
-                        <td className="text-right px-2 py-1.5 text-gray-600 border-l border-gray-200">{fmt(d.pim, 0)}</td>
-                        <td className="text-right px-2 py-1.5 text-gray-600">{fmt(d.devengado, 0)}</td>
-                        <td className={`text-center px-2 py-1.5 font-semibold ${pctColor(d.pctFinanciero)}`}>
-                          {d.pctFinanciero !== null ? `${fmt(d.pctFinanciero)}%` : '—'}
+                        
+                        {/* Financiero */}
+                        <td className="text-right px-2 py-2 text-[10px] text-slate-700 border-r border-gray-200">{fmt(d.pim, 0)}</td>
+                        <td className="text-right px-2 py-2 text-[10px] text-slate-700 border-r border-gray-200">{fmt(d.devengado, 0)}</td>
+                        <td className={`text-center px-2 py-2 text-[11px] font-bold ${pctColor(d.pctFinanciero)}`}>
+                          <div className="flex items-center justify-center gap-1">
+                            {d.pctFinanciero !== null ? `${fmt(d.pctFinanciero)}%` : '—'}
+                            <StatusDot pct={d.pctFinanciero} />
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -266,9 +319,16 @@ export default function Pp117Page() {
 
       {/* Encabezado */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Ejecución PP 0117</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Tablero jerárquico: Producto → Actividad Presupuestal → Centro de Costo</p>
+        <div className="flex items-center gap-3">
+          <Link href="/poi-pp117/dashboard">
+            <Button variant="outline" size="icon" className="h-8 w-8 text-gray-600 hover:text-gray-900 shrink-0">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Ejecución PP 0117</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Tablero jerárquico: Producto → Actividad Presupuestal → Centro de Costo</p>
+          </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">

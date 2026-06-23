@@ -68,12 +68,13 @@ export default function TransparenciaDetallePage({ params }: { params: Promise<{
         numeroExpediente:   data.numeroExpediente,
         fechaIngreso:       data.fechaIngreso ? new Date(data.fechaIngreso) : new Date(),
         documentoIngreso:   data.documentoIngreso ?? '',
-        direccion:          data.direccion,
+        direccion:          Array.isArray(data.direccion) ? data.direccion : (typeof data.direccion === 'string' ? data.direccion.split(',').map((s: string) => s.trim()).filter(Boolean) : []),
         estado:             data.estado,
         fechaAtencion:      data.fechaAtencion ? new Date(data.fechaAtencion) : null,
         asunto:             data.asunto,
         documentoRespuesta: data.documentoRespuesta ?? '',
-        categoria:          data.categoria ?? '',
+        categoria:          Array.isArray(data.categoria) ? data.categoria : (typeof data.categoria === 'string' ? data.categoria.split(',').map((s: string) => s.trim()).filter(Boolean) : []),
+        plazoInterno:       data.plazoInterno ? new Date(data.plazoInterno) : null,
         observaciones:      data.observaciones ?? '',
       })
     } catch {
@@ -89,7 +90,8 @@ export default function TransparenciaDetallePage({ params }: { params: Promise<{
       const payload = {
         ...data,
         fechaIngreso:  data.fechaIngreso instanceof Date ? data.fechaIngreso.toISOString() : data.fechaIngreso,
-        fechaAtencion: data.fechaAtencion instanceof Date ? data.fechaAtencion.toISOString() : data.fechaAtencion ?? null,
+        fechaAtencion: data.fechaAtencion instanceof Date ? data.fechaAtencion.toISOString() : (data.fechaAtencion || null),
+        plazoInterno:  data.plazoInterno instanceof Date ? data.plazoInterno.toISOString() : (data.plazoInterno || null),
       }
       const res = await fetch(`/api/transparencia/${id}`, {
         method:  'PUT',
@@ -97,7 +99,13 @@ export default function TransparenciaDetallePage({ params }: { params: Promise<{
         body:    JSON.stringify(payload),
       })
       const json = await res.json()
-      if (!res.ok) { toast.error(json?.detail ?? 'Error al guardar'); return }
+      if (!res.ok) {
+        const errorMsg = Array.isArray(json?.detail)
+          ? json.detail.map((e: any) => `${e.loc?.join('.')}: ${e.msg}`).join(', ')
+          : (json?.detail || 'Error al guardar')
+        toast.error(errorMsg)
+        return
+      }
       toast.success('Registro actualizado')
       setRegistro(json)
       setEditMode(false)
@@ -128,7 +136,7 @@ export default function TransparenciaDetallePage({ params }: { params: Promise<{
   return (
     <div className="flex min-h-screen bg-background">
       <AppSidebar />
-      <div className="flex-1 ml-56 flex flex-col min-h-screen">
+      <div className="flex-1 ml-0 md:ml-64 flex flex-col min-h-screen">
 
         <header className="border-b bg-card sticky top-0 z-30">
           <div className="px-6 py-4 flex items-center gap-4">
@@ -202,28 +210,92 @@ export default function TransparenciaDetallePage({ params }: { params: Promise<{
                       </FormItem>
                     )} />
 
-                    <FormField control={form.control} name="direccion" render={({ field }) => (
+                    <FormField control={form.control} name="plazoInterno" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Dirección *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            {DIRECCIONES.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
+                        <FormLabel>Plazo Interno</FormLabel>
+                        <FormControl>
+                          <Input type="date" value={toDateValue(field.value)} onChange={e => field.onChange(fromDateValue(e.target.value))} />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
 
-                    <FormField control={form.control} name="categoria" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Categoría</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Sin categoría" /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            {CATEGORIAS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
+                    <FormField control={form.control} name="direccion" render={() => (
+                      <FormItem className="md:col-span-2">
+                        <div className="mb-2">
+                          <FormLabel>Dirección *</FormLabel>
+                          <CardDescription>Seleccione una o más direcciones.</CardDescription>
+                        </div>
+                        <div className="flex flex-wrap gap-6 pt-2">
+                          {DIRECCIONES.map((d) => (
+                            <FormField
+                              key={d}
+                              control={form.control}
+                              name="direccion"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                  <FormControl>
+                                    <input
+                                      type="checkbox"
+                                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                                      checked={field.value?.includes(d as any)}
+                                      onChange={(e) => {
+                                        const current = field.value || []
+                                        const updated = e.target.checked
+                                          ? [...current, d]
+                                          : current.filter((val: string) => val !== d)
+                                        field.onChange(updated)
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="font-normal cursor-pointer text-sm">
+                                    {d}
+                                  </FormLabel>
+                                </FormItem>
+                              )}
+                            />
+                          ))}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+
+                    <FormField control={form.control} name="categoria" render={() => (
+                      <FormItem className="md:col-span-2">
+                        <div className="mb-2">
+                          <FormLabel>Categoría</FormLabel>
+                          <CardDescription>Seleccione una o más categorías opcionalmente.</CardDescription>
+                        </div>
+                        <div className="flex flex-wrap gap-6 pt-2">
+                          {CATEGORIAS.map((c) => (
+                            <FormField
+                              key={c}
+                              control={form.control}
+                              name="categoria"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                  <FormControl>
+                                    <input
+                                      type="checkbox"
+                                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                                      checked={field.value?.includes(c)}
+                                      onChange={(e) => {
+                                        const current = field.value || []
+                                        const updated = e.target.checked
+                                          ? [...current, c]
+                                          : current.filter((val: string) => val !== c)
+                                        field.onChange(updated.length > 0 ? updated : [])
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="font-normal cursor-pointer text-sm">
+                                    {c}
+                                  </FormLabel>
+                                </FormItem>
+                              )}
+                            />
+                          ))}
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )} />

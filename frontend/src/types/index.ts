@@ -155,13 +155,14 @@ export interface TransparenciaRegistro {
   numeroExpediente: string
   fechaIngreso: string | Date
   documentoIngreso: string | null
-  direccion: 'DPNNA' | 'DSLD' | 'DA' | 'DPE' | 'DGNNA'
+  direccion: string[]
   estado: EstadoTransparencia
   fechaAtencion: string | Date | null
   asunto: string
   documentoRespuesta: string | null
-  categoria: string | null
+  categoria: string[] | null
   plazoVencimiento: string | Date | null
+  plazoInterno: string | Date | null
   observaciones: string | null
   creadoPor: string | null
   createdAt: string | Date

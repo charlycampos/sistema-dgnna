@@ -5,7 +5,8 @@ import { useMe } from '@/lib/use-me'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Download, AlertTriangle, ChevronDown, ChevronRight, LayoutList, Globe } from 'lucide-react'
+import { Download, AlertTriangle, ChevronDown, ChevronRight, LayoutList, Globe, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 
 const MESES_NOMBRES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SET','OCT','NOV','DIC']
 
@@ -208,7 +209,7 @@ function TablaAoUpe({ ao, idx, mesNombre, anio }: { ao: AoUpe; idx: number; mesN
 
   return (
     <div className="overflow-x-auto rounded border border-gray-300 shadow-sm">
-      <table className="text-xs border-collapse w-full">
+      <table className="text-xs border-collapse w-max">
         <thead>
           {/* Fila 1 */}
           <tr>
@@ -408,9 +409,16 @@ export default function DgnnaPage() {
   return (
     <div className="flex flex-col gap-6 p-6 max-w-full">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Ejecucion POI DGNNA</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Seguimiento de actividades operativas por direccion</p>
+        <div className="flex items-center gap-3">
+          <Link href="/poi-pp117/dashboard">
+            <Button variant="outline" size="icon" className="h-8 w-8 text-gray-600 hover:text-gray-900 shrink-0">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Ejecucion POI DGNNA</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Seguimiento de actividades operativas por direccion</p>
+          </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">

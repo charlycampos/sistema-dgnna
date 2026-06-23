@@ -29,6 +29,8 @@ def _out(r) -> dict:
         "horaInicio": r.horaInicio, "horaFin": r.horaFin,
         "categoria": r.categoria, "estado": r.estado,
         "descripcion": r.descripcion, "creadoPor": r.creadoPor,
+        "direccionResponsable": r.direccionResponsable,
+        "nombreResponsable": r.nombreResponsable,
         "createdAt": r.createdAt, "updatedAt": r.updatedAt,
     }
 

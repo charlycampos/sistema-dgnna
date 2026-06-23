@@ -30,6 +30,7 @@ const MODULOS_DISPONIBLES = [
   { id: 'sala-reuniones',  label: 'Sala de Reuniones' },
   { id: 'transparencia',   label: 'Módulo Ley de Transparencia' },
   { id: 'fortalecimiento', label: 'Módulo Fortalecimiento de Capacidades' },
+  { id: 'poi-pp117',       label: 'Módulo POI - PP117' },
 ]
 
 const ROL_MODULO_OPTIONS = [

@@ -57,19 +57,29 @@ def get_usuario(token: str = Depends(oauth2_scheme)) -> str:
         return ""
 
 
+def _split(v) -> list:
+    """Convierte una cadena separada por comas en lista (vacío -> [])."""
+    if not v:
+        return []
+    if isinstance(v, list):
+        return v
+    return [s.strip() for s in v.split(",") if s.strip()]
+
+
 def _out(r: TransparenciaModel) -> dict:
     return {
         "id":                 r.id,
         "numeroExpediente":   r.numeroExpediente,
         "fechaIngreso":       r.fechaIngreso,
         "documentoIngreso":   r.documentoIngreso,
-        "direccion":          r.direccion,
+        "direccion":          _split(r.direccion),
         "estado":             r.estado,
         "fechaAtencion":      r.fechaAtencion,
         "asunto":             r.asunto,
         "documentoRespuesta": r.documentoRespuesta,
-        "categoria":          r.categoria,
+        "categoria":          _split(r.categoria),
         "plazoVencimiento":   r.plazoVencimiento,
+        "plazoInterno":       r.plazoInterno,
         "observaciones":      r.observaciones,
         "creadoPor":          r.creadoPor,
         "createdAt":          r.createdAt,
@@ -175,13 +185,14 @@ def crear(
             numeroExpediente=   body.numeroExpediente,
             fechaIngreso=       body.fechaIngreso,
             documentoIngreso=   body.documentoIngreso,
-            direccion=          body.direccion,
+            direccion=          ", ".join(body.direccion) if body.direccion else "",
             estado=             body.estado or "Pendiente",
             fechaAtencion=      body.fechaAtencion,
             asunto=             body.asunto,
             documentoRespuesta= body.documentoRespuesta,
-            categoria=          body.categoria,
+            categoria=          ", ".join(body.categoria) if body.categoria else None,
             plazoVencimiento=   plazo,
+            plazoInterno=       body.plazoInterno,
             observaciones=      body.observaciones,
             creadoPor=          usuario or body.creadoPor,
         )
@@ -210,6 +221,8 @@ def actualizar(
         if "fechaIngreso" in datos and datos["fechaIngreso"]:
             datos["plazoVencimiento"] = calcular_plazo_habiles(datos["fechaIngreso"], 10)
         for campo, valor in datos.items():
+            if campo in ("direccion", "categoria") and isinstance(valor, list):
+                valor = ", ".join(valor) if valor else ("" if campo == "direccion" else None)
             setattr(r, campo, valor)
         db.commit()
         db.refresh(r)

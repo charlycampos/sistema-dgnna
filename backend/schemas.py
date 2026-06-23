@@ -5,7 +5,7 @@ Schemas Pydantic para validación de requests y serialización de responses.
 from __future__ import annotations
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 
 
 # ─────────────────────────────────────────────
@@ -682,12 +682,13 @@ class TransparenciaCreate(BaseModel):
     numeroExpediente:   str
     fechaIngreso:       datetime
     documentoIngreso:   Optional[str] = None
-    direccion:          str           # DPNNA | DSLD | DA | DPE | DGNNA
+    direccion:          List[str]
     estado:             str = "Pendiente"
     fechaAtencion:      Optional[datetime] = None
     asunto:             str
     documentoRespuesta: Optional[str] = None
-    categoria:          Optional[str] = None
+    categoria:          Optional[List[str]] = None
+    plazoInterno:       Optional[datetime] = None
     observaciones:      Optional[str] = None
     creadoPor:          Optional[str] = None
 
@@ -695,12 +696,13 @@ class TransparenciaUpdate(BaseModel):
     numeroExpediente:   Optional[str] = None
     fechaIngreso:       Optional[datetime] = None
     documentoIngreso:   Optional[str] = None
-    direccion:          Optional[str] = None
+    direccion:          Optional[List[str]] = None
     estado:             Optional[str] = None
     fechaAtencion:      Optional[datetime] = None
     asunto:             Optional[str] = None
     documentoRespuesta: Optional[str] = None
-    categoria:          Optional[str] = None
+    categoria:          Optional[List[str]] = None
+    plazoInterno:       Optional[datetime] = None
     observaciones:      Optional[str] = None
 
 class TransparenciaOut(BaseModel):
@@ -708,13 +710,14 @@ class TransparenciaOut(BaseModel):
     numeroExpediente:   str
     fechaIngreso:       datetime
     documentoIngreso:   Optional[str]
-    direccion:          str
+    direccion:          List[str]
     estado:             str
     fechaAtencion:      Optional[datetime]
     asunto:             str
     documentoRespuesta: Optional[str]
-    categoria:          Optional[str]
+    categoria:          Optional[List[str]]
     plazoVencimiento:   Optional[datetime]
+    plazoInterno:       Optional[datetime]
     observaciones:      Optional[str]
     creadoPor:          Optional[str]
     createdAt:          datetime
@@ -722,6 +725,12 @@ class TransparenciaOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+    @field_validator('direccion', 'categoria', mode='before')
+    def split_comma_separated(cls, v):
+        if isinstance(v, str):
+            return [d.strip() for d in v.split(',') if d.strip()]
+        return v
 
 class TransparenciaDashboardOut(BaseModel):
     total:           int

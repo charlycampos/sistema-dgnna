@@ -78,14 +78,13 @@ export const transparenciaSchema = z.object({
     numeroExpediente:   z.string().min(1, "El número de expediente es obligatorio"),
     fechaIngreso:       z.date({ message: "La fecha de ingreso es obligatoria" }),
     documentoIngreso:   z.string().optional().nullable(),
-    direccion:          z.enum(['DPNNA', 'DSLD', 'DA', 'DPE', 'DGNNA'], {
-                            message: "Seleccione una dirección válida"
-                        }),
+    direccion:          z.array(z.enum(['DPNNA', 'DSLD', 'DA', 'DPE', 'DGNNA'])).min(1, "Seleccione al menos una dirección"),
     estado:             z.enum(['Pendiente', 'En Proceso', 'Atendido']).default('Pendiente'),
     fechaAtencion:      z.date().optional().nullable(),
     asunto:             z.string().min(1, "El asunto es obligatorio"),
     documentoRespuesta: z.string().optional().nullable(),
-    categoria:          z.string().optional().nullable(),
+    categoria:          z.array(z.string()).optional().nullable(),
+    plazoInterno:       z.date().optional().nullable(),
     observaciones:      z.string().optional().nullable(),
 }).refine(data => {
     // Si está Atendido debe tener fecha de atención
