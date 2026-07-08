@@ -393,6 +393,7 @@ export default function ApelacionesPage() {
                                                 <th className="px-4 py-3 text-left text-sm font-semibold hidden lg:table-cell">Procedencia</th>
                                                 <th className="px-4 py-3 text-left text-sm font-semibold hidden lg:table-cell">Complejidad</th>
                                                 <th className="px-4 py-3 text-left text-sm font-semibold hidden md:table-cell">Abogado</th>
+                                                <th className="px-4 py-3 text-left text-sm font-semibold hidden lg:table-cell">Revisor</th>
                                                 <th className="px-4 py-3 text-left text-sm font-semibold w-[90px] md:w-auto">Estado</th>
                                                 <th className="px-4 py-3 text-left text-sm font-semibold w-[80px] md:w-auto">Acciones</th>
                                             </tr>
@@ -449,6 +450,7 @@ export default function ApelacionesPage() {
                                                             <td className="px-4 py-3 text-sm hidden lg:table-cell">{apelacion.procedencia}</td>
                                                             <td className="px-4 py-3 text-sm hidden lg:table-cell">{apelacion.complejidad?.nombre}</td>
                                                             <td className="px-4 py-3 text-sm hidden md:table-cell">{apelacion.abogado?.nombre}</td>
+                                                            <td className="px-4 py-3 text-sm hidden lg:table-cell">{apelacion.revisor?.nombre || '-'}</td>
                                                             <td className="px-4 py-3 text-sm">
                                                                 <Badge variant={getEstadoBadgeVariant(apelacion.estado)}>
                                                                     {apelacion.estado}
@@ -510,6 +512,10 @@ export default function ApelacionesPage() {
                                                                         <div>
                                                                             <span className="font-semibold text-[10px] text-muted-foreground uppercase tracking-wider block mb-0.5">Abogado Asignado:</span>
                                                                             <span className="text-xs">{apelacion.abogado?.nombre || 'No asignado'}</span>
+                                                                        </div>
+                                                                        <div>
+                                                                            <span className="font-semibold text-[10px] text-muted-foreground uppercase tracking-wider block mb-0.5">Revisor:</span>
+                                                                            <span className="text-xs">{apelacion.revisor?.nombre || 'No asignado'}</span>
                                                                         </div>
                                                                         {apelacion.procedencia && (
                                                                             <div>

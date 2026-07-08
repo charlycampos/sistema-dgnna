@@ -18,6 +18,8 @@ CREATE TABLE sala_db.reservas_sala (
     estado      VARCHAR2(20)  DEFAULT 'Programado',
     descripcion VARCHAR2(500),
     creadopor   VARCHAR2(200),
+    direccionresponsable VARCHAR2(100),
+    nombreresponsable    VARCHAR2(200),
     createdat   TIMESTAMP     DEFAULT SYSTIMESTAMP,
     updatedat   TIMESTAMP     DEFAULT SYSTIMESTAMP
 );

@@ -219,10 +219,10 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                 setTipoNna(loadedNnas[0].tipo)
             }
 
-            setAbogados(abogadosData.filter((a: Abogado) => a.activo))
-            setComplejidades(complejidadesData.filter((c: ComplejidadJuridica) => c.activo))
-            setProcedencias(procedenciasData.filter((p: Procedencia) => p.activo))
-            setRevisores(Array.isArray(revisoresData) ? revisoresData.filter((r: Revisor) => r.activo) : [])
+            setAbogados(abogadosData.filter((a: Abogado) => a.activo || a.id === apelacionData.abogadoId))
+            setComplejidades(complejidadesData.filter((c: ComplejidadJuridica) => c.activo || c.id === apelacionData.complejidadId))
+            setProcedencias(procedenciasData.filter((p: Procedencia) => p.activo || p.nombre === apelacionData.procedencia))
+            setRevisores(Array.isArray(revisoresData) ? revisoresData.filter((r: Revisor) => r.activo || r.id === apelacionData.revisorId) : [])
             setCargaRevisores(Array.isArray(revisorCargaData) ? revisorCargaData : [])
 
             // Cargar datos en el formulario

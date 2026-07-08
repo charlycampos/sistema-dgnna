@@ -59,6 +59,8 @@ def crear_reserva(
             categoria   = body.categoria.strip(),
             estado      = body.estado,
             descripcion = body.descripcion,
+            direccionResponsable = body.direccionResponsable,
+            nombreResponsable    = body.nombreResponsable,
             creadoPor   = body.creadoPor or current_user.get("nombre", ""),
         )
         db.add(reserva)
@@ -109,6 +111,8 @@ def actualizar_reserva(
         if body.categoria is not None:   reserva.categoria   = body.categoria.strip()
         if body.estado is not None:      reserva.estado      = body.estado
         if body.descripcion is not None: reserva.descripcion = body.descripcion
+        if body.direccionResponsable is not None: reserva.direccionResponsable = body.direccionResponsable
+        if body.nombreResponsable is not None:    reserva.nombreResponsable    = body.nombreResponsable
 
         db.commit()
         db.refresh(reserva)

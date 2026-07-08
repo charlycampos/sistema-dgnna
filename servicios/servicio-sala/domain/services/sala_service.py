@@ -27,6 +27,8 @@ class SalaService:
             estado      = datos.get("estado", "Programado"),
             descripcion = datos.get("descripcion"),
             creadoPor   = datos.get("creadoPor") or usuario,
+            direccionResponsable = datos.get("direccionResponsable"),
+            nombreResponsable    = datos.get("nombreResponsable"),
         )
         self._verificar_conflictos(reserva)
         return self._sala.guardar(reserva)
@@ -42,6 +44,8 @@ class SalaService:
         if datos.get("categoria")  is not None: reserva.categoria  = datos["categoria"].strip()
         if datos.get("estado")     is not None: reserva.estado     = datos["estado"]
         if datos.get("descripcion")is not None: reserva.descripcion= datos["descripcion"]
+        if datos.get("direccionResponsable") is not None: reserva.direccionResponsable = datos["direccionResponsable"]
+        if datos.get("nombreResponsable")    is not None: reserva.nombreResponsable    = datos["nombreResponsable"]
 
         from datetime import datetime
         reserva.updatedAt = datetime.utcnow()

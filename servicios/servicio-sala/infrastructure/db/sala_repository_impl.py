@@ -37,6 +37,8 @@ class SalaRepositoryImpl(SalaRepository):
             horaInicio=reserva.horaInicio, horaFin=reserva.horaFin,
             categoria=reserva.categoria, estado=reserva.estado,
             descripcion=reserva.descripcion, creadoPor=reserva.creadoPor,
+            direccionResponsable=reserva.direccionResponsable,
+            nombreResponsable=reserva.nombreResponsable,
         )
         self._db.add(model)
         try:
@@ -56,6 +58,8 @@ class SalaRepositoryImpl(SalaRepository):
         model.categoria   = reserva.categoria
         model.estado      = reserva.estado
         model.descripcion = reserva.descripcion
+        model.direccionResponsable = reserva.direccionResponsable
+        model.nombreResponsable    = reserva.nombreResponsable
         model.updatedAt   = datetime.utcnow()
         try:
             self._db.commit()
@@ -79,5 +83,7 @@ class SalaRepositoryImpl(SalaRepository):
             horaInicio=m.horaInicio, horaFin=m.horaFin,
             categoria=m.categoria, estado=m.estado,
             descripcion=m.descripcion, creadoPor=m.creadoPor,
+            direccionResponsable=m.direccionResponsable,
+            nombreResponsable=m.nombreResponsable,
             createdAt=m.createdAt, updatedAt=m.updatedAt,
         )

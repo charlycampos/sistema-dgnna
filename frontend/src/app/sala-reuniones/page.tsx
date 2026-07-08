@@ -840,6 +840,11 @@ export default function SalaReunionesPage() {
                                       <div style={{ fontSize: 10, color: TX3, marginTop: 1, display: 'flex', alignItems: 'center', gap: 3 }}>
                                         <Clock size={9} />{ev.horaInicio}–{ev.horaFin}
                                       </div>
+                                      {ev.nombreResponsable && (
+                                        <div style={{ fontSize: 10, color: TX3, marginTop: 1, display: 'flex', alignItems: 'center', gap: 3, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                                          <User size={9} />{ev.nombreResponsable}
+                                        </div>
+                                      )}
                                     </div>
                                   )
                                 })}

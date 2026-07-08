@@ -240,6 +240,8 @@ class ReservaSalaCreate(BaseModel):
     categoria: str
     estado: str = "Programado"
     descripcion: Optional[str] = None
+    direccionResponsable: Optional[str] = None
+    nombreResponsable: Optional[str] = None
     creadoPor: Optional[str] = None
 
 class ReservaSalaUpdate(BaseModel):
@@ -250,6 +252,8 @@ class ReservaSalaUpdate(BaseModel):
     categoria: Optional[str] = None
     estado: Optional[str] = None
     descripcion: Optional[str] = None
+    direccionResponsable: Optional[str] = None
+    nombreResponsable: Optional[str] = None
 
 class ReservaSalaOut(BaseModel):
     id: str
@@ -260,6 +264,8 @@ class ReservaSalaOut(BaseModel):
     categoria: str
     estado: str
     descripcion: Optional[str]
+    direccionResponsable: Optional[str] = None
+    nombreResponsable: Optional[str] = None
     creadoPor: Optional[str]
     createdAt: datetime
     updatedAt: datetime

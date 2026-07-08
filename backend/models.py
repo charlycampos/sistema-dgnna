@@ -140,6 +140,8 @@ class ReservaSala(Base):
     categoria   = Column(String(100), nullable=False)  # para asignar color
     estado      = Column(String(20), default="Programado")  # Programado | Realizado | Cancelado | Reprogramado
     descripcion = Column(String(500), nullable=True)
+    direccionResponsable = Column(String(200), nullable=True)  # dirección/área del responsable
+    nombreResponsable    = Column(String(200), nullable=True)  # nombre del responsable del evento
     creadoPor   = Column(String(200), nullable=True)   # nombre del usuario que registró
     createdAt   = Column(DateTime, default=datetime.utcnow)
     updatedAt   = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
