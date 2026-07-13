@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 
 const SECRET = new TextEncoder().encode(
-  process.env.SESSION_SECRET ?? 'dgnna-sistema-apelaciones-secret-2026'
+  process.env.SESSION_SECRET ?? 'dgnna-sistema-dgnna-secret-2026'
 )
 const COOKIE_NAME = 'dgnna_session'
 

@@ -12,9 +12,9 @@ import jwt as pyjwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
-SECRET_KEY   = os.getenv("SESSION_SECRET", "dgnna-sistema-apelaciones-secret-2026")
+SECRET_KEY   = os.getenv("SESSION_SECRET", "dgnna-sistema-dgnna-secret-2026")
 ALGORITHM    = "HS256"
-EXPIRE_HOURS = 8
+EXPIRE_MINUTES = 15  # sesión expira a los 15 min de inactividad (se renueva desde el frontend)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
@@ -33,7 +33,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 def create_token(data: dict) -> str:
     payload = data.copy()
-    payload["exp"] = datetime.utcnow() + timedelta(hours=EXPIRE_HOURS)
+    payload["exp"] = datetime.utcnow() + timedelta(minutes=EXPIRE_MINUTES)
     return pyjwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 

@@ -248,8 +248,12 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                 cargos: apelacionData.cargos || '',
                 observaciones: apelacionData.observaciones || '',
                 revisorId: apelacionData.revisorId || null,
-                fechaAsignacionRevisor: apelacionData.fechaRevisor
-                    ? new Date(apelacionData.fechaRevisor)
+                // Si ya tiene revisor asignado pero nunca se registró la fecha (datos
+                // antiguos/importados), se completa con la fecha actual para que el
+                // formulario sea válido sin obligar al usuario a tocar el campo
+                // deshabilitado "Fecha Asignación Revisor".
+                fechaAsignacionRevisor: apelacionData.revisorId
+                    ? (apelacionData.fechaRevisor ? new Date(apelacionData.fechaRevisor) : new Date())
                     : null,
             })
         } catch (error) {

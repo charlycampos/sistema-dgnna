@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { jwtVerify } from 'jose'
+import { jwtVerify, SignJWT } from 'jose'
 
 const SECRET = new TextEncoder().encode(
   process.env.SESSION_SECRET ?? 'dgnna-sistema-dgnna-secret-2026'
 )
 const COOKIE_NAME = 'dgnna_session'
+const SESSION_MINUTES = 15 // inactividad máxima antes de cerrar sesión
 
 // Rutas que NO requieren autenticación
 const RUTAS_PUBLICAS = ['/login']
@@ -41,8 +42,27 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    await jwtVerify(token, SECRET)
-    return NextResponse.next()
+    const { payload } = await jwtVerify(token, SECRET)
+
+    // Renovación deslizante: cada request válido re-emite el token
+    // con 15 min más de vida. Si el usuario deja de usar el sistema,
+    // la sesión expira sola a los 15 min.
+    const { exp: _exp, iat: _iat, ...datos } = payload
+    const nuevoToken = await new SignJWT(datos)
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime(`${SESSION_MINUTES}m`)
+      .sign(SECRET)
+
+    const response = NextResponse.next()
+    response.cookies.set(COOKIE_NAME, nuevoToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * SESSION_MINUTES,
+      path: '/',
+    })
+    return response
   } catch {
     // Token inválido o expirado → redirigir al login
     const url = request.nextUrl.clone()

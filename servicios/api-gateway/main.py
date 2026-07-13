@@ -25,9 +25,10 @@ SERVICES = {
     "proyectos-ley":   os.getenv("PROYECTOS_LEY_SERVICE_URL",   "http://localhost:8005"),
     "transparencia":   os.getenv("TRANSPARENCIA_SERVICE_URL",   "http://localhost:8006"),
     "poi-pp117":       os.getenv("POI_PP117_SERVICE_URL",       "http://localhost:8007"),
+    "mapa":            os.getenv("MAPA_SERVICE_URL",            "http://localhost:8008"),
 }
 
-SECRET_KEY = os.getenv("SESSION_SECRET", "auth-service-secret-2026")
+SECRET_KEY = os.getenv("SESSION_SECRET", "dgnna-sistema-dgnna-secret-2026")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 # ── Rutas públicas (sin autenticación) ───────────────────────────
@@ -52,6 +53,7 @@ ROUTE_MAP = [
     ("/api/proyectos-ley",  "proyectos-ley"),
     ("/api/transparencia",  "transparencia"),
     ("/api/poi-pp117",      "poi-pp117"),
+    ("/api/mapa",           "mapa"),
 ]
 
 app = FastAPI(

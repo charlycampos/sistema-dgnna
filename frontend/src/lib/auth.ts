@@ -8,7 +8,7 @@ import { jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 
 const SECRET = new TextEncoder().encode(
-  process.env.SESSION_SECRET ?? 'dgnna-sistema-apelaciones-secret-2026'
+  process.env.SESSION_SECRET ?? 'dgnna-sistema-dgnna-secret-2026'
 )
 export const COOKIE_NAME = 'dgnna_session'
 

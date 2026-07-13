@@ -444,6 +444,33 @@ export default function NuevaApelacionPage() {
         return todas;
     };
 
+    const ETIQUETAS_CAMPOS: Record<string, string> = {
+        numeroExpediente: 'Número de Expediente',
+        fechaIngreso: 'Fecha de Ingreso',
+        apelantes: 'Apelante(s)',
+        nnas: 'NNA / CAR',
+        procedencia: 'Procedencia',
+        documento: 'Documento',
+        asunto: 'Asunto',
+        folios: 'Folios',
+        complejidadId: 'Complejidad Jurídica',
+        abogadoId: 'Abogado Asignado (verifique que el panel de asignación haya cargado)',
+        fechaAsignacion: 'Fecha de Asignación',
+        estado: 'Estado',
+        numeroResolucion: 'Número de Resolución',
+        fechaAsignacionRevisor: 'Fecha de Asignación del Revisor',
+    }
+
+    const onInvalid = (errors: Record<string, any>) => {
+        const campos = Object.keys(errors).map(k => ETIQUETAS_CAMPOS[k] || k)
+        console.error('Formulario inválido, campos con error:', errors)
+        toast.error(
+            campos.length > 0
+                ? `No se pudo guardar. Revise: ${campos.join(', ')}`
+                : 'No se pudo guardar. Verifique el formulario.'
+        )
+    }
+
     const onSubmit = async (data: ApelacionFormValues) => {
         setPendingData(data)
 
@@ -712,7 +739,7 @@ export default function NuevaApelacionPage() {
                             </CardHeader>
                             <CardContent>
                                 <Form {...form}>
-                                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                                    <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-6">
 
                                         {/* Información Básica */}
                                         <div className="space-y-4">

@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server'
 
 const BACKEND_URL     = process.env.BACKEND_URL     ?? 'http://localhost:8000'
 const POI_SERVICE_URL = process.env.POI_SERVICE_URL ?? 'http://localhost:8007'
+const MAPA_SERVICE_URL = process.env.MAPA_SERVICE_URL ?? 'http://localhost:8008'
 const COOKIE_NAME = 'dgnna_session'
 
 /**
@@ -159,6 +160,29 @@ export async function proxyMultipartToPoiService(
   } catch (error) {
     console.error(`Error multipart POI [${path}]:`, error)
     return NextResponse.json({ error: 'Error de conexión con servicio POI' }, { status: 503 })
+  }
+}
+
+/**
+ * Proxy al microservicio Mapa Interactivo (puerto 8008).
+ */
+export async function proxyToMapaService(
+  path: string,
+  init: RequestInit = {}
+): Promise<NextResponse> {
+  try {
+    const token = await _getToken()
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(init.headers as Record<string, string> ?? {}),
+    }
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    const res = await fetch(`${MAPA_SERVICE_URL}${path}`, { ...init, headers })
+    const data = await res.json().catch(() => null)
+    return NextResponse.json(data ?? {}, { status: res.status })
+  } catch (error) {
+    console.error(`Error servicio Mapa [${path}]:`, error)
+    return NextResponse.json({ error: 'Error de conexión con servicio Mapa' }, { status: 503 })
   }
 }
 

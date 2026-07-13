@@ -11,9 +11,9 @@ import jwt as pyjwt
 
 from domain.ports.usuario_repository import UsuarioRepository
 
-SECRET_KEY   = os.getenv("SESSION_SECRET", "dgnna-auth-secret-2026")
+SECRET_KEY   = os.getenv("SESSION_SECRET", "dgnna-sistema-dgnna-secret-2026")
 ALGORITHM    = "HS256"
-EXPIRE_HOURS = 8
+EXPIRE_MINUTES = 15  # sesión expira a los 15 min de inactividad (se renueva desde el frontend)
 
 
 class AuthService:
@@ -72,5 +72,5 @@ class AuthService:
 
     def _crear_token(self, data: dict) -> str:
         payload = data.copy()
-        payload["exp"] = datetime.utcnow() + timedelta(hours=EXPIRE_HOURS)
+        payload["exp"] = datetime.utcnow() + timedelta(minutes=EXPIRE_MINUTES)
         return pyjwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
