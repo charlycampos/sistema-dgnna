@@ -10,7 +10,7 @@ import {
   Save, AlertCircle, Eye, User, Edit3, X,
   Check, ChevronRight, BarChart2,
   TrendingUp, LayoutGrid, ChevronDown, LogOut,
-  Calendar, AlertTriangle, UserCheck, Info, Lock, Plane, Users
+  Calendar, AlertTriangle, UserCheck, Info, Lock, Plane, Users, MinusCircle
 } from 'lucide-react'
 import { descargarExcelSustracion } from '@/lib/export-excel'
 import { toast } from 'sonner'
@@ -1192,22 +1192,113 @@ function TabPersonas({ caso, getVal, onChange, onRefresh }: { caso: Caso; getVal
 
 // ── PESTAÑA: EVALUACIÓN INICIAL (v2) ──────────────────────────────────
 function TabEvaluacion({ caso, onGuardarProceso }: { caso: Caso; onGuardarProceso: (p: ProcesoOperativo) => void }) {
-  const [proc, setProc] = useState<ProcesoOperativo>(() => caso.procesoOperativo || {
-    casoId: caso.id, faseOperativa: 'Evaluación', evaluacionResultado: 'Pendiente', requisitos: REQ_BASE,
+  const isSpanishCountry = useMemo(() => {
+    const hispanoHablantes = ['Argentina', 'Bolivia', 'Chile', 'Colombia', 'Costa Rica', 'Cuba', 'Ecuador', 'El Salvador', 'España', 'Guatemala', 'Honduras', 'México', 'Nicaragua', 'Panamá', 'Paraguay', 'Perú', 'República Dominicana', 'Uruguay', 'Venezuela'];
+    return hispanoHablantes.includes(caso.pais);
+  }, [caso.pais]);
+
+  const [proc, setProc] = useState<ProcesoOperativo>(() => {
+    const base = caso.procesoOperativo || {
+      casoId: caso.id, faseOperativa: 'Evaluación', evaluacionResultado: 'Pendiente', requisitos: REQ_BASE,
+    };
+    // Auto-detección: Si el país es de habla hispana y el requisito 7 está pendiente, preseleccionar 'No aplica'
+    if (isSpanishCountry && base.requisitos) {
+      base.requisitos = base.requisitos.map(r => (r.id === 'r7' && r.estado === 'Pendiente' ? { ...r, estado: 'No aplica' } : r));
+    }
+    return base;
   });
+
   useEffect(() => {
     if (caso.procesoOperativo) setProc(caso.procesoOperativo)
-  }, [caso.id, caso.procesoOperativo?.updatedAt])
+  }, [caso.id, caso.procesoOperativo?.updatedAt]);
+
+  // Cálculo automático del resultado según los requisitos
+  const calcularResultadoAuto = (reqs: RequisitoProceso[]) => {
+    const hayObservado = reqs.some(r => r.estado === 'Observado');
+    if (hayObservado) return 'Observada';
+    const hayPendiente = reqs.some(r => r.estado === 'Pendiente');
+    if (!hayPendiente) {
+      const todosNoAplica = reqs.every(r => r.estado === 'No aplica');
+      return todosNoAplica ? 'No corresponde' : 'Completa';
+    }
+    return 'Pendiente';
+  };
+
+  const actualizarRequisito = (id: string, nuevoEstado: RequisitoProceso['estado']) => {
+    const nuevosReqs = proc.requisitos.map(x => (x.id === id ? { ...x, estado: nuevoEstado } : x));
+    const autoRes = calcularResultadoAuto(nuevosReqs);
+    setProc(prev => ({
+      ...prev,
+      requisitos: nuevosReqs,
+      evaluacionResultado: autoRes !== 'Pendiente' ? autoRes : (prev.evaluacionResultado === 'Completa' || prev.evaluacionResultado === 'Observada' ? autoRes : prev.evaluacionResultado),
+    }));
+  };
+
+  const marcarTodosConformes = () => {
+    const nuevosReqs = proc.requisitos.map(r => ({
+      ...r,
+      estado: (isSpanishCountry && r.id === 'r7') ? 'No aplica' : ('Completo' as const),
+    }));
+    setProc(prev => ({
+      ...prev,
+      requisitos: nuevosReqs,
+      evaluacionResultado: 'Completa',
+    }));
+  };
+
   const completos = proc.requisitos.filter(r => r.estado === 'Completo').length;
+  const observados = proc.requisitos.filter(r => r.estado === 'Observado').length;
+
+  const resColor = proc.evaluacionResultado === 'Completa'
+    ? { bg: '#DCFCE7', border: '#16A34A', text: '#15803D' }
+    : proc.evaluacionResultado === 'Observada'
+    ? { bg: '#FEE2E2', border: '#DC2626', text: '#B91C1C' }
+    : proc.evaluacionResultado === 'No corresponde'
+    ? { bg: '#EEF2FF', border: '#6366F1', text: '#4338CA' }
+    : { bg: '#FFFFFF', border: BR, text: TX };
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }} className="main-scroll">
       <div style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, overflow: 'hidden' }}>
         <div style={{ padding: '12px 14px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 12, color: TX }}>
-          <div><b>Lista de verificación</b><span style={{ display: 'block', fontSize: 10, color: TX3, marginTop: 2 }}>{completos} de {proc.requisitos.length} atendidos</span></div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <select value={proc.evaluacionResultado || ''} onChange={e => setProc({ ...proc, evaluacionResultado: e.target.value })} style={{ padding: '6px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11, outline: 'none' }}>
-              <option value="">Pendiente de evaluación</option>{['Completa', 'Observada', 'No corresponde'].map(x => <option key={x}>{x}</option>)}
+          <div>
+            <b>Lista de verificación</b>
+            <span style={{ display: 'block', fontSize: 10, color: TX3, marginTop: 2 }}>
+              {completos} de {proc.requisitos.length} conformes{observados > 0 ? ` · ${observados} observado${observados > 1 ? 's' : ''}` : ''}
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              type="button"
+              onClick={marcarTodosConformes}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '6px 10px', borderRadius: 6,
+                border: '1px solid #BBF7D0', background: '#F0FDF4',
+                color: '#15803D', fontSize: 11, fontWeight: 700,
+                cursor: 'pointer'
+              }}
+              title="Marcar todos los requisitos como Conformes de 1 clic"
+            >
+              <Check size={13} strokeWidth={2.8} /> Todo conforme
+            </button>
+            <select
+              value={proc.evaluacionResultado || ''}
+              onChange={e => setProc({ ...proc, evaluacionResultado: e.target.value })}
+              style={{
+                padding: '6px 10px',
+                border: `1.5px solid ${resColor.border}`,
+                background: resColor.bg,
+                color: resColor.text,
+                borderRadius: 6,
+                fontSize: 11,
+                fontWeight: 700,
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="">Pendiente de evaluación</option>
+              {['Completa', 'Observada', 'No corresponde'].map(x => <option key={x} value={x}>{x}</option>)}
             </select>
             <button onClick={() => onGuardarProceso(proc)} style={{ padding: '6px 12px', border: 'none', borderRadius: 6, background: BL, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
               Guardar
@@ -1216,12 +1307,85 @@ function TabEvaluacion({ caso, onGuardarProceso }: { caso: Caso; onGuardarProces
         </div>
         <div>
           {proc.requisitos.map((r, i) => (
-            <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '36px minmax(0, 1fr) 170px', alignItems: 'center', gap: 10, padding: '10px 14px', borderTop: i ? `1px solid ${BR}` : 'none' }}>
-              <div style={{ width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: r.estado === 'Completo' ? '#DCFCE7' : '#F1F5F9', color: r.estado === 'Completo' ? '#15803D' : TX3, fontSize: 11, fontWeight: 700 }}>{r.estado === 'Completo' ? <Check size={12} /> : i + 1}</div>
+            <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '36px minmax(0, 1fr) 150px', alignItems: 'center', gap: 10, padding: '10px 14px', borderTop: i ? `1px solid ${BR}` : 'none' }}>
+              <div style={{
+                width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: r.estado === 'Completo' ? '#DCFCE7' : r.estado === 'Observado' ? '#FEE2E2' : r.estado === 'Pendiente' ? '#FEF3C7' : '#EEF2FF',
+                color: r.estado === 'Completo' ? '#15803D' : r.estado === 'Observado' ? '#B91C1C' : r.estado === 'Pendiente' ? '#B45309' : '#4338CA',
+                fontSize: 11, fontWeight: 700
+              }}>
+                {r.estado === 'Completo' ? <Check size={12} strokeWidth={3} /> : i + 1}
+              </div>
               <div style={{ fontSize: 12, fontWeight: 600, color: TX }}>{r.nombre}</div>
-              <select value={r.estado} onChange={e => setProc({ ...proc, requisitos: proc.requisitos.map(x => x.id === r.id ? { ...x, estado: e.target.value as any } : x) })} style={{ padding: '6px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11, outline: 'none' }}>
-                {['Pendiente', 'Completo', 'Observado', 'No aplica'].map(x => <option key={x}>{x}</option>)}
-              </select>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+                {/* Conforme (Verde) */}
+                <button
+                  type="button"
+                  title="Conforme"
+                  onClick={() => actualizarRequisito(r.id, 'Completo')}
+                  style={{
+                    width: 30, height: 30, borderRadius: 6,
+                    border: `1.5px solid ${r.estado === 'Completo' ? '#16A34A' : '#E2E8F0'}`,
+                    background: r.estado === 'Completo' ? '#DCFCE7' : '#FFFFFF',
+                    color: r.estado === 'Completo' ? '#15803D' : '#94A3B8',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <Check size={14} strokeWidth={2.8} />
+                </button>
+
+                {/* Observado (Rojo) */}
+                <button
+                  type="button"
+                  title="Observado"
+                  onClick={() => actualizarRequisito(r.id, 'Observado')}
+                  style={{
+                    width: 30, height: 30, borderRadius: 6,
+                    border: `1.5px solid ${r.estado === 'Observado' ? '#DC2626' : '#E2E8F0'}`,
+                    background: r.estado === 'Observado' ? '#FEE2E2' : '#FFFFFF',
+                    color: r.estado === 'Observado' ? '#B91C1C' : '#94A3B8',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <AlertTriangle size={13} strokeWidth={2.6} />
+                </button>
+
+                {/* Pendiente (Ámbar / Naranja) */}
+                <button
+                  type="button"
+                  title="Pendiente"
+                  onClick={() => actualizarRequisito(r.id, 'Pendiente')}
+                  style={{
+                    width: 30, height: 30, borderRadius: 6,
+                    border: `1.5px solid ${r.estado === 'Pendiente' ? '#D97706' : '#E2E8F0'}`,
+                    background: r.estado === 'Pendiente' ? '#FEF3C7' : '#FFFFFF',
+                    color: r.estado === 'Pendiente' ? '#B45309' : '#94A3B8',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <Clock size={13} strokeWidth={2.4} />
+                </button>
+
+                {/* No aplica (Azul Índigo) */}
+                <button
+                  type="button"
+                  title="No aplica"
+                  onClick={() => actualizarRequisito(r.id, 'No aplica')}
+                  style={{
+                    width: 30, height: 30, borderRadius: 6,
+                    border: `1.5px solid ${r.estado === 'No aplica' ? '#6366F1' : '#E2E8F0'}`,
+                    background: r.estado === 'No aplica' ? '#EEF2FF' : '#FFFFFF',
+                    color: r.estado === 'No aplica' ? '#4338CA' : '#94A3B8',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <MinusCircle size={13} strokeWidth={2.4} />
+                </button>
+              </div>
             </div>
           ))}
         </div>
