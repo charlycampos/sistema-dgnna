@@ -3,8 +3,8 @@
 /**
  * Cierre de sesión automático por inactividad.
  *
- * - A los 14 min sin actividad: muestra un aviso ("tu sesión expirará en 1 minuto").
- * - A los 15 min sin actividad: llama a /api/auth/logout y redirige a /login.
+ * - A los 29 min sin actividad: muestra un aviso ("tu sesión expirará en 1 minuto").
+ * - A los 30 min sin actividad: llama a /api/auth/logout y redirige a /login.
  *
  * La actividad (mouse, teclado, scroll, touch) reinicia los contadores.
  * Debe coincidir con SESSION_MINUTES del middleware.ts.
@@ -13,15 +13,13 @@ import { useEffect, useRef } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
-const IDLE_MINUTES = 15
+const IDLE_MINUTES = 480 // 8 horas de sesión activa (jornada laboral)
 const IDLE_MS = IDLE_MINUTES * 60 * 1000
-const WARN_MS = IDLE_MS - 60 * 1000 // aviso 1 min antes
-/* Mientras el usuario esté activo, renovar la cookie de sesión cada 5 min.
-   Sin esto, la cookie (15 min) puede expirar aunque el usuario esté usando
-   una página que no hace peticiones al servidor (ej. navegando el mapa). */
+const WARN_MS = IDLE_MS - 5 * 60 * 1000 // aviso 5 min antes
+/* Mientras el usuario esté activo, renovar la cookie de sesión cada 5 min. */
 const PING_MS = 5 * 60 * 1000
 
-const EVENTOS = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'] as const
+const EVENTOS = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'input', 'change'] as const
 
 export default function AutoLogout() {
   const pathname = usePathname()
@@ -35,6 +33,10 @@ export default function AutoLogout() {
     if (pathname === '/login') return
 
     const cerrarSesion = async () => {
+      if (toastId.current !== null) {
+        toast.dismiss(toastId.current)
+        toastId.current = null
+      }
       try {
         await fetch('/api/auth/logout', { method: 'POST' })
       } catch {
@@ -53,8 +55,17 @@ export default function AutoLogout() {
 
       warnTimer.current = setTimeout(() => {
         toastId.current = toast.warning(
-          'Tu sesión expirará en 1 minuto por inactividad',
-          { duration: 60_000 }
+          'Tu sesión se cerrará en 5 minutos por inactividad.',
+          {
+            duration: 60_000,
+            action: {
+              label: 'Seguir trabajando',
+              onClick: () => {
+                reiniciar()
+                fetch('/api/me').catch(() => {})
+              },
+            },
+          }
         )
       }, WARN_MS)
 
@@ -90,6 +101,10 @@ export default function AutoLogout() {
       EVENTOS.forEach(e => window.removeEventListener(e, onActividad))
       if (warnTimer.current) clearTimeout(warnTimer.current)
       if (logoutTimer.current) clearTimeout(logoutTimer.current)
+      if (toastId.current !== null) {
+        toast.dismiss(toastId.current)
+        toastId.current = null
+      }
       clearInterval(ping)
     }
   }, [pathname, router])

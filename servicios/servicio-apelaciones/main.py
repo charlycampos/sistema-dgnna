@@ -37,6 +37,7 @@ def run_migrations():
     import traceback
     migraciones = [
         "ALTER TABLE apelaciones ADD (revisorid VARCHAR2(36))",
+        "ALTER TABLE apelaciones ADD (fecharevisor TIMESTAMP)",
         "ALTER TABLE apelaciones MODIFY (apelante NULL)",
         "ALTER TABLE apelaciones MODIFY (nnacar NULL)",
     ]

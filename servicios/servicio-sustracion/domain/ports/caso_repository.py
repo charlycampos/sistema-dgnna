@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from domain.entities.caso_sustracion import CasoSustracion, BitacoraSustracion, HistorialJudicial
+from domain.entities.caso_sustracion import CasoSustracion, BitacoraSustracion, HistorialJudicial, NnaSustracion, ProcesoOperativoSustracion
 
 
 class CasoRepository(ABC):
@@ -22,6 +22,21 @@ class CasoRepository(ABC):
 
     @abstractmethod
     def eliminar(self, id: str) -> bool: ...
+
+    @abstractmethod
+    def agregar_nna(self, nna: NnaSustracion) -> NnaSustracion: ...
+
+    @abstractmethod
+    def actualizar_nna(self, nna: NnaSustracion) -> Optional[NnaSustracion]: ...
+
+    @abstractmethod
+    def eliminar_nna(self, caso_id: str, nna_id: str) -> bool: ...
+
+    @abstractmethod
+    def obtener_proceso(self, caso_id: str) -> Optional[ProcesoOperativoSustracion]: ...
+
+    @abstractmethod
+    def guardar_proceso(self, proceso: ProcesoOperativoSustracion) -> ProcesoOperativoSustracion: ...
 
     # Bitácora
     @abstractmethod

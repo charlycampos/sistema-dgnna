@@ -32,6 +32,7 @@ const MODULOS_DISPONIBLES = [
   { id: 'fortalecimiento', label: 'Módulo Fortalecimiento de Capacidades' },
   { id: 'poi-pp117',       label: 'Módulo POI - PP117' },
   { id: 'mapa',            label: 'Módulo Mapa de Cobertura de Servicios' },
+  { id: 'prevenir-proteger', label: 'Módulo Prevenir para Proteger' },
 ]
 
 const ROL_MODULO_OPTIONS = [

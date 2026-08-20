@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 import uuid
 
 
@@ -26,12 +26,61 @@ class HistorialJudicial:
 
 
 @dataclass
+class NnaSustracion:
+    casoId: str
+    nombres: str
+    primerApellido: str
+    segundoApellido: Optional[str] = None
+    sexo: Optional[str] = None
+    fechaNacimiento: Optional[str] = None
+    edad: Optional[str] = None
+    tipoEdad: Optional[str] = None
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    createdAt: datetime = field(default_factory=datetime.utcnow)
+
+
+@dataclass
+class ProcesoOperativoSustracion:
+    casoId: str
+    faseOperativa: str = "Evaluación"
+    evaluacionResultado: Optional[str] = None
+    requisitos: List[Dict[str, Any]] = field(default_factory=list)
+    fechaObservacion: Optional[str] = None
+    fechaNotificacion: Optional[str] = None
+    fechaLimiteSubsanacion: Optional[str] = None
+    ampliacionSubsanacion: Optional[str] = None
+    fechaRespuestaSubsanacion: Optional[str] = None
+    resultadoSubsanacion: Optional[str] = None
+    detalleSubsanacion: Optional[str] = None
+    destinatarioGestion: Optional[str] = None
+    tipoComunicacion: Optional[str] = None
+    fechaEnvio: Optional[str] = None
+    referenciaSgd: Optional[str] = None
+    respuestaEsperada: Optional[str] = None
+    proximaAccion: Optional[str] = None
+    fechaLimite: Optional[str] = None
+    respuestaRecibida: Optional[str] = None
+    estadoCooperacion: Optional[str] = None
+    estadoRetornoVoluntario: Optional[str] = None
+    propuestaRetorno: Optional[str] = None
+    fechaPrevistaRetorno: Optional[str] = None
+    compromisosRetorno: Optional[str] = None
+    fechaAcuerdo: Optional[str] = None
+    fechaLimitePasajes: Optional[str] = None
+    pasajesRecibidos: Optional[str] = None
+    fechaRetornoEfectivo: Optional[str] = None
+    updatedAt: datetime = field(default_factory=datetime.utcnow)
+
+
+@dataclass
 class CasoSustracion:
     codigo:      str
-    nnaNombre:   str
     pais:        str
     fechaIngreso: str
     # NNA
+    nnaNombres:   Optional[str] = None
+    nnaPrimerApellido: Optional[str] = None
+    nnaSegundoApellido: Optional[str] = None
     nnaSexo:     Optional[str] = None
     nnaEdad:     Optional[str] = None
     nnaTipoEdad: Optional[str] = None
@@ -77,6 +126,8 @@ class CasoSustracion:
     updatedAt:     datetime = field(default_factory=datetime.utcnow)
     bitacora:          List[BitacoraSustracion] = field(default_factory=list)
     historialJudicial: List[HistorialJudicial]  = field(default_factory=list)
+    nna:               List[NnaSustracion] = field(default_factory=list)
+    procesoOperativo:  Optional[ProcesoOperativoSustracion] = None
 
     def actualizar_estado_judicial(self) -> None:
         """Regla de negocio: el estado judicial es la etapa más reciente del historial."""

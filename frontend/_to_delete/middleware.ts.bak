@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { jwtVerify } from 'jose'
+import { jwtVerify, SignJWT } from 'jose'
 
 const SECRET = new TextEncoder().encode(
   process.env.SESSION_SECRET ?? 'dgnna-sistema-dgnna-secret-2026'
 )
 const COOKIE_NAME = 'dgnna_session'
+const MAX_AGE = 60 * 60 * 8 // 8 horas de sesión activa (jornada laboral)
 
 // Rutas que NO requieren autenticación
 const PUBLIC_PATHS = ['/login', '/api/auth/login']
@@ -36,17 +37,49 @@ export async function middleware(request: NextRequest) {
 
   // Verificar sesión para rutas protegidas
   const token = request.cookies.get(COOKIE_NAME)?.value
+  const esApi = pathname.startsWith('/api/')
 
   if (!token) {
+    // Las rutas API devuelven 401 (JSON), no una redirección a HTML
+    if (esApi) {
+      return NextResponse.json({ error: 'Sesión expirada' }, { status: 401 })
+    }
     const loginUrl = new URL('/login', request.url)
     return NextResponse.redirect(loginUrl)
   }
 
   try {
-    await jwtVerify(token, SECRET)
-    return NextResponse.next()
+    const { payload } = await jwtVerify(token, SECRET)
+    const response = NextResponse.next()
+
+    // Renovación deslizante: cada request con sesión válida extiende la
+    // vigencia a 30 min más. Solo re-firmamos si queda menos de la mitad,
+    // para no firmar un token nuevo en cada request.
+    const ahora = Math.floor(Date.now() / 1000)
+    const restante = (payload.exp ?? 0) - ahora
+    if (restante < MAX_AGE / 2) {
+      const { exp: _exp, iat: _iat, ...datos } = payload
+      const nuevoToken = await new SignJWT(datos)
+        .setProtectedHeader({ alg: 'HS256' })
+        .setIssuedAt()
+        .setExpirationTime(`${MAX_AGE}s`)
+        .sign(SECRET)
+      response.cookies.set(COOKIE_NAME, nuevoToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: MAX_AGE,
+        path: '/',
+      })
+    }
+    return response
   } catch {
     // Token expirado o inválido
+    if (esApi) {
+      const response = NextResponse.json({ error: 'Sesión expirada' }, { status: 401 })
+      response.cookies.delete(COOKIE_NAME)
+      return response
+    }
     const loginUrl = new URL('/login', request.url)
     const response = NextResponse.redirect(loginUrl)
     response.cookies.delete(COOKIE_NAME)

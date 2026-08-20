@@ -147,43 +147,47 @@ class ReservaSala(Base):
     updatedAt   = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+SU_SCHEMA = "SUSTRACION_DB"
+
+
 class CasoSustracion(Base):
     __tablename__ = "casos_sustracion"
+    __table_args__ = {"schema": SU_SCHEMA}
 
-    id                   = Column("ID", String(36), primary_key=True, default=new_id)
-    codigo               = Column("CODIGO", String(20), nullable=False, unique=True)   # HOJA_TRAMITE
+    id                   = Column("id", String(36), primary_key=True, default=new_id)
+    codigo               = Column("codigo", String(20), nullable=False, unique=True)   # HOJA_TRAMITE
     # ── NNA ──────────────────────────────────────────────────────────
-    nnaNombre            = Column("nnaNombre", String(300), nullable=False)  # NOMBRES + APELLIDOS
+    nnaNombre            = Column("nnanombre", String(300), nullable=True)  # NOMBRES + APELLIDOS
     nnaSexo              = Column("nnasexo", String(10), nullable=True)    # Hombre | Mujer
     nnaEdad              = Column("nnaedad", String(10), nullable=True)    # valor numérico
     nnaTipoEdad          = Column("nnatipoedad", String(10), nullable=True)    # Años | Meses | Días
-    nnaFechaNac          = Column("nnaFechaNac", String(10), nullable=True)    # YYYY-MM-DD (opcional)
+    nnaFechaNac          = Column("nnafechanac", String(10), nullable=True)    # YYYY-MM-DD (opcional)
     # ── Trámite ──────────────────────────────────────────────────────
-    pais                 = Column("PAIS", String(100), nullable=False)  # PAIS_CONTRAPARTE
+    pais                 = Column("pais", String(100), nullable=False)  # PAIS_CONTRAPARTE
     etapa                = Column("etapa", String(20), nullable=True)    # Administrativo | Judicial
     tipoSolicitud        = Column("tiposolicitud", String(50), nullable=True)    # Restitución | Régimen de Visitas
     acPeru               = Column("acperu", String(20), nullable=True)    # Requirente | Requerida
-    fechaIngreso         = Column("fechaIngreso", String(10), nullable=False)   # YYYY-MM-DD
-    fechaSalida          = Column("fechaSalida", String(10), nullable=True)    # YYYY-MM-DD
+    fechaIngreso         = Column("fechaingreso", String(10), nullable=False)   # YYYY-MM-DD
+    fechaSalida          = Column("fechasalida", String(10), nullable=True)    # YYYY-MM-DD
     # ── Solicitante ──────────────────────────────────────────────────
-    solicitanteNombre    = Column("solicitanteNombre", String(300), nullable=True)
+    solicitanteNombre    = Column("solicitantenombre", String(300), nullable=True)
     solicitanteSexo      = Column("solicitantesexo", String(10), nullable=True)    # Hombre | Mujer
-    solicitanteTelefono  = Column("solicitanteTelefono", String(50), nullable=True)
+    solicitanteTelefono  = Column("solicitantetelefono", String(50), nullable=True)
     solicitanteCorreo    = Column("solicitantecorreo", String(200), nullable=True)
-    solicitanteDomicilio = Column("solicitanteDomicilio", String(500), nullable=True)
+    solicitanteDomicilio = Column("solicitantedomicilio", String(500), nullable=True)
     # ── Requerido ────────────────────────────────────────────────────
-    requeridoNombre      = Column("requeridoNombre", String(300), nullable=True)
+    requeridoNombre      = Column("requeridombre", String(300), nullable=True)
     requeridoSexo        = Column("requeridosexo", String(10), nullable=True)    # Hombre | Mujer
     requeridoTelefono    = Column("requeridotelefono", String(50), nullable=True)
     requeridoCorreo      = Column("requeridocorreo", String(200), nullable=True)
-    requeridoDomicilio   = Column("requeridoDomicilio", String(500), nullable=True)
+    requeridoDomicilio   = Column("requeridodomicilio", String(500), nullable=True)
     # ── Gestión y seguimiento ─────────────────────────────────────────
-    profesional          = Column("PROFESIONAL", String(100), nullable=True)   # EMMA | JANNY | CECILIA
-    estado               = Column("ESTADO", String(20), default="Tramite") # Tramite | Pendiente | Archivado
+    profesional          = Column("profesional", String(100), nullable=True)   # EMMA | JANNY | CECILIA
+    estado               = Column("estado", String(20), default="Tramite") # Tramite | Pendiente | Archivado
     fechaEntrevista      = Column("fechaentrevista", String(10), nullable=True)    # YYYY-MM-DD
     resultadoEntrevista  = Column("resultadoentrevista", String(20), nullable=True)    # Favorable | Desfavorable | Pendiente | No aplica
     # ── Proceso judicial ─────────────────────────────────────────────
-    estadoJudicial       = Column("estadoJudicial", String(100), nullable=True)   # Sin demanda | ... | Ejecución
+    estadoJudicial       = Column("estadojudicial", String(100), nullable=True)   # Sin demanda | ... | Ejecución
     fechaDemanda         = Column("fechademanda", String(10), nullable=True)    # YYYY-MM-DD
     numExpedienteJudicial= Column("numexpedientejudicial", String(100), nullable=True)
     juzgado              = Column("juzgado", String(300), nullable=True)
@@ -191,13 +195,13 @@ class CasoSustracion(Base):
     sentencia2da         = Column("sentencia2da", String(300), nullable=True)
     casacion             = Column("casacion", String(300), nullable=True)
     # ── Cierre ───────────────────────────────────────────────────────
-    motivoCierre         = Column("motivoCierre", String(200), nullable=True)
+    motivoCierre         = Column("motivocierre", String(200), nullable=True)
     retorno              = Column("retorno", String(20), nullable=True)    # SI | NO | Pendiente | No aplica
     # ── General ──────────────────────────────────────────────────────
-    observaciones        = Column("OBSERVACIONES", String(1000), nullable=True)
-    creadoPor            = Column("creadoPor", String(200), nullable=True)
-    createdAt            = Column("createdAt", DateTime, default=datetime.utcnow)
-    updatedAt            = Column("updatedAt", DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    observaciones        = Column("observaciones", String(1000), nullable=True)
+    creadoPor            = Column("creadopor", String(200), nullable=True)
+    createdAt            = Column("createdat", DateTime, default=datetime.utcnow)
+    updatedAt            = Column("updatedat", DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     bitacora = relationship("BitacoraSustracion", back_populates="caso",
                             cascade="all, delete-orphan",
@@ -210,27 +214,29 @@ class CasoSustracion(Base):
 
 class BitacoraSustracion(Base):
     __tablename__ = "bitacora_sustracion"
+    __table_args__ = {"schema": SU_SCHEMA}
 
     id        = Column("id", String(36), primary_key=True, default=new_id)
-    casoId    = Column("casoId", String(36), ForeignKey("casos_sustracion.ID", ondelete="CASCADE"), nullable=False)
+    casoId    = Column("casoid", String(36), ForeignKey(f"{SU_SCHEMA}.casos_sustracion.id", ondelete="CASCADE"), nullable=False)
     fecha     = Column("fecha", String(10), nullable=False)    # YYYY-MM-DD
     texto     = Column("texto", String(2000), nullable=False)
-    creadoPor = Column("creadoPor", String(200), nullable=True)
-    createdAt = Column("createdAt", DateTime, default=datetime.utcnow)
+    creadoPor = Column("creadopor", String(200), nullable=True)
+    createdAt = Column("createdat", DateTime, default=datetime.utcnow)
 
     caso = relationship("CasoSustracion", back_populates="bitacora")
 
 
 class HistorialJudicial(Base):
     __tablename__ = "historial_judicial"
+    __table_args__ = {"schema": SU_SCHEMA}
 
     id          = Column("id", String(36), primary_key=True, default=new_id)
-    casoId      = Column("casoId", String(36), ForeignKey("casos_sustracion.ID", ondelete="CASCADE"), nullable=False)
+    casoId      = Column("casoid", String(36), ForeignKey(f"{SU_SCHEMA}.casos_sustracion.id", ondelete="CASCADE"), nullable=False)
     etapa       = Column("etapa", String(100), nullable=False)   # etapa del proceso
     fecha       = Column("fecha", String(10), nullable=False)    # YYYY-MM-DD
     descripcion = Column("descripcion", String(2000), nullable=True)
-    creadoPor   = Column("creadoPor", String(200), nullable=True)
-    createdAt   = Column("createdAt", DateTime, default=datetime.utcnow)
+    creadoPor   = Column("creadopor", String(200), nullable=True)
+    createdAt   = Column("createdat", DateTime, default=datetime.utcnow)
 
     caso = relationship("CasoSustracion", back_populates="historialJudicial")
 

@@ -439,8 +439,8 @@ export default function MapaCobertura() {
   const verInstitucion = useCallback(async (id: string) => {
     try {
       const res = await fetch(`/api/mapa/instituciones/${id}`)
-      // Sesión expirada: el middleware redirige a /login (el fetch lo sigue)
-      if (res.redirected && res.url.includes('/login')) {
+      // Sesión expirada: el middleware devuelve 401 (o redirige a /login)
+      if (res.status === 401 || (res.redirected && res.url.includes('/login'))) {
         toast.error('Tu sesión expiró. Vuelve a iniciar sesión.')
         window.location.href = '/login'
         return

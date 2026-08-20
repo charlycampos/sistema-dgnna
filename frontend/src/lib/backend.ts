@@ -8,6 +8,7 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
 const BACKEND_URL     = process.env.BACKEND_URL     ?? 'http://localhost:8000'
+const SUSTRACCION_SERVICE_URL = process.env.SUSTRACCION_SERVICE_URL ?? 'http://localhost:8003'
 const POI_SERVICE_URL = process.env.POI_SERVICE_URL ?? 'http://localhost:8007'
 const MAPA_SERVICE_URL = process.env.MAPA_SERVICE_URL ?? 'http://localhost:8008'
 const COOKIE_NAME = 'dgnna_session'
@@ -33,7 +34,11 @@ export async function callBackend(
     headers['Authorization'] = `Bearer ${token}`
   }
 
-  return fetch(`${BACKEND_URL}${path}`, {
+  const baseUrl = path.startsWith('/api/sustracion')
+    ? SUSTRACCION_SERVICE_URL
+    : BACKEND_URL
+
+  return fetch(`${baseUrl}${path}`, {
     ...init,
     headers,
   })

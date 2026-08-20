@@ -90,7 +90,7 @@ def crear(
         puntosTotal       = pts_total,
         abogadoId         = body.abogadoId,
         revisorId         = body.revisorId,
-        fechaRevisor      = datetime.utcnow() if body.revisorId else None,
+        fechaRevisor      = (body.fechaRevisor or datetime.utcnow()) if body.revisorId else None,
         fechaAsignacion   = body.fechaAsignacion or datetime.utcnow(),
         estado            = body.estado,
         numeroResolucion  = body.numeroResolucion,
@@ -141,13 +141,18 @@ def actualizar(
     ap.puntosTotal       = pts_total
     ap.abogadoId         = body.abogadoId
     
-    # Si el revisor asignado cambia, actualizamos automáticamente la fecha de revisor
-    if body.revisorId != ap.revisorId:
-        if body.revisorId:
+    # Fecha de asignación del revisor: se respeta la enviada por el formulario.
+    # Solo se autocompleta cuando se asigna un revisor distinto; si el revisor
+    # no cambió y no llega fecha, se conserva lo que haya en BD (incluso vacío).
+    if body.revisorId:
+        if body.fechaRevisor:
+            ap.fechaRevisor = body.fechaRevisor
+        elif body.revisorId != ap.revisorId:
             ap.fechaRevisor = datetime.utcnow()
-        else:
-            ap.fechaRevisor = None
-            
+    else:
+        ap.fechaRevisor = None
+
+
     ap.revisorId         = body.revisorId
     if body.fechaAsignacion:
         ap.fechaAsignacion = body.fechaAsignacion

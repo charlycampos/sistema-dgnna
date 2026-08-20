@@ -1,0 +1,5524 @@
+{
+ "instituciones": [
+  {
+   "nombre": "CEM Lima (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JIRON CAMANA N° 616",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994800533 / 01-419726",
+   "cobertura": [
+    "150101"
+   ]
+  },
+  {
+   "nombre": "CEM Iquitos",
+   "tipo": "CEM",
+   "direccion": "AV. MARISCAL CÁCERES N° 1720",
+   "departamento": "Loreto",
+   "telefono": "999050526",
+   "cobertura": [
+    "160101"
+   ]
+  },
+  {
+   "nombre": "CEM Trujillo",
+   "tipo": "CEM",
+   "direccion": "MZ C LOTE 5 SECTOR A- (PUEBLO JOVEN MONSERRATE) (ALT. DE LAS CDRAS 4 Y 5 DE LA AV. HUSARES DE JUNIN",
+   "departamento": "La Libertad",
+   "telefono": "948069926",
+   "cobertura": [
+    "130101"
+   ]
+  },
+  {
+   "nombre": "CEM Piura",
+   "tipo": "CEM",
+   "direccion": "CLL. LAS CIDRAS MZ X, LOTE 36, URB MIRAFLORES",
+   "departamento": "Piura",
+   "telefono": "994834132",
+   "cobertura": [
+    "200104"
+   ]
+  },
+  {
+   "nombre": "CEM Cusco",
+   "tipo": "CEM",
+   "direccion": "AV. MICAELA BASTIDAS N°450 WANCHAQ",
+   "departamento": "Cusco",
+   "telefono": "994833892 / 084-67984",
+   "cobertura": [
+    "080108"
+   ]
+  },
+  {
+   "nombre": "CEM Ica",
+   "tipo": "CEM",
+   "direccion": "CALLE CALIFORNIA MZA B LOTE10",
+   "departamento": "Ica",
+   "telefono": "994840879",
+   "cobertura": [
+    "110101"
+   ]
+  },
+  {
+   "nombre": "CEM Sicuani",
+   "tipo": "CEM",
+   "direccion": "AV. CONFEDERACIÓN N° 222",
+   "departamento": "Cusco",
+   "telefono": "994834021",
+   "cobertura": [
+    "080601"
+   ]
+  },
+  {
+   "nombre": "CEM La Molina",
+   "tipo": "CEM",
+   "direccion": "CALLE LOS ALMENDROS CDRA 5 S/N URB AMPLIACION RESIDENCIAL MONTERRICO-LA MOLINA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "984841161 / 01-508566",
+   "cobertura": [
+    "150114"
+   ]
+  },
+  {
+   "nombre": "CEM Comas",
+   "tipo": "CEM",
+   "direccion": "PJE. NEPTUNO S/N KM. 14.5 TÚPAC AMARU-INT. INABIF-COMAS",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994833686",
+   "cobertura": [
+    "150110"
+   ]
+  },
+  {
+   "nombre": "CEM San Juan De Miraflores",
+   "tipo": "CEM",
+   "direccion": "AV CENTRAL S/N SECTOR ALFONSO UGARTE PAMPLONA ALTA-INT. DE SEDIF-INABIF-SJM",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994840286",
+   "cobertura": [
+    "150133"
+   ]
+  },
+  {
+   "nombre": "CEM Jauja",
+   "tipo": "CEM",
+   "direccion": "JR. AYACUCHO 1036, PLAZA PRINCIPAL DE DISTITO DE APATA",
+   "departamento": "Junin",
+   "telefono": "994833715",
+   "cobertura": [
+    "120403"
+   ]
+  },
+  {
+   "nombre": "CEM San Juan De Lurigancho",
+   "tipo": "CEM",
+   "direccion": "VILLA CAMPOY, CALLE 25 S/N, 3ERA ETAPA DE CAMPOY (ASOC COMPRADORES DE CAMPOY II ETAPA MZ V LT 1 /EX INSTITUTO \"LOCAL DE LA DEMUNA Y CSMC",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994840340",
+   "cobertura": [
+    "150132"
+   ]
+  },
+  {
+   "nombre": "CEM Chiclayo",
+   "tipo": "CEM",
+   "direccion": "AV. CHINCHAYSUYO 970 URB. FEDERICO VILLARREAL",
+   "departamento": "Lambayeque",
+   "telefono": "994833544",
+   "cobertura": [
+    "140101"
+   ]
+  },
+  {
+   "nombre": "CEM Huacho",
+   "tipo": "CEM",
+   "direccion": "CALLE COLON 533 HUACHO - A UNA CUADRA DE PLAZA DEL SOL",
+   "departamento": "Lima Provincia",
+   "telefono": "994841221 / 01-508568",
+   "cobertura": [
+    "150801"
+   ]
+  },
+  {
+   "nombre": "CEM Juliaca",
+   "tipo": "CEM",
+   "direccion": "JR. 4 DE NOVIEMBRE 114",
+   "departamento": "Puno",
+   "telefono": "994800535 / 051-64948",
+   "cobertura": [
+    "211101"
+   ]
+  },
+  {
+   "nombre": "CEM Puno",
+   "tipo": "CEM",
+   "direccion": "JR. AREQUIPA Nº 857",
+   "departamento": "Puno",
+   "telefono": "994374400 / 051-67946",
+   "cobertura": [
+    "210101"
+   ]
+  },
+  {
+   "nombre": "CEM Chincheros",
+   "tipo": "CEM",
+   "direccion": "AV. FERNANDO BELAUNDE TERRY S/N - 5 ESQUINAS, FRENTE AL SEMÁFORO",
+   "departamento": "Apurimac",
+   "telefono": "994840329 / 083-38930",
+   "cobertura": [
+    "030601"
+   ]
+  },
+  {
+   "nombre": "CEM Ventanilla",
+   "tipo": "CEM",
+   "direccion": "CALLE LAS PALOMAS 171, EX - ZONA COMERCIAL - LOCAL LA CASA DE MUJER. 1ER PISO",
+   "departamento": "Callao",
+   "telefono": "994833661",
+   "cobertura": [
+    "070106"
+   ]
+  },
+  {
+   "nombre": "CEM Huamanga",
+   "tipo": "CEM",
+   "direccion": "AV. LAS MALVINAS MANZADA D LOTE 1 - ASOCIACIÓN VILLA LOS WARPAS",
+   "departamento": "Ayacucho",
+   "telefono": "941524315",
+   "cobertura": [
+    "050110"
+   ]
+  },
+  {
+   "nombre": "CEM Andahuaylas",
+   "tipo": "CEM",
+   "direccion": "AV. PERÚ S/N PUERTA 4 Y 5 DEL ESTADIO MUNICIPAL LOS CHANKAS",
+   "departamento": "Apurimac",
+   "telefono": "994833490",
+   "cobertura": [
+    "030201"
+   ]
+  },
+  {
+   "nombre": "CEM Huanuco",
+   "tipo": "CEM",
+   "direccion": "JR. MALECÓN LOS INCAS CUADRA 5 S/N(ESQUINA CON OLLANTAY)-LOCAL MULTISERVICIO DE ATENCIÓN MADRE NIÑO",
+   "departamento": "Huanuco",
+   "telefono": "941526985 / 062-670068",
+   "cobertura": [
+    "100102"
+   ]
+  },
+  {
+   "nombre": "CEM Oxapampa",
+   "tipo": "CEM",
+   "direccion": "JR. MAYER S/N ( TIENDA 9 MERCADO SANTA ROSA)",
+   "departamento": "Pasco",
+   "telefono": "994834284",
+   "cobertura": [
+    "190301"
+   ]
+  },
+  {
+   "nombre": "CEM Tarapoto",
+   "tipo": "CEM",
+   "direccion": "JR.SHAPAJA 5TA CUADRA S/N - BARRIO HUAYCO DE LA URB. SANTA INES (LOCAL EX CAMAL",
+   "departamento": "San Martin",
+   "telefono": "994800910",
+   "cobertura": [
+    "220901"
+   ]
+  },
+  {
+   "nombre": "CEM Cajamarca",
+   "tipo": "CEM",
+   "direccion": "JR. TARAPACA N° 714 2DO. PISO OF. 203-204 FRENTE AL BBVA",
+   "departamento": "Cajamarca",
+   "telefono": "994834045",
+   "cobertura": [
+    "060101"
+   ]
+  },
+  {
+   "nombre": "CEM Huanta",
+   "tipo": "CEM",
+   "direccion": "JR. DELFINO LUDEÑA S/N 1ERA CUADRA, LURICOCHA",
+   "departamento": "Ayacucho",
+   "telefono": "994840401",
+   "cobertura": [
+    "050405"
+   ]
+  },
+  {
+   "nombre": "CEM Lambayeque",
+   "tipo": "CEM",
+   "direccion": "AV. HUAMACHUCO N°162",
+   "departamento": "Lambayeque",
+   "telefono": "994833865",
+   "cobertura": [
+    "140301"
+   ]
+  },
+  {
+   "nombre": "CEM Chimbote",
+   "tipo": "CEM",
+   "direccion": "AV. JOSE GALVEZ N° 660, 3ER PISO - (MERCADO DE PECES)",
+   "departamento": "Ancash",
+   "telefono": "994840085 / 043-67068",
+   "cobertura": [
+    "021801"
+   ]
+  },
+  {
+   "nombre": "CEM Moquegua",
+   "tipo": "CEM",
+   "direccion": "CALLE MOQUEGUA 949",
+   "departamento": "Moquegua",
+   "telefono": "994834306 / 053-67012",
+   "cobertura": [
+    "180101"
+   ]
+  },
+  {
+   "nombre": "CEM Tacna",
+   "tipo": "CEM",
+   "direccion": "CALLE HIPÓLITO UNANUE Nº 970 CERCADO DE TACNA, COMISARIA DE FAMILIA",
+   "departamento": "Tacna",
+   "telefono": "994800850",
+   "cobertura": [
+    "230101"
+   ]
+  },
+  {
+   "nombre": "CEM Surco",
+   "tipo": "CEM",
+   "direccion": "JR. LAS ORQUIDEAS MZ N1 LT 1-URB. SAN IGNACIO-MONTERRICO - SURCO",
+   "departamento": "Lima Metropolitana",
+   "telefono": "941524326 / 01-275161",
+   "cobertura": [
+    "150140"
+   ]
+  },
+  {
+   "nombre": "CEM Huancayo",
+   "tipo": "CEM",
+   "direccion": "JR. CUZCO N° 1590 (COSTADO DE LA SOCIEDAD DE BENEFICIENCIA DE HUANCAYO Y HOSPITAL CARRION)",
+   "departamento": "Junin",
+   "telefono": "994840568",
+   "cobertura": [
+    "120101"
+   ]
+  },
+  {
+   "nombre": "CEM Arequipa",
+   "tipo": "CEM",
+   "direccion": "AV. MARISCAL CACERES N° 306 CERCADO AREQUIPA",
+   "departamento": "Arequipa",
+   "telefono": "941524320",
+   "cobertura": [
+    "040101"
+   ]
+  },
+  {
+   "nombre": "CEM Chulucanas",
+   "tipo": "CEM",
+   "direccion": "AV. ALFONSO UGARTE S/N CUADRA 1 (COSTADO DE LA DEMUNA)",
+   "departamento": "Piura",
+   "telefono": "994801061",
+   "cobertura": [
+    "200401"
+   ]
+  },
+  {
+   "nombre": "CEM Pucallpa",
+   "tipo": "CEM",
+   "direccion": "JR. TACNA Nº 292",
+   "departamento": "Ucayali",
+   "telefono": "994801093 / 061-67028",
+   "cobertura": [
+    "250101"
+   ]
+  },
+  {
+   "nombre": "CEM Villa El Salvador (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "SECTOR 3 GRUPO 21 MZ E LOTE 13, AV. LOS ALAMOS, VILLA EL SALVADOR",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994819530 / 01-452105",
+   "cobertura": [
+    "150142"
+   ]
+  },
+  {
+   "nombre": "CEM Callao (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AA.HH ALFREDO PALACIOS MZ D LOTE 1",
+   "departamento": "Callao",
+   "telefono": "994833640",
+   "cobertura": [
+    "070101"
+   ]
+  },
+  {
+   "nombre": "CEM Huaraz",
+   "tipo": "CEM",
+   "direccion": "AV. RAIMONDI S/N CUADRA 10 - INTERIOR DE LA DIRECCION REGIONAL DEL MINISTERIO DEL TRABAJO Y DEL EMPELO.",
+   "departamento": "Ancash",
+   "telefono": "994834069",
+   "cobertura": [
+    "020101"
+   ]
+  },
+  {
+   "nombre": "CEM Pasco",
+   "tipo": "CEM",
+   "direccion": "JIRON FRANCISCO BOLOGNESI S/N (COSTADO DE LA CAPILLA DE ULIACHIN)",
+   "departamento": "Pasco",
+   "telefono": "994820645",
+   "cobertura": [
+    "190101"
+   ]
+  },
+  {
+   "nombre": "CEM Huancavelica",
+   "tipo": "CEM",
+   "direccion": "JR. POTOCCHI S/N ESPALDA DE LA PISCINA SAN CRISTOBAL",
+   "departamento": "Huancavelica",
+   "telefono": "994840885 / 067-51121",
+   "cobertura": [
+    "090101"
+   ]
+  },
+  {
+   "nombre": "CEM Ferreñafe",
+   "tipo": "CEM",
+   "direccion": "CLL. NICANOR CARMONA N° 223",
+   "departamento": "Lambayeque",
+   "telefono": "999051932",
+   "cobertura": [
+    "140201"
+   ]
+  },
+  {
+   "nombre": "CEM Tumbes",
+   "tipo": "CEM",
+   "direccion": "PASAJE MAXIMILIANO MORAN MANZANA 01 - LOTE 03 - URB. ANDRES ARAUJO MORAN",
+   "departamento": "Tumbes",
+   "telefono": "994800877",
+   "cobertura": [
+    "240101"
+   ]
+  },
+  {
+   "nombre": "CEM Pachacutec",
+   "tipo": "CEM",
+   "direccion": "MZ Z , PRIMA N°1, LOTE 3 SECTOR D1, PROYECTO PILOTO NUEVA PACHACUTEC.",
+   "departamento": "Callao",
+   "telefono": "994840257",
+   "cobertura": [
+    "070106"
+   ]
+  },
+  {
+   "nombre": "CEM Madre De Dios",
+   "tipo": "CEM",
+   "direccion": "AVENIDA 2 DE MAYO N°710, PUERTO MALDONADO",
+   "departamento": "Madre De Dios",
+   "telefono": "994834124 / 082-67000",
+   "cobertura": [
+    "170101"
+   ]
+  },
+  {
+   "nombre": "CEM Abancay",
+   "tipo": "CEM",
+   "direccion": "MZ. B LOTE 10, URBANIZACION ANGEL VILLA RETAMOSO - PROLONGACIÓN CUSCO",
+   "departamento": "Apurimac",
+   "telefono": "994801045 / 083-67001",
+   "cobertura": [
+    "030101"
+   ]
+  },
+  {
+   "nombre": "CEM Los Olivos",
+   "tipo": "CEM",
+   "direccion": "AV. UNIVERSITARIA CDRA 2086-LOS OLIVOS, PALACIO DE LA JUVENTUD-6TOPISO",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994841146",
+   "cobertura": [
+    "150117"
+   ]
+  },
+  {
+   "nombre": "CEM Vilcas Huaman",
+   "tipo": "CEM",
+   "direccion": "PLAZA PACHACUTEC S/N (INTERIOR DE LA MUNIICIPALIDAD PROVINCIAL DE VILCAS HUAMAN - 2DO PISO)",
+   "departamento": "Ayacucho",
+   "telefono": "994841359",
+   "cobertura": [
+    "051101"
+   ]
+  },
+  {
+   "nombre": "CEM La Mar",
+   "tipo": "CEM",
+   "direccion": "JR SIMÓN BOLIVAR S/N - PRIMERA CUADRA",
+   "departamento": "Ayacucho",
+   "telefono": "994840141",
+   "cobertura": [
+    "050501"
+   ]
+  },
+  {
+   "nombre": "CEM Utcubamba",
+   "tipo": "CEM",
+   "direccion": "AV. CHACHAPOYAS 1944, INTERIOR 2DO PISO - COSTADO DEL BANCO DE CREDITO",
+   "departamento": "Amazonas",
+   "telefono": "994840307",
+   "cobertura": [
+    "010701"
+   ]
+  },
+  {
+   "nombre": "CEM Barboncito (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "SAN SALVADOR 432, SAN MARTÍN DE PORRES 15101",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994819554",
+   "cobertura": [
+    "150135"
+   ]
+  },
+  {
+   "nombre": "CEM Moyobamba",
+   "tipo": "CEM",
+   "direccion": "AV. GRAU CDRA 4 (AL COSTADO DEL MERCADO AYAYMAMA - CAMPO FERIAL AYYAMAMA)",
+   "departamento": "San Martin",
+   "telefono": "994800911",
+   "cobertura": [
+    "220101"
+   ]
+  },
+  {
+   "nombre": "CEM Rioja",
+   "tipo": "CEM",
+   "direccion": "JR.TEOBALDO LOPEZ CUADRA 3",
+   "departamento": "San Martin",
+   "telefono": "994800491",
+   "cobertura": [
+    "220801"
+   ]
+  },
+  {
+   "nombre": "CEM Otuzco",
+   "tipo": "CEM",
+   "direccion": "CLL. TACNA N° 547 - PROVINCIA DE OTUZCO, DEPARTAMENTO LA LIBERTAD",
+   "departamento": "La Libertad",
+   "telefono": "994841165",
+   "cobertura": [
+    "130601"
+   ]
+  },
+  {
+   "nombre": "CEM Kimbiri",
+   "tipo": "CEM",
+   "direccion": "JIRON CUSCO N° 273 DEL DISTRITO DE KIMBIRI",
+   "departamento": "Cusco",
+   "telefono": "994840227",
+   "cobertura": [
+    "080907"
+   ]
+  },
+  {
+   "nombre": "CEM Chanchamayo",
+   "tipo": "CEM",
+   "direccion": "AV CIRCUNVALACION 696 LA MERCED,CHANCHAMAYO REF. AL FRENTE DE LA DEFENSA PÚBLICA",
+   "departamento": "Junin",
+   "telefono": "994841200",
+   "cobertura": [
+    "120301"
+   ]
+  },
+  {
+   "nombre": "CEM Ambo",
+   "tipo": "CEM",
+   "direccion": "JR. MARISCAL CASTILLA CDRA 02 -INTERIOR DEL CENTRO CIVICO COSTADO DEL BANCO DE LA NACIÓN",
+   "departamento": "Huanuco",
+   "telefono": "941526967",
+   "cobertura": [
+    "100201"
+   ]
+  },
+  {
+   "nombre": "CEM Cangallo",
+   "tipo": "CEM",
+   "direccion": "JR. MARIA PARADO DE BELLIDO, PLAZA PRINCIPAL 2DO. PISO (MUNICIPALIDAD PROVINCIAL DE CANGALLO)",
+   "departamento": "Ayacucho",
+   "telefono": "994834086",
+   "cobertura": [
+    "050201"
+   ]
+  },
+  {
+   "nombre": "CEM Lucanas",
+   "tipo": "CEM",
+   "direccion": "JR. BOLOGNESI N° 108 (A MEDIA CUADRA DE LA PLAZA ARMAS DE PUQUIO) - MUNICIPALIDAD PROVINCIAL DE LUCANAS -PUQUIO",
+   "departamento": "Ayacucho",
+   "telefono": "994840384",
+   "cobertura": [
+    "050601"
+   ]
+  },
+  {
+   "nombre": "CEM Parinacochas",
+   "tipo": "CEM",
+   "direccion": "JR. COMERCIO S/N - CENTRO CIVICO DE CORA CORA",
+   "departamento": "Ayacucho",
+   "telefono": "941524310",
+   "cobertura": [
+    "050701"
+   ]
+  },
+  {
+   "nombre": "CEM Huarmey",
+   "tipo": "CEM",
+   "direccion": "JR.QUILIPE N° 145 - HUARMEY (LOCAL DE ONG- REAQUI RURACHUN- RADIO MANANTIAL)",
+   "departamento": "Ancash",
+   "telefono": "994834076",
+   "cobertura": [
+    "021101"
+   ]
+  },
+  {
+   "nombre": "CEM Pisco",
+   "tipo": "CEM",
+   "direccion": "CALLE 10 MANUEL E. BARRIO NUEVO MZ. J, LT. 31, URBANIZACION FONAVI, PISCO",
+   "departamento": "Ica",
+   "telefono": "994833743",
+   "cobertura": [
+    "110501"
+   ]
+  },
+  {
+   "nombre": "CEM Huamachuco",
+   "tipo": "CEM",
+   "direccion": "INTERSECCION DE AV. HUAMACHUCO Y PASAJE BELAUNDE - DISTRITO DE CHUGAY (COSTADO DE ESTADIO CHUGAY)",
+   "departamento": "La Libertad",
+   "telefono": "999053236",
+   "cobertura": [
+    "130902"
+   ]
+  },
+  {
+   "nombre": "CEM Manchay",
+   "tipo": "CEM",
+   "direccion": "AV. VÍCTOR MALASQUES CHACALTANA S/N CPR PORTADA 1 DE MANCHAY-CENTRO CULTURAL DEL ESPÍRITU SANTO",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994840264 / 01-282802",
+   "cobertura": [
+    "150123"
+   ]
+  },
+  {
+   "nombre": "CEM Surquillo",
+   "tipo": "CEM",
+   "direccion": "JIRÓN SAN PEDRO Y JIRÓN MARIANO JURADO DE LOS REYES(EX SAN CARLOS N° 600)",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994840439",
+   "cobertura": [
+    "150141"
+   ]
+  },
+  {
+   "nombre": "CEM Villa Maria Del Triunfo",
+   "tipo": "CEM",
+   "direccion": "PJE PAUL ESCOBAR 105-VALLECITO BAJO-SAN GABRIEL-VMT",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994833554 / 01-760802",
+   "cobertura": [
+    "150143"
+   ]
+  },
+  {
+   "nombre": "CEM Cañete",
+   "tipo": "CEM",
+   "direccion": "AVENIDA MARISCAL BENAVIDES S/N / DIST. DE SAN VICENTE",
+   "departamento": "Lima Provincia",
+   "telefono": "994833796",
+   "cobertura": [
+    "150501"
+   ]
+  },
+  {
+   "nombre": "CEM Villa Rica",
+   "tipo": "CEM",
+   "direccion": "JR.COOPERATIVA N° 220 - VILLA RICA (COSTADO DE LA MUNICIPALIDAD)",
+   "departamento": "Pasco",
+   "telefono": "994834083",
+   "cobertura": [
+    "190307"
+   ]
+  },
+  {
+   "nombre": "CEM Mi Perú",
+   "tipo": "CEM",
+   "direccion": "AV. AYACUCHO CON AV. HUAURA S/N - MI PERU",
+   "departamento": "Callao",
+   "telefono": "932978419",
+   "cobertura": [
+    "070107"
+   ]
+  },
+  {
+   "nombre": "CEM Yurimaguas",
+   "tipo": "CEM",
+   "direccion": "CALLE CONDAMINE  N °113 FRENTE AL COLEGIO MARCELINA LÓPEZ ROJAS",
+   "departamento": "Loreto",
+   "telefono": "994833705 / 065-79217",
+   "cobertura": [
+    "160201"
+   ]
+  },
+  {
+   "nombre": "CEM Camana",
+   "tipo": "CEM",
+   "direccion": "AV. MARISCAL CASTILLA S/N ESQUINA CON PROLONGACIÓN QUILCA",
+   "departamento": "Arequipa",
+   "telefono": "941524318",
+   "cobertura": [
+    "040201"
+   ]
+  },
+  {
+   "nombre": "CEM Concepcion",
+   "tipo": "CEM",
+   "direccion": "JIRON RICARDO PALMA S/N PLATAFORMA DEL MERCADO MODELO (COSTADO DE LA RENIEC)",
+   "departamento": "Junin",
+   "telefono": "994833711 / 064-67029",
+   "cobertura": [
+    "120201"
+   ]
+  },
+  {
+   "nombre": "CEM Antabamba",
+   "tipo": "CEM",
+   "direccion": "CALLE CALVARIO S/N ESQUINA CALLE HUANCA S/N, BARRIO ALTO",
+   "departamento": "Apurimac",
+   "telefono": "994834227 / 083-38962",
+   "cobertura": [
+    "030301"
+   ]
+  },
+  {
+   "nombre": "CEM Chuquibambilla",
+   "tipo": "CEM",
+   "direccion": "AV. GRAU S/N - CHUQUIBAMBILLA (AL COSTADO DEL BANCO DE LA NACIÓN)",
+   "departamento": "Apurimac",
+   "telefono": "994834137",
+   "cobertura": [
+    "030701"
+   ]
+  },
+  {
+   "nombre": "CEM Miraflores (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "URBANIZACION CHAPICHICO MZ E LT-28 2DO PISO)",
+   "departamento": "Arequipa",
+   "telefono": "994801200",
+   "cobertura": [
+    "040110"
+   ]
+  },
+  {
+   "nombre": "CEM Jaen",
+   "tipo": "CEM",
+   "direccion": "CLL. UNIVERSIDAD ENTRE LA CDRA 4 Y 5 - URB. EL EDEN.",
+   "departamento": "Cajamarca",
+   "telefono": "994840108",
+   "cobertura": [
+    "060801"
+   ]
+  },
+  {
+   "nombre": "CEM Chumbivilcas",
+   "tipo": "CEM",
+   "direccion": "CALLE STA. BARBARA S/N - SANTO TOMAS /CHUMBIVILCAS",
+   "departamento": "Cusco",
+   "telefono": "935780484",
+   "cobertura": [
+    "080701"
+   ]
+  },
+  {
+   "nombre": "CEM Acobamba",
+   "tipo": "CEM",
+   "direccion": "JR. MANCO CAPAC S/N - ACOBAMBA",
+   "departamento": "Huancavelica",
+   "telefono": "941526965",
+   "cobertura": [
+    "090201"
+   ]
+  },
+  {
+   "nombre": "CEM Iberia",
+   "tipo": "CEM",
+   "direccion": "PASAJE LOS OLIVOS MZ L, LTE. 5 - BARRIO EL BAMBU",
+   "departamento": "Madre De Dios",
+   "telefono": "921285631 / 082-67000",
+   "cobertura": [
+    "170302"
+   ]
+  },
+  {
+   "nombre": "CEM Sechura",
+   "tipo": "CEM",
+   "direccion": "AAHH VICENTE CHUNGA ALDANA MZ O LOTE 1",
+   "departamento": "Piura",
+   "telefono": "994820122 / 073-79505",
+   "cobertura": [
+    "200801"
+   ]
+  },
+  {
+   "nombre": "CEM Churcampa",
+   "tipo": "CEM",
+   "direccion": "ESQUINA REAL Y SAN ANTONIO ( COSTADO DE SEGURIDAD CIUDADANA - FRENTE A PLAZA PRINCIPAL)",
+   "departamento": "Huancavelica",
+   "telefono": "994840430 / 067-48716",
+   "cobertura": [
+    "090501"
+   ]
+  },
+  {
+   "nombre": "CEM Pichari",
+   "tipo": "CEM",
+   "direccion": "AV. INCA GARCILASO DE LA VEGA 683(",
+   "departamento": "Cusco",
+   "telefono": "994834049",
+   "cobertura": [
+    "080910"
+   ]
+  },
+  {
+   "nombre": "CEM Chachapoyas",
+   "tipo": "CEM",
+   "direccion": "CLL. MANUEL MOLLINEDO - CUADRA 4 AA.HH. SEÑOR DE LOS MILAGROS- LOCAL COMUNAL 2DO PISO",
+   "departamento": "Amazonas",
+   "telefono": "994834149",
+   "cobertura": [
+    "010101"
+   ]
+  },
+  {
+   "nombre": "CEM Huanca Sancos",
+   "tipo": "CEM",
+   "direccion": "AV.LOS AYLLUS S/N - LOCAL MUNICIPAL - 1ER PISO",
+   "departamento": "Ayacucho",
+   "telefono": "994374411",
+   "cobertura": [
+    "050301"
+   ]
+  },
+  {
+   "nombre": "CEM Paucar Del Sara Sara",
+   "tipo": "CEM",
+   "direccion": "JR. MIGUEL DE CERVANTES 455 (PLAZA DE ARMAS)",
+   "departamento": "Ayacucho",
+   "telefono": "994819192 / 066-45320",
+   "cobertura": [
+    "050801"
+   ]
+  },
+  {
+   "nombre": "CEM Sucre",
+   "tipo": "CEM",
+   "direccion": "INTERIOR DE LA MUNICIPALIDAD PROVINCIAL DE QUEROBAMBA, 2DO PISO (PLAZA DE ARMAS)",
+   "departamento": "Ayacucho",
+   "telefono": "994833922 / 066-67006",
+   "cobertura": [
+    "050901"
+   ]
+  },
+  {
+   "nombre": "CEM Huepetuhe",
+   "tipo": "CEM",
+   "direccion": "AV. INDEPENDENCIA S/N",
+   "departamento": "Madre De Dios",
+   "telefono": "985850558 / 082-67000",
+   "cobertura": [
+    "170204"
+   ]
+  },
+  {
+   "nombre": "CEM Chocope",
+   "tipo": "CEM",
+   "direccion": "JR.GILDEMEISTER Nº 187 ( A ESPALADAS DEL INSTITUTO TECNOLOGICO)",
+   "departamento": "La Libertad",
+   "telefono": "994841077",
+   "cobertura": [
+    "130203"
+   ]
+  },
+  {
+   "nombre": "CEM Carabayllo",
+   "tipo": "CEM",
+   "direccion": "AV. SAN LUCAS S/N MZ J LT 01 AAHH VILLA SAN ANTONIO CARABAYLLO-LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "998725496 / 01-556467",
+   "cobertura": [
+    "150106"
+   ]
+  },
+  {
+   "nombre": "CEM Sullana",
+   "tipo": "CEM",
+   "direccion": "CLL. MANUEL COX MZ B LT 2 URBANIZACION RAMIRO PRIALE",
+   "departamento": "Piura",
+   "telefono": "994374392",
+   "cobertura": [
+    "200601"
+   ]
+  },
+  {
+   "nombre": "CEM Nuevo Chimbote",
+   "tipo": "CEM",
+   "direccion": "AV. CENTRAL BRUCES S/N (INTERIOR DEL POLIDEPORTIVO BRUCES-PILAR NORES DE GARCIA)",
+   "departamento": "Ancash",
+   "telefono": "994841383",
+   "cobertura": [
+    "021809"
+   ]
+  },
+  {
+   "nombre": "CEM Independencia",
+   "tipo": "CEM",
+   "direccion": "AV. HUAMACHUCO S/N - INTERIOR COLISEO DE LA AMISTAD",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994840281 / 994834256",
+   "cobertura": [
+    "150112"
+   ]
+  },
+  {
+   "nombre": "CEM Bagua",
+   "tipo": "CEM",
+   "direccion": "JR. SARGENTO LORES S/N A COSTADO DEL CEDIF-INABIF/ A 2 CUADRAS DE LA GERENCIA SUB REGIONAL DE BAGUA",
+   "departamento": "Amazonas",
+   "telefono": "994839908 / 041-79582 / 994834045",
+   "cobertura": [
+    "010201"
+   ]
+  },
+  {
+   "nombre": "CEM Huarochiri",
+   "tipo": "CEM",
+   "direccion": "PLAZA INDEPENDENCIA N°118 - MATUCANA",
+   "departamento": "Lima Provincia",
+   "telefono": "994833882 / 01-508569 / 914157811",
+   "cobertura": [
+    "150701"
+   ]
+  },
+  {
+   "nombre": "CEM Tingo Maria",
+   "tipo": "CEM",
+   "direccion": "JR. SAN ALEJANDRO 331 ( FRENTE A LA UNIVERSIDAD HUANUCO LOCAL ANTIGUO)",
+   "departamento": "Huanuco",
+   "telefono": "941526971 / 989254602",
+   "cobertura": [
+    "100601"
+   ]
+  },
+  {
+   "nombre": "CEM La Esperanza",
+   "tipo": "CEM",
+   "direccion": "3ER SECTOR DE WINCHANZAO MZ 33 LOTE 01",
+   "departamento": "La Libertad",
+   "telefono": "994833514 / 999052147",
+   "cobertura": [
+    "130105"
+   ]
+  },
+  {
+   "nombre": "CEM Yauyos",
+   "tipo": "CEM",
+   "direccion": "JR. ENRIQUE SWAYNE S/N 1ER PISO DE LA CASA DEL MAESTRO",
+   "departamento": "Lima Provincia",
+   "telefono": "994840474 / 941524319",
+   "cobertura": [
+    "151001"
+   ]
+  },
+  {
+   "nombre": "CEM Nauta",
+   "tipo": "CEM",
+   "direccion": "CALLE MANUEL PACAYA N° 377",
+   "departamento": "Loreto",
+   "telefono": "994839921 / 065-67035 / 994840094",
+   "cobertura": [
+    "160301"
+   ]
+  },
+  {
+   "nombre": "CEM Ilave",
+   "tipo": "CEM",
+   "direccion": "JR. INDEPENDENCIA 210 - ILAVE",
+   "departamento": "Puno",
+   "telefono": "994800868 / 969431068",
+   "cobertura": [
+    "210501"
+   ]
+  },
+  {
+   "nombre": "CEM Espinar",
+   "tipo": "CEM",
+   "direccion": "AV. SAN MARTIN 316- CERCADO",
+   "departamento": "Cusco",
+   "telefono": "994840212 / 994840181",
+   "cobertura": [
+    "080801"
+   ]
+  },
+  {
+   "nombre": "CEM Melgar",
+   "tipo": "CEM",
+   "direccion": "JIRON LUIS DALLE S/N",
+   "departamento": "Puno",
+   "telefono": "941524325 / 930682241",
+   "cobertura": [
+    "210801"
+   ]
+  },
+  {
+   "nombre": "CEM Nasca",
+   "tipo": "CEM",
+   "direccion": "JIRON TACNA 338 - 2DO PISO (BIBLIOTECA MUNICPAL DE NASCA )",
+   "departamento": "Ica",
+   "telefono": "994840556 / 994840108",
+   "cobertura": [
+    "110301"
+   ]
+  },
+  {
+   "nombre": "CEM Tarma",
+   "tipo": "CEM",
+   "direccion": "JR. AMAZONAS 475 - 2DO PISO DEL MERCADO MODELO - TARMA (COSTADO DE CUNAMAS)",
+   "departamento": "Junin",
+   "telefono": "994840685 / 064-78492 / 941524313",
+   "cobertura": [
+    "120701"
+   ]
+  },
+  {
+   "nombre": "CEM Yauli",
+   "tipo": "CEM",
+   "direccion": "AV. HORACIO ZEVALLOS GAMES N° 315 CENTRO CIVICO - 2DO PISO",
+   "departamento": "Junin",
+   "telefono": "994833574 / 064-67029 / 994819604",
+   "cobertura": [
+    "120801"
+   ]
+  },
+  {
+   "nombre": "CEM Santiago De Chuco",
+   "tipo": "CEM",
+   "direccion": "CLL. LUIS FELIPE DE LA PUENTE UCEDA N° 1630 REF. EX BIBLIOTECA MUNICIPAL",
+   "departamento": "La Libertad",
+   "telefono": "994840575 / 994839848",
+   "cobertura": [
+    "131001"
+   ]
+  },
+  {
+   "nombre": "CEM Padre Abad",
+   "tipo": "CEM",
+   "direccion": "JR. MALECON LAS PALMERAS MZ. L-5 LT.01 - JJVV LAS PALMERAS AGUAYTIA",
+   "departamento": "Ucayali",
+   "telefono": "994800884 / 940414732",
+   "cobertura": [
+    "250301"
+   ]
+  },
+  {
+   "nombre": "CEM Chilca",
+   "tipo": "CEM",
+   "direccion": "JIRON NICOLAS DE PIEROLA 204 (ESQUINA CON CALLE CESAR VALLEJO - 2 PISO)",
+   "departamento": "Junin",
+   "telefono": "994841305 / 064-51114 / 940414730",
+   "cobertura": [
+    "120107"
+   ]
+  },
+  {
+   "nombre": "CEM Tayacaja",
+   "tipo": "CEM",
+   "direccion": "PLAZA PRINCIPAL COLCABAMBA, COLCABAMBA, PALACIO MUNICIPAL - 1ER PISO.",
+   "departamento": "Huancavelica",
+   "telefono": "994841168 / 940404522",
+   "cobertura": [
+    "090705"
+   ]
+  },
+  {
+   "nombre": "CEM Chota",
+   "tipo": "CEM",
+   "direccion": "JR. CAJAMARCA 638",
+   "departamento": "Cajamarca",
+   "telefono": "994840094 / 994840518",
+   "cobertura": [
+    "060401"
+   ]
+  },
+  {
+   "nombre": "CEM Quillabamba",
+   "tipo": "CEM",
+   "direccion": "JR. VILCABAMBA S/N",
+   "departamento": "Cusco",
+   "telefono": "994840921 / 994840887",
+   "cobertura": [
+    "080901"
+   ]
+  },
+  {
+   "nombre": "CEM Azangaro",
+   "tipo": "CEM",
+   "direccion": "MERCADO CENTRAL PEDRO VILCAPASA- 3ER PISO, AZANGARO) .",
+   "departamento": "Puno",
+   "telefono": "994834229 / 941526968",
+   "cobertura": [
+    "210201"
+   ]
+  },
+  {
+   "nombre": "CEM Chupaca",
+   "tipo": "CEM",
+   "direccion": "JR. GRAU 159-161 , 1ER PISO (COSTADO DE RENIEC)",
+   "departamento": "Junin",
+   "telefono": "994840491 / 064-67030 / 994841576",
+   "cobertura": [
+    "120901"
+   ]
+  },
+  {
+   "nombre": "CEM Pacasmayo",
+   "tipo": "CEM",
+   "direccion": "TRASVERSAL ANCASH 600 - SAN PEDRO DE LLOC",
+   "departamento": "La Libertad",
+   "telefono": "994833842 / 994833892",
+   "cobertura": [
+    "130701"
+   ]
+  },
+  {
+   "nombre": "CEM San Ignacio",
+   "tipo": "CEM",
+   "direccion": "JR. BOLOGNESI 139, PROV. SAN IGNACIO, CAJAMARCA",
+   "departamento": "Cajamarca",
+   "telefono": "941524313 / 076-26390 / 994833257",
+   "cobertura": [
+    "060901"
+   ]
+  },
+  {
+   "nombre": "CEM Puente Piedra",
+   "tipo": "CEM",
+   "direccion": "MZ. E LT. 9 URB. PALERMO-ESPALDA DE TOTTUS-PUENTE PIEDRA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994834118 / 994840212",
+   "cobertura": [
+    "150125"
+   ]
+  },
+  {
+   "nombre": "CEM Chucuito",
+   "tipo": "CEM",
+   "direccion": "JR. LOYOLA S/N - JULI - CHUCUITO",
+   "departamento": "Puno",
+   "telefono": "994800968 / 994840227",
+   "cobertura": [
+    "210401"
+   ]
+  },
+  {
+   "nombre": "CEM Victor Fajardo",
+   "tipo": "CEM",
+   "direccion": "JR. VICTOR FAJARDO S/N CUADRA 7 (LOCAL DE LA GOBERNACION)",
+   "departamento": "Ayacucho",
+   "telefono": "994840603 / 914183928",
+   "cobertura": [
+    "051001"
+   ]
+  },
+  {
+   "nombre": "CEM Huaral",
+   "tipo": "CEM",
+   "direccion": "CALLE LA HUAQUILLA CON CALLE EL PALMO. EDIFICIO LA DEMUNA 4TO PISO",
+   "departamento": "Lima Provincia",
+   "telefono": "994841324 / 01-508567 / 994820158",
+   "cobertura": [
+    "150601"
+   ]
+  },
+  {
+   "nombre": "CEM Lamas",
+   "tipo": "CEM",
+   "direccion": "JR. SAN MARTIN Nº 774 - LAMAS",
+   "departamento": "San Martin",
+   "telefono": "994800916 / 994834049",
+   "cobertura": [
+    "220501"
+   ]
+  },
+  {
+   "nombre": "CEM Huamalies",
+   "tipo": "CEM",
+   "direccion": "JR. HUAMALIES N°112, LLATAS HUAMALIES",
+   "departamento": "Huanuco",
+   "telefono": "941526973 / 994840921",
+   "cobertura": [
+    "100501"
+   ]
+  },
+  {
+   "nombre": "CEM Quispicanchi",
+   "tipo": "CEM",
+   "direccion": "URBANIZACION TAMBILLO S/N - URCOS",
+   "departamento": "Cusco",
+   "telefono": "994374406",
+   "cobertura": [
+    "081201"
+   ]
+  },
+  {
+   "nombre": "CEM Paita",
+   "tipo": "CEM",
+   "direccion": "AH.HH. SAN FRANCISCO MZ J LT 09 SALON COMUNAL- PAITA ALTA",
+   "departamento": "Piura",
+   "telefono": "994801087 / 914177583",
+   "cobertura": [
+    "200501"
+   ]
+  },
+  {
+   "nombre": "CEM Yungay",
+   "tipo": "CEM",
+   "direccion": "AV. ARIAS GRACIANI S/N (PARTE BAJA DE LA PLAZA DE ARMAS)",
+   "departamento": "Ancash",
+   "telefono": "994841098 / 043-67068 / 914186694",
+   "cobertura": [
+    "022001"
+   ]
+  },
+  {
+   "nombre": "CEM Huari",
+   "tipo": "CEM",
+   "direccion": "JR. SAN MARTIN CDRA.10 -2DO PISO DEL MERCADO MODELO DE HUARI",
+   "departamento": "Ancash",
+   "telefono": "994834211 / 994834021",
+   "cobertura": [
+    "021001"
+   ]
+  },
+  {
+   "nombre": "CEM Ilo",
+   "tipo": "CEM",
+   "direccion": "NUEVA VICTORIA MZ I LOTE 1",
+   "departamento": "Moquegua",
+   "telefono": "994834329 / 994841011",
+   "cobertura": [
+    "180301"
+   ]
+  },
+  {
+   "nombre": "CEM Talara",
+   "tipo": "CEM",
+   "direccion": "AV. MARTIRES PETROLEROS S/N -2DO NIVEL",
+   "departamento": "Piura",
+   "telefono": "994819803 / 994800803",
+   "cobertura": [
+    "200701"
+   ]
+  },
+  {
+   "nombre": "CEM Huancabamba",
+   "tipo": "CEM",
+   "direccion": "CLL. 2 DE MAYO Nº 307-309  HUANCABAMBA- PIURA",
+   "departamento": "Piura",
+   "telefono": "994801062 / 073-47360 / 999052866",
+   "cobertura": [
+    "200301"
+   ]
+  },
+  {
+   "nombre": "CEM Pachitea",
+   "tipo": "CEM",
+   "direccion": "JR. ALFONSO UGARTE N° 204 - PANAO - PACHITEA - (EX ES SALUD)",
+   "departamento": "Huanuco",
+   "telefono": "994841191 / 062-404193 / 932862503",
+   "cobertura": [
+    "100801"
+   ]
+  },
+  {
+   "nombre": "CEM Angaraes",
+   "tipo": "CEM",
+   "direccion": "AV. CENTENARIO S/N - PARQUE ANDRES AVELINO CACERES - PUEBLO NUEVO - LIRCAY (LOCAL DEL CENTRO CIVICO)",
+   "departamento": "Huancavelica",
+   "telefono": "994840974 / 067-79110 / 932862503",
+   "cobertura": [
+    "090301"
+   ]
+  },
+  {
+   "nombre": "CEM Hualgayoc",
+   "tipo": "CEM",
+   "direccion": "JR. CMDT ESPINAR Nº 130. BAMBAMARCA- HUALGAYOC",
+   "departamento": "Cajamarca",
+   "telefono": "994840673 / 940410573",
+   "cobertura": [
+    "060701"
+   ]
+  },
+  {
+   "nombre": "CEM Cutervo",
+   "tipo": "CEM",
+   "direccion": "INTERSECCION DE JR LA MERCED Y JR PROGRESO",
+   "departamento": "Cajamarca",
+   "telefono": "994840181 / 982660186",
+   "cobertura": [
+    "060601"
+   ]
+  },
+  {
+   "nombre": "CEM Chepen",
+   "tipo": "CEM",
+   "direccion": "JR. ATAHUALPA N° 707 -2DO PISO ( INTERIOR DE LA IGLESIA - PLAZA DE ARMAS DE CHEPEN)",
+   "departamento": "La Libertad",
+   "telefono": "948526644 / 989354281",
+   "cobertura": [
+    "130401"
+   ]
+  },
+  {
+   "nombre": "CEM Islay",
+   "tipo": "CEM",
+   "direccion": "CALLE AREQUIPA N° 261 ISLAY AREQUIPA",
+   "departamento": "Arequipa",
+   "telefono": "994840363 / 932865195",
+   "cobertura": [
+    "040701"
+   ]
+  },
+  {
+   "nombre": "CEM Jesus Maria",
+   "tipo": "CEM",
+   "direccion": "CONCHA ACÚSTICA DE CAMPO MARTE – AV. HORACIO URTEAGA CUADRA 5, DISTRITO DE JESÚS MARÍA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994819601 / 941526965",
+   "cobertura": [
+    "150113"
+   ]
+  },
+  {
+   "nombre": "CEM San Antonio De Putina",
+   "tipo": "CEM",
+   "direccion": "AV.LA LIBERTAD S/N- BARRIO SANTIAGO LUJAN",
+   "departamento": "Puno",
+   "telefono": "994800855 / 994840974",
+   "cobertura": [
+    "211001"
+   ]
+  },
+  {
+   "nombre": "CEM Caballo Cocha",
+   "tipo": "CEM",
+   "direccion": "CALLE 1 ERO DE SETIEMBRE-SECTOR I MZ9 - REF.FRENTE A LA BOTICA LUCERITO",
+   "departamento": "Loreto",
+   "telefono": "994839924 / 065-67036 / 994820316",
+   "cobertura": [
+    "160401"
+   ]
+  },
+  {
+   "nombre": "CEM Anta",
+   "tipo": "CEM",
+   "direccion": "JR. JAQUIJAHUANA S/N",
+   "departamento": "Cusco",
+   "telefono": "994840518 / 994840430",
+   "cobertura": [
+    "080301"
+   ]
+  },
+  {
+   "nombre": "CEM Cajabamba",
+   "tipo": "CEM",
+   "direccion": "COMPLEJO DEPORTIVO PAMPA GRANDE S/N",
+   "departamento": "Cajamarca",
+   "telefono": "994834256 / 994840885",
+   "cobertura": [
+    "060201"
+   ]
+  },
+  {
+   "nombre": "CEM Casma",
+   "tipo": "CEM",
+   "direccion": "MZ C LOTE 16 - LOCAL ONG- MAPAYMUMDI O EX SENATI (CENTRO CIVICO - CASMA)",
+   "departamento": "Ancash",
+   "telefono": "914152228 / 043-67068 / 994840973",
+   "cobertura": [
+    "020801"
+   ]
+  },
+  {
+   "nombre": "CEM Viru",
+   "tipo": "CEM",
+   "direccion": "CLL. MARISCAL CACERES 106 - DITR. VIRU",
+   "departamento": "La Libertad",
+   "telefono": "994840618 / 994841168",
+   "cobertura": [
+    "131201"
+   ]
+  },
+  {
+   "nombre": "CEM Candarave",
+   "tipo": "CEM",
+   "direccion": "CALLE GRAU S/N",
+   "departamento": "Tacna",
+   "telefono": "994820255 / 052-50720 / 989388711",
+   "cobertura": [
+    "230201"
+   ]
+  },
+  {
+   "nombre": "CEM Chincha Alta",
+   "tipo": "CEM",
+   "direccion": "AV. FATIMA 173 CHINCHA ALTA",
+   "departamento": "Ica",
+   "telefono": "994840432 / 937410251",
+   "cobertura": [
+    "110201"
+   ]
+  },
+  {
+   "nombre": "CEM Cotabambas",
+   "tipo": "CEM",
+   "direccion": "PLAZA DE ARMAS S/N - LOCAL DE LA MUNICIPALIDAD PROVINCIAL DE COTABAMBAS- DISTRITO DE TAMBOBAMBA.",
+   "departamento": "Apurimac",
+   "telefono": "994839869 / 932866126",
+   "cobertura": [
+    "030501"
+   ]
+  },
+  {
+   "nombre": "CEM Urubamba",
+   "tipo": "CEM",
+   "direccion": "JIRON. BELÉN S/N",
+   "departamento": "Cusco",
+   "telefono": "994841011 / 941526967",
+   "cobertura": [
+    "081301"
+   ]
+  },
+  {
+   "nombre": "CEM Junin",
+   "tipo": "CEM",
+   "direccion": "JR. BOLIVAR N° 820 - JUNIN - JUNIN",
+   "departamento": "Junin",
+   "telefono": "994833708 / 064-34411 / 994841091",
+   "cobertura": [
+    "120501"
+   ]
+  },
+  {
+   "nombre": "CEM Datem Del Marañon",
+   "tipo": "CEM",
+   "direccion": "JIRON MARAÑON NO. 766 - 4TO ´PISO - SAN LORENZO",
+   "departamento": "Loreto",
+   "telefono": "994833621 / 940404507",
+   "cobertura": [
+    "160701"
+   ]
+  },
+  {
+   "nombre": "CEM Carabaya",
+   "tipo": "CEM",
+   "direccion": "AV BRASIL S/N",
+   "departamento": "Puno",
+   "telefono": "994800520 / 941526973",
+   "cobertura": [
+    "210301"
+   ]
+  },
+  {
+   "nombre": "CEM Sandia",
+   "tipo": "CEM",
+   "direccion": "JR. INCA GARCILASO DE LA VEGA S/N HOTEL MUNICIPAL CANDAMO 2DO.",
+   "departamento": "Puno",
+   "telefono": "994800957 / 941526985",
+   "cobertura": [
+    "211201"
+   ]
+  },
+  {
+   "nombre": "CEM Condorcanqui",
+   "tipo": "CEM",
+   "direccion": "JR. AMAZONAS CUADRA 03. P.J. JUAN VELASCO ALVARADO",
+   "departamento": "Amazonas",
+   "telefono": "994839920 / 994800906",
+   "cobertura": [
+    "010401"
+   ]
+  },
+  {
+   "nombre": "CEM Huaylas",
+   "tipo": "CEM",
+   "direccion": "JR. SAN MARTIN S/N MZ. B6 LT. 1 - BARRIO MALAMBO. (INTERIOR DEL ESTADIO MUNICIPAL DE HUAYLAS \"GERARDO LARA\" PUERTA N° 2 OCCIDENTE)",
+   "departamento": "Ancash",
+   "telefono": "994841114 / 043-67069",
+   "cobertura": [
+    "021201"
+   ]
+  },
+  {
+   "nombre": "CEM Huaytara",
+   "tipo": "CEM",
+   "direccion": "CALLE MUNICIPAL N° 100 PRIMER PISO (MUNICIPALIDAD PROVINCIAL DE HUAYTARA - PLAZA DE ARMAS",
+   "departamento": "Huancavelica",
+   "telefono": "994840973 / 994841191",
+   "cobertura": [
+    "090601"
+   ]
+  },
+  {
+   "nombre": "CEM Dos De Mayo",
+   "tipo": "CEM",
+   "direccion": "JR. SAN ANTONIO S/N 2DO PISO DEL MERCADILLO DEL DISTRITO DE RIPAN - PASANDO EL PUENTE DE PIEDRA",
+   "departamento": "Huanuco",
+   "telefono": "994841091 / 062-670076 / 994801195",
+   "cobertura": [
+    "100301"
+   ]
+  },
+  {
+   "nombre": "CEM Huancane",
+   "tipo": "CEM",
+   "direccion": "AV. EL EJERCITO N° 502 - 3ER PISO DEL POLICLINICO MUNICIPAL DE HUANCANE",
+   "departamento": "Puno",
+   "telefono": "994801001 / 051-56600 / 941526971",
+   "cobertura": [
+    "210601"
+   ]
+  },
+  {
+   "nombre": "CEM Lampa",
+   "tipo": "CEM",
+   "direccion": "JR. LA MUNICIPALIDAD S/N TERMINAL TERRESTRE, 2DO PISO",
+   "departamento": "Puno",
+   "telefono": "994801126 / 941526978",
+   "cobertura": [
+    "210701"
+   ]
+  },
+  {
+   "nombre": "CEM Atalaya",
+   "tipo": "CEM",
+   "direccion": "CLL. RIOJA N° 659 - DISTRITO DE RAYMONDI",
+   "departamento": "Ucayali",
+   "telefono": "994801097 / 930225856",
+   "cobertura": [
+    "250201"
+   ]
+  },
+  {
+   "nombre": "CEM Barranca",
+   "tipo": "CEM",
+   "direccion": "URB. SANTA CATALINA DENTRO DEL COLISEO CERRADO",
+   "departamento": "Lima Provincia",
+   "telefono": "994834249 / 01-508568 / 970268112",
+   "cobertura": [
+    "150201"
+   ]
+  },
+  {
+   "nombre": "CEM Carhuaz",
+   "tipo": "CEM",
+   "direccion": "1RA CDRA DEL JR. ICA, S/N (EXTERIOR DEL COLISEO CERRADO DE CARHUAZ)",
+   "departamento": "Ancash",
+   "telefono": "994833996 / 043-67068 / 953704701",
+   "cobertura": [
+    "020601"
+   ]
+  },
+  {
+   "nombre": "CEM Celendin",
+   "tipo": "CEM",
+   "direccion": "JR. SAN MARTIN N 343",
+   "departamento": "Cajamarca",
+   "telefono": "941524319 / 076-55501 / 994840879",
+   "cobertura": [
+    "060301"
+   ]
+  },
+  {
+   "nombre": "CEM Requena",
+   "tipo": "CEM",
+   "direccion": "CALLE SAN ANTONIO S/N",
+   "departamento": "Loreto",
+   "telefono": "961975453 / 994800933",
+   "cobertura": [
+    "160501"
+   ]
+  },
+  {
+   "nombre": "CEM Daniel Alcides Carrion",
+   "tipo": "CEM",
+   "direccion": "JIRON BOLOGNESI S/N 2 PISO - MERCADO CENTRAL DE YANAHUANCA",
+   "departamento": "Pasco",
+   "telefono": "994374471 / 994840133",
+   "cobertura": [
+    "190201"
+   ]
+  },
+  {
+   "nombre": "CEM Bellavista (San Martin)",
+   "tipo": "CEM",
+   "direccion": "JR. IQUITOS N° 260 (EX-BIBLIOTECA MUNICIPAL DE BELLAVISTA- 1ER PISO 2DO NIVEL)",
+   "departamento": "San Martin",
+   "telefono": "994839969 / 940414735",
+   "cobertura": [
+    "220201"
+   ]
+  },
+  {
+   "nombre": "CEM Mariscal Caceres (San Martin)",
+   "tipo": "CEM",
+   "direccion": "JR. PROGRESO, CUADRA 4- FRENTE A LA GOBERNACION PROVINCIAL.",
+   "departamento": "San Martin",
+   "telefono": "994800874 / 994840556",
+   "cobertura": [
+    "220601"
+   ]
+  },
+  {
+   "nombre": "CEM Jorge Basadre",
+   "tipo": "CEM",
+   "direccion": "AV. VILLA MUNICIPAL S/N",
+   "departamento": "Tacna",
+   "telefono": "994800825 / 994833743",
+   "cobertura": [
+    "230301"
+   ]
+  },
+  {
+   "nombre": "CEM Aguas Verdes",
+   "tipo": "CEM",
+   "direccion": "CLL. SAN MARTIN S/N DEL COMPLEJO HABITACIONAL - LOCAL DE LOS BOMBEROS",
+   "departamento": "Tumbes",
+   "telefono": "994800813 / 072-67002 / 994840432",
+   "cobertura": [
+    "240302"
+   ]
+  },
+  {
+   "nombre": "CEM Calca",
+   "tipo": "CEM",
+   "direccion": "AV. LA PAZ S/N",
+   "departamento": "Cusco",
+   "telefono": "994840887 / 999052587",
+   "cobertura": [
+    "080401"
+   ]
+  },
+  {
+   "nombre": "CEM Pangoa",
+   "tipo": "CEM",
+   "direccion": "JR.UCAYALI S/N- ENTRE LA COMISARIA PANGOA Y EL MERCADO CENTRAL",
+   "departamento": "Junin",
+   "telefono": "994841301 / 064-67030 / 989351131",
+   "cobertura": [
+    "120606"
+   ]
+  },
+  {
+   "nombre": "CEM Sivia",
+   "tipo": "CEM",
+   "direccion": "AV. MISIÓN FRANCISCANA CRUCE CON LA AV. RICARDO PALMA - 2DO PISO",
+   "departamento": "Ayacucho",
+   "telefono": "994374405 / 999053162",
+   "cobertura": [
+    "050407"
+   ]
+  },
+  {
+   "nombre": "CEM Gran Chimu",
+   "tipo": "CEM",
+   "direccion": "PASAJE MEDIO MUNDO S/N -CASCAS (LOCAL DEL ESTADIO MUNICIPAL)",
+   "departamento": "La Libertad",
+   "telefono": "994841315 / 932867232",
+   "cobertura": [
+    "131101"
+   ]
+  },
+  {
+   "nombre": "CEM Castrovirreyna",
+   "tipo": "CEM",
+   "direccion": "AV. LOS LIBERTADORES S/N ( INT. DE LA MUNICIPALIDAD PROVINCIAL DE CASTROVIRREYNA)",
+   "departamento": "Huancavelica",
+   "telefono": "994820316 / 914705415",
+   "cobertura": [
+    "090401"
+   ]
+  },
+  {
+   "nombre": "CEM Chilete",
+   "tipo": "CEM",
+   "direccion": "AV. DIEZ DE ENERO S/N, DISTRITO DE CHILETE",
+   "departamento": "Cajamarca",
+   "telefono": "994801131 / 932867094",
+   "cobertura": [
+    "060502"
+   ]
+  },
+  {
+   "nombre": "CEM Puerto Inca",
+   "tipo": "CEM",
+   "direccion": "MALECON LEGUIA S/N 2DO PISO LOCAL DE LA EX DEMUNA DE PUERTO INCA(FRENTE AL RIO PACHITEA-)",
+   "departamento": "Huanuco",
+   "telefono": "994801195 / 999053181",
+   "cobertura": [
+    "100901"
+   ]
+  },
+  {
+   "nombre": "CEM Ucayali",
+   "tipo": "CEM",
+   "direccion": "CALLE ALBERTO ÁNGULO CUADRA 2 - SEGUNDO PISO",
+   "departamento": "Loreto",
+   "telefono": "994800484 / 989372772",
+   "cobertura": [
+    "160601"
+   ]
+  },
+  {
+   "nombre": "CEM Paucartambo",
+   "tipo": "CEM",
+   "direccion": "AV. CIRCUNVALACION ERICKSON S/N",
+   "departamento": "Cusco",
+   "telefono": "994820158 / 937401253",
+   "cobertura": [
+    "081101"
+   ]
+  },
+  {
+   "nombre": "CEM Picota",
+   "tipo": "CEM",
+   "direccion": "CARRETERA FERNANDO BELAUNDE TERRY S/N, KM 60",
+   "departamento": "San Martin",
+   "telefono": "994820313 / 042-670447 / 965363374",
+   "cobertura": [
+    "220701"
+   ]
+  },
+  {
+   "nombre": "CEM Lauricocha",
+   "tipo": "CEM",
+   "direccion": "JR. LEONCIO PRADO S/N - EDIFICIO PODER JUDICIAL- 5TO. PISO",
+   "departamento": "Huanuco",
+   "telefono": "994800906 / 062-404226 / 999053324",
+   "cobertura": [
+    "101001"
+   ]
+  },
+  {
+   "nombre": "CEM Pataz",
+   "tipo": "CEM",
+   "direccion": "JR. JOSE GALVEZ N° 481, 1ER PISO , DEL CENTRO CIVICO.",
+   "departamento": "La Libertad",
+   "telefono": "994801199",
+   "cobertura": [
+    "130801"
+   ]
+  },
+  {
+   "nombre": "CEM Rodriguez De Mendoza",
+   "tipo": "CEM",
+   "direccion": "JR. MATIAZA RIMACHI N°510 (INT. MUNICIPALIDAD PROVINCIAL DE RODRIGUEZ DE MENDOZA",
+   "departamento": "Amazonas",
+   "telefono": "994840310 / 994841200",
+   "cobertura": [
+    "010601"
+   ]
+  },
+  {
+   "nombre": "CEM Canas",
+   "tipo": "CEM",
+   "direccion": "PLAZA DE ARMAS S/N",
+   "departamento": "Cusco",
+   "telefono": "941526968 / 994841305",
+   "cobertura": [
+    "080501"
+   ]
+  },
+  {
+   "nombre": "CEM General Sanchez Cerro",
+   "tipo": "CEM",
+   "direccion": "AV. EL EJERCITO S/N - ANEXO COGRI",
+   "departamento": "Moquegua",
+   "telefono": "941526987 / 053-48574 / 994840491",
+   "cobertura": [
+    "180201"
+   ]
+  },
+  {
+   "nombre": "CEM Yarowilca",
+   "tipo": "CEM",
+   "direccion": "JR. SAN JUAN J16 DEL DISTRITO DE CHAVINILLO",
+   "departamento": "Huanuco",
+   "telefono": "941526978 / 994833711",
+   "cobertura": [
+    "101101"
+   ]
+  },
+  {
+   "nombre": "CEM Julcan",
+   "tipo": "CEM",
+   "direccion": "CALLE CIRO ALEGRIA S/N  JULCAN -1ER PISO (A ESPALDA DEL LOCAL MULTI USOS DE LA MUNICIPALIDAD))",
+   "departamento": "La Libertad",
+   "telefono": "994800932 / 994840568",
+   "cobertura": [
+    "130501"
+   ]
+  },
+  {
+   "nombre": "CEM La Banda De Shilcayo",
+   "tipo": "CEM",
+   "direccion": "PASAJE 17 DE AGOSTO N°152 - LA BANDA DE SHILCAYO",
+   "departamento": "San Martin",
+   "telefono": "994820951 / 996060920",
+   "cobertura": [
+    "220909"
+   ]
+  },
+  {
+   "nombre": "CEM Castilla",
+   "tipo": "CEM",
+   "direccion": "PLAZA BUENOS AIRES N° 100 APLAO",
+   "departamento": "Arequipa",
+   "telefono": "941526975 / 994833708",
+   "cobertura": [
+    "040401"
+   ]
+  },
+  {
+   "nombre": "CEM San Marcos",
+   "tipo": "CEM",
+   "direccion": "JR. LA VALLE S/N - SAN MARCOS",
+   "departamento": "Cajamarca",
+   "telefono": "994819604 / 932974586",
+   "cobertura": [
+    "061001"
+   ]
+  },
+  {
+   "nombre": "CEM San Miguel (Cajamarca)",
+   "tipo": "CEM",
+   "direccion": "JIRON BOLIVAR 553 - 2DO. PISO",
+   "departamento": "Cajamarca",
+   "telefono": "994839848 / 076-31932 / 914152308",
+   "cobertura": [
+    "061101"
+   ]
+  },
+  {
+   "nombre": "CEM Caraveli",
+   "tipo": "CEM",
+   "direccion": "CALLE AYACUCHO N° 308",
+   "departamento": "Arequipa",
+   "telefono": "941524328 / 994833501",
+   "cobertura": [
+    "040301"
+   ]
+  },
+  {
+   "nombre": "CEM Bolognesi",
+   "tipo": "CEM",
+   "direccion": "JR. TACNA N° 320 SEGUNDO PISO, INTERIOR DEL CENTRO CIVICO - PLAZA DE ARMAS",
+   "departamento": "Ancash",
+   "telefono": "994800536 / 994840685",
+   "cobertura": [
+    "020501"
+   ]
+  },
+  {
+   "nombre": "CEM Sihuas",
+   "tipo": "CEM",
+   "direccion": "JR. 09 DE ENERO - S/N- PLAZA DE ARMAS (LOCAL ANTIGUO DE LA MUNICIPALIDAD PROVINCIAL DE SIHUAS",
+   "departamento": "Ancash",
+   "telefono": "941526974 / 043-26650 / 994833574",
+   "cobertura": [
+    "021901"
+   ]
+  },
+  {
+   "nombre": "CEM Pallasca",
+   "tipo": "CEM",
+   "direccion": "PLAZA DE ARMAS S/N RED. SEGUNDO PISO DE LA SUB PREFECTURA DE LA PROVINCIA DE PALLASCA",
+   "departamento": "Ancash",
+   "telefono": "940396636 / 989248190",
+   "cobertura": [
+    "021501"
+   ]
+  },
+  {
+   "nombre": "CEM Mariscal Luzuriaga",
+   "tipo": "CEM",
+   "direccion": "CLL. SAN PABLO S/N (COSTADO DEL RENIEC) - DISTRITO DE PISCOBAMBA, PROVINCIA MARISCAL LUZURIAGA)",
+   "departamento": "Ancash",
+   "telefono": "941526988 / 932869024",
+   "cobertura": [
+    "021301"
+   ]
+  },
+  {
+   "nombre": "CEM El Porvenir (La Libertad) (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. WICHANZAO MZA 23, LOTE 2, SECTOR NUEVO PORVENIR",
+   "departamento": "La Libertad",
+   "telefono": "914152158 / 932869547",
+   "cobertura": [
+    "130102"
+   ]
+  },
+  {
+   "nombre": "CEM Echarati",
+   "tipo": "CEM",
+   "direccion": "PLAZA DE ARMAS S/N",
+   "departamento": "Cusco",
+   "telefono": "994833257 / 989351070",
+   "cobertura": [
+    "080902"
+   ]
+  },
+  {
+   "nombre": "CEM Condesuyos",
+   "tipo": "CEM",
+   "direccion": "CALLE COPACABANA N°300 2DO PISO(LOCAL COMUNAL)",
+   "departamento": "Arequipa",
+   "telefono": "940404509 / 933405788",
+   "cobertura": [
+    "040601"
+   ]
+  },
+  {
+   "nombre": "CEM Huallaga",
+   "tipo": "CEM",
+   "direccion": "AV. LORETO 385 - DISTRITO DE SAPOSOA - HUALLAGA.",
+   "departamento": "San Martin",
+   "telefono": "940396627 / 994840158",
+   "cobertura": [
+    "220401"
+   ]
+  },
+  {
+   "nombre": "CEM Asuncion",
+   "tipo": "CEM",
+   "direccion": "JR. PACHACUTEC S/N",
+   "departamento": "Ancash",
+   "telefono": "940396360",
+   "cobertura": [
+    "020401"
+   ]
+  },
+  {
+   "nombre": "CEM Aymaraes",
+   "tipo": "CEM",
+   "direccion": "JR. BALLON S/N - 1RA CUADRA",
+   "departamento": "Apurimac",
+   "telefono": "940396629",
+   "cobertura": [
+    "030401"
+   ]
+  },
+  {
+   "nombre": "CEM San Pablo",
+   "tipo": "CEM",
+   "direccion": "AV. JULIAN CRUZADO S/N",
+   "departamento": "Cajamarca",
+   "telefono": "940414732 / 076-31140",
+   "cobertura": [
+    "061201"
+   ]
+  },
+  {
+   "nombre": "CEM Oyon",
+   "tipo": "CEM",
+   "direccion": "JIRÓN UNIÓN S/N (FRENTE AL MERCADO CENTRAL)",
+   "departamento": "Lima Provincia",
+   "telefono": "940414738 / 994819048",
+   "cobertura": [
+    "150901"
+   ]
+  },
+  {
+   "nombre": "CEM Acomayo",
+   "tipo": "CEM",
+   "direccion": "JR. RAMÓN CASTILLA S/N (EX LOCAL DE ESSALUD) - ACOMAYO.",
+   "departamento": "Cusco",
+   "telefono": "940404522",
+   "cobertura": [
+    "080201"
+   ]
+  },
+  {
+   "nombre": "CEM Marañon",
+   "tipo": "CEM",
+   "direccion": "JR. ANCASH S/N, PRIMERO PISO DEL JUZGADO MIXTO DE HUACRACHUCO, A MEDIA CUADRA DEL MINISTERIO PUBLICO.",
+   "departamento": "Huanuco",
+   "telefono": "940396626",
+   "cobertura": [
+    "100701"
+   ]
+  },
+  {
+   "nombre": "CEM Ancon",
+   "tipo": "CEM",
+   "direccion": "AV. 11 DE ENERO CRUCE CON CALLE HUARAL, ASOCIACION LA VARIANTE, ANCON.",
+   "departamento": "Lima Metropolitana",
+   "telefono": "940414728 / 01-586757",
+   "cobertura": [
+    "150102"
+   ]
+  },
+  {
+   "nombre": "CEM Pomabamba",
+   "tipo": "CEM",
+   "direccion": "JR. PERU S/N- PLAZA DE ARMAS",
+   "departamento": "Ancash",
+   "telefono": "940414733 / 043-67069",
+   "cobertura": [
+    "021601"
+   ]
+  },
+  {
+   "nombre": "CEM Tarata",
+   "tipo": "CEM",
+   "direccion": "CALLE ZELA S/N -",
+   "departamento": "Tacna",
+   "telefono": "940414727",
+   "cobertura": [
+    "230401"
+   ]
+  },
+  {
+   "nombre": "CEM Contralmirante Villar",
+   "tipo": "CEM",
+   "direccion": "AV. FAUSTINO PIAGGIO S/N",
+   "departamento": "Tumbes",
+   "telefono": "940404508",
+   "cobertura": [
+    "240201"
+   ]
+  },
+  {
+   "nombre": "CEM Huacaybamba",
+   "tipo": "CEM",
+   "direccion": "JR. PACHACUTEC CDRA 02 S/N - 2DO PISO DE LA MUNICIPALIDAD PROVINCIAL DE HUACAYBAMBA",
+   "departamento": "Huanuco",
+   "telefono": "940404507",
+   "cobertura": [
+    "100401"
+   ]
+  },
+  {
+   "nombre": "CEM Palpa",
+   "tipo": "CEM",
+   "direccion": "CALLE AREQUIPA 135",
+   "departamento": "Ica",
+   "telefono": "940414735",
+   "cobertura": [
+    "110401"
+   ]
+  },
+  {
+   "nombre": "CEM Canta",
+   "tipo": "CEM",
+   "direccion": "AVENIDA CIRCUNVALACIÓN S/N (AL COSTADO DEL CEMENTERIO DE CANTA)",
+   "departamento": "Lima Provincia",
+   "telefono": "940404510",
+   "cobertura": [
+    "150401"
+   ]
+  },
+  {
+   "nombre": "CEM Moho",
+   "tipo": "CEM",
+   "direccion": "AV. CIRCUNVALACIÓN S/N",
+   "departamento": "Puno",
+   "telefono": "940396625 / 948069926",
+   "cobertura": [
+    "210901"
+   ]
+  },
+  {
+   "nombre": "CEM Carlos Fermin Fitzcarrald",
+   "tipo": "CEM",
+   "direccion": "JR. PLAZA DE ARMAS N°506 - 1ER PISO DE LA MUNICIPALIDAD",
+   "departamento": "Ancash",
+   "telefono": "940404511",
+   "cobertura": [
+    "020701"
+   ]
+  },
+  {
+   "nombre": "CEM Cajatambo",
+   "tipo": "CEM",
+   "direccion": "JR. ANTONIO RAYMONDI Nº 141, CAJATAMBO",
+   "departamento": "Lima Provincia",
+   "telefono": "914158590",
+   "cobertura": [
+    "150301"
+   ]
+  },
+  {
+   "nombre": "CEM Antonio Raimondi",
+   "tipo": "CEM",
+   "direccion": "AV. LLAMELLIN N° 728",
+   "departamento": "Ancash",
+   "telefono": "940396631",
+   "cobertura": [
+    "020301"
+   ]
+  },
+  {
+   "nombre": "CEM Santa Cruz",
+   "tipo": "CEM",
+   "direccion": "JR. RAMÓN CASTILLA N° 320",
+   "departamento": "Cajamarca",
+   "telefono": "940414730",
+   "cobertura": [
+    "061301"
+   ]
+  },
+  {
+   "nombre": "CEM Chosica",
+   "tipo": "CEM",
+   "direccion": "AV. ENRIQUE GUZMAN Y VALLE S/N INT. DE CASA DE LA MUJER DE CHOSICA 3ER PISO",
+   "departamento": "Lima Metropolitana",
+   "telefono": "940414725 / 01-360313",
+   "cobertura": [
+    "150118"
+   ]
+  },
+  {
+   "nombre": "CEM Cieneguilla",
+   "tipo": "CEM",
+   "direccion": "AA. HH. MAGDA PORTAL AV. SAN MARTÍN MZ L LT 1-CIENEGUILLA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "940406584",
+   "cobertura": [
+    "150109"
+   ]
+  },
+  {
+   "nombre": "CEM Recuay",
+   "tipo": "CEM",
+   "direccion": "JR. BOLIVAR N°290-INTERIOR DEL ANTIGUO HOTEL PASTORURI . 1ER PISO",
+   "departamento": "Ancash",
+   "telefono": "940404533",
+   "cobertura": [
+    "021701"
+   ]
+  },
+  {
+   "nombre": "CEM Napo",
+   "tipo": "CEM",
+   "direccion": "CALLE PATRICIO MOSQUERA S/N",
+   "departamento": "Loreto",
+   "telefono": "940404535",
+   "cobertura": [
+    "160107"
+   ]
+  },
+  {
+   "nombre": "CEM Aija",
+   "tipo": "CEM",
+   "direccion": "PLAZA DE ARMAS DE AIJA - JR. INDEPENDENCIA N° 480",
+   "departamento": "Ancash",
+   "telefono": "914157354",
+   "cobertura": [
+    "020201"
+   ]
+  },
+  {
+   "nombre": "CEM Ocros",
+   "tipo": "CEM",
+   "direccion": "PLAZA DE ARMAS S/N - CLL. COMERCIO NO. 272 INTERIOR DE LA MUNICIPALIDAD PROVINCIAL DE OCROS - 3ER PISO",
+   "departamento": "Ancash",
+   "telefono": "914180821 / 994833544",
+   "cobertura": [
+    "021401"
+   ]
+  },
+  {
+   "nombre": "CEM Paruro",
+   "tipo": "CEM",
+   "direccion": "BARRIO LOS LICENCIADOS S/N ALBERGUE MUNICIPAL",
+   "departamento": "Cusco",
+   "telefono": "914183928 / 084-20267 / 999051932",
+   "cobertura": [
+    "081001"
+   ]
+  },
+  {
+   "nombre": "CEM Bolivar",
+   "tipo": "CEM",
+   "direccion": "JR. SAN MARTIN N° 535, A UNA CUADRA DEL INSTITUTO SUPERIOR TECNICO BOLIVAR",
+   "departamento": "La Libertad",
+   "telefono": "914173798 / 994833865",
+   "cobertura": [
+    "130301"
+   ]
+  },
+  {
+   "nombre": "CEM Purús",
+   "tipo": "CEM",
+   "direccion": "AV. JULIO VILLACORTA S/N VCON LUIS MUÑOZ NADAL S/N",
+   "departamento": "Ucayali",
+   "telefono": "989439016 / 999052487",
+   "cobertura": [
+    "250401"
+   ]
+  },
+  {
+   "nombre": "CEM Bongara",
+   "tipo": "CEM",
+   "direccion": "JR. 26 DE DICIEMBRE 460. FRENTE A LA PLAZA DE ARMAS DE JUMBILLA.",
+   "departamento": "Amazonas",
+   "telefono": "914179014 / 932869698",
+   "cobertura": [
+    "010301"
+   ]
+  },
+  {
+   "nombre": "CEM Putumayo",
+   "tipo": "CEM",
+   "direccion": "NO TENEMOS LOCAL- CONVENIO EN TRÁMITE",
+   "departamento": "Loreto",
+   "telefono": "930913390 / 932869849",
+   "cobertura": [
+    "160801"
+   ]
+  },
+  {
+   "nombre": "CEM Corongo",
+   "tipo": "CEM",
+   "direccion": "JR. LIMA 710 2DO PISO DE LA COMISARIA DE CORONGO",
+   "departamento": "Ancash",
+   "telefono": "914188153 / 999053281",
+   "cobertura": [
+    "020901"
+   ]
+  },
+  {
+   "nombre": "CEM Pichanaqui",
+   "tipo": "CEM",
+   "direccion": "JIRÓN JUNÍN 908 - A ESPALDAS DE LA GOBERNACIÓN DE PICHANAQUI",
+   "departamento": "Junin",
+   "telefono": "914152308 / 064-67030 / 999052882",
+   "cobertura": [
+    "120303"
+   ]
+  },
+  {
+   "nombre": "CEM San Sebastian",
+   "tipo": "CEM",
+   "direccion": "AV. MARCOS ZAPATA CON AVENIDA CUSCO",
+   "departamento": "Cusco",
+   "telefono": "914177583 / 084-67984 / 999052525",
+   "cobertura": [
+    "080105"
+   ]
+  },
+  {
+   "nombre": "CEM Majes",
+   "tipo": "CEM",
+   "direccion": "OFICINA ESTADIO ALMIRANTE MIGUEL GRAU S/N - AV. CARLOS SHUTTON - EL PEDREGAL - MAJES",
+   "departamento": "Arequipa",
+   "telefono": "914197324 / 999052840",
+   "cobertura": [
+    "040520"
+   ]
+  },
+  {
+   "nombre": "CEM Florencia De Mora",
+   "tipo": "CEM",
+   "direccion": "CLL. JOSE DE LA TORRE UGARTE, N° 1000 2DO PISO (DENTRO DE LA MUNICIPALIDAD)",
+   "departamento": "La Libertad",
+   "telefono": "994801050 / 999052367",
+   "cobertura": [
+    "130103"
+   ]
+  },
+  {
+   "nombre": "CEM La Victoria",
+   "tipo": "CEM",
+   "direccion": "JR. SEBASTIAN BARRANCA N° 290-2DO PISO-LA VICTORIA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "914171432 / 994833953",
+   "cobertura": [
+    "150115"
+   ]
+  },
+  {
+   "nombre": "CEM San Miguel (Lima)",
+   "tipo": "CEM",
+   "direccion": "LA CASA DE LA CULTURA-CALLE FEDERICO GALLESE 420-SAN MIGUEL",
+   "departamento": "Lima Metropolitana",
+   "telefono": "914159470 / 940414728",
+   "cobertura": [
+    "150136"
+   ]
+  },
+  {
+   "nombre": "CEM San Juan Bautista",
+   "tipo": "CEM",
+   "direccion": "AVENIDA ABELARDO QUIÑONES N° 2371)",
+   "departamento": "Loreto",
+   "telefono": "914182552 / 994801059",
+   "cobertura": [
+    "160113"
+   ]
+  },
+  {
+   "nombre": "CEM Inambari",
+   "tipo": "CEM",
+   "direccion": "JR. FRANCISCO BOLOGNESI S/N",
+   "departamento": "Madre De Dios",
+   "telefono": "914181517 / 994833688",
+   "cobertura": [
+    "170102"
+   ]
+  },
+  {
+   "nombre": "CEM Cerro Colorado (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA ALFONSO UGARTE CUADRA 2 S/N, CERRO COLORADO - AREQUIPA",
+   "departamento": "Arequipa",
+   "telefono": "989388721 / 940414725",
+   "cobertura": [
+    "040104"
+   ]
+  },
+  {
+   "nombre": "CEM El Milagro (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. TUPAC AMARU MZ. 11 LOTE 1, CENTRO POBLADO MENOR EL MILAGRO, HUANCHACO - TRUJILLO - LA LIBERTAD.",
+   "departamento": "La Libertad",
+   "telefono": "989353729 / 940406584",
+   "cobertura": [
+    "130104"
+   ]
+  },
+  {
+   "nombre": "CEM Del Norte (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE FRANCISCO CUNEO 1119, CHICLAYO",
+   "departamento": "Lambayeque",
+   "telefono": "999052487 / 994833686",
+   "cobertura": [
+    "140101"
+   ]
+  },
+  {
+   "nombre": "CEM Villa Maria Del Triunfo (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. EL TRIUNFO N° 374-2DO PISO-CERCADO VILLA MARÍA DEL TRIUNFO-LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "932978593 / 994840281",
+   "cobertura": [
+    "150143"
+   ]
+  },
+  {
+   "nombre": "CEM Imperial (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV.. DOS DE MAYO N° 350, IMPERIAL - CAÑETE - LIMA.",
+   "departamento": "Lima Provincia",
+   "telefono": "989247924 / 01-508568 / 994819601",
+   "cobertura": [
+    "150507"
+   ]
+  },
+  {
+   "nombre": "CEM Carmen Alto (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA LOS LIBERTADORES S/N, CARMEN ALTO - HUAMANGA - AYACUCHO. REFERENCIA: FRENTE AL MERCADO DE PRODUCTORES DEL DISTRITO DE CARMEN ALTO.",
+   "departamento": "Ayacucho",
+   "telefono": "989378098 / 066-67005 / 994841161",
+   "cobertura": [
+    "050104"
+   ]
+  },
+  {
+   "nombre": "CEM Huanta (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA SAN MARTÍN N° 372, 2DO PISO HUANTA - HUANTA - AYACUCHO. REFERENCIA: A 1 CUADRA DE LA PLAZA PRINCIPAL DE HUANTA.",
+   "departamento": "Ayacucho",
+   "telefono": "983152017 / 914171432",
+   "cobertura": [
+    "050401"
+   ]
+  },
+  {
+   "nombre": "CEM Chorrillos (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. DEFENSORES DEL MORRO N° 650-CHORRILLOS-LIMA-CDRA 6 DE EX. AVENIDA HUAYLAS",
+   "departamento": "Lima Metropolitana",
+   "telefono": "989211145 / 01-340542 / 994800533-932963743",
+   "cobertura": [
+    "150108"
+   ]
+  },
+  {
+   "nombre": "CEM Ciudad Nueva (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE CASIMIRO ESPEJO S/N, CIUDAD NUEVA - TACNA - TACNA.",
+   "departamento": "Tacna",
+   "telefono": "989353178 / 994841146",
+   "cobertura": [
+    "230104"
+   ]
+  },
+  {
+   "nombre": "CEM Sagitario (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. LAS GAVIOTAS N° 1400 URB. SAGITARIO-SANTIAGO DE SURCO-LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "989353159 / 01-395913 / 994800591",
+   "cobertura": [
+    "150140"
+   ]
+  },
+  {
+   "nombre": "CEM De Familia Cajamarca (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. AYACUCHO S/N CUADRA 6 NTERSECCION CON EL JR. AMAZONAS 2DO PISO",
+   "departamento": "Cajamarca",
+   "telefono": "914157811 / 076-67019 / 994840264",
+   "cobertura": [
+    "060101"
+   ]
+  },
+  {
+   "nombre": "CEM Carmen De La Legua Reynoso (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA 1RO. DE MAYO N° 1108, CARMEN DE LA LEGUA REYNOSO - CALLAO - CALLAO. REFERENCIA: A 2 CUADRAS DE LA MUNICIPALIDAD DE CARMEN DE LA LEGUA REYNOSO.",
+   "departamento": "Callao",
+   "telefono": "989388723 / 940404512",
+   "cobertura": [
+    "070103"
+   ]
+  },
+  {
+   "nombre": "CEM De Familia Cusco (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JIRÓN PARURO CON JIRÓN SICUANI S/N, URBANIZACIÓN EL PROGRESO, WANCHAQ - CUSCO - CUSCO.",
+   "departamento": "Cusco",
+   "telefono": "994800808 / 084-87985 / 994834118",
+   "cobertura": [
+    "080108"
+   ]
+  },
+  {
+   "nombre": "CEM Huancayo (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA FERROCARRIL N°555, HUANCAYO - HUANCAYO - JUNÍN. REFERENCIA: ENTRE JIRÓN CUSCO Y JIRÓN AYACUCHO.",
+   "departamento": "Junin",
+   "telefono": "989248190 / 064-21163 / 994840340",
+   "cobertura": [
+    "120101"
+   ]
+  },
+  {
+   "nombre": "CEM De Familia El Agustino (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. ALFREDO TEJADA DIAZ N° 237 - URB. POPULAR LA CORPORACIÓN",
+   "departamento": "Lima Metropolitana",
+   "telefono": "989337084 / 01-515667 / 994840286",
+   "cobertura": [
+    "150111"
+   ]
+  },
+  {
+   "nombre": "CEM Laura Caller (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. RÍO MARAÑÓN CDRA 8 S/N-LOS OLIVOS-LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "989355773 / 994819554",
+   "cobertura": [
+    "150117"
+   ]
+  },
+  {
+   "nombre": "CEM San Pedro De Carabayllo (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. MIGUEL GRAU N°285-CARABAYLLO-LIMA-ESPALDAS DEL COLEGIO REPÚBLICA DE ARGENTINA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "989215939 / 01-508567 / 914159470",
+   "cobertura": [
+    "150106"
+   ]
+  },
+  {
+   "nombre": "CEM San Martin De Porres (Lima) (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE MANUEL VILLAR S/N, CDRA 4-SAN MARTÍN DE PORRRES-LIMA-ALT. DE CDRA 4 DE HABICH",
+   "departamento": "Lima Metropolitana",
+   "telefono": "989292298 / 01-417809 / 941524326",
+   "cobertura": [
+    "150135"
+   ]
+  },
+  {
+   "nombre": "CEM Iquitos (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE MORONA N°120",
+   "departamento": "Loreto",
+   "telefono": "989379417 / 994840439",
+   "cobertura": [
+    "160101"
+   ]
+  },
+  {
+   "nombre": "CEM Asunción (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JIRON PUNO N° 353, ASUNCION - CAJAMARCA - CAJAMARCA. REFERENCIA: A 1 CUADRA DE LA PLAZA PRINCIPAL DE ASUNCION.",
+   "departamento": "Cajamarca",
+   "telefono": "989254602 / 076-67019 / 994819530",
+   "cobertura": [
+    "060102"
+   ]
+  },
+  {
+   "nombre": "CEM Sicuani (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "PROLONGACIÓN DE LA AVENIDA GRAU S/N, SICUANI - CANCHIS- CUSCO.",
+   "departamento": "Cusco",
+   "telefono": "989354281 / 084-35138 / 994833554",
+   "cobertura": [
+    "080601"
+   ]
+  },
+  {
+   "nombre": "CEM De Familia Collique (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. FRANCISCO DE ZELA S/N 5TA. ZONA COLLIQUE COMAS REF. AL FRENTE DEL COLEGIO FE Y ALEGRIA 13",
+   "departamento": "Lima Metropolitana",
+   "telefono": "941526977 / 01-508565 / 932870341",
+   "cobertura": [
+    "150110"
+   ]
+  },
+  {
+   "nombre": "CEM Nueva Sullana (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. EL NIÑO S/N MZ. B LOTE 13, SULLANA - SULLANA - PIURA.",
+   "departamento": "Piura",
+   "telefono": "989389118 / 073-57922 / 999053319",
+   "cobertura": [
+    "200601"
+   ]
+  },
+  {
+   "nombre": "CEM Gregorio Albarracin (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "ASOCIACIÓN DE VIVIENDA 29 DE MAYO - RIO AZUL MANZANA 424-A P- LOTE 1",
+   "departamento": "Tacna",
+   "telefono": "989336758 / 932870914",
+   "cobertura": [
+    "230110"
+   ]
+  },
+  {
+   "nombre": "CEM Mazamari (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV.QUILLABAMBA N° 498, MAZAMARI - SATIPO - JUNÍN",
+   "departamento": "Junin",
+   "telefono": "989351070 / 064-67029 / 932870471",
+   "cobertura": [
+    "120604"
+   ]
+  },
+  {
+   "nombre": "CEM Santa Anita (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. CIRO ALEGRIA N° 555-3ER PISO COOPERATIVA UNIVERSAL-SANTA ANITA-LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "989362475 / 999053301",
+   "cobertura": [
+    "150137"
+   ]
+  },
+  {
+   "nombre": "CEM Samegua (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. EMANCIPACION MZ. Z LOTE 2.",
+   "departamento": "Moquegua",
+   "telefono": "989327972 / 053-67011 / 914198614",
+   "cobertura": [
+    "180104"
+   ]
+  },
+  {
+   "nombre": "CEM Puno (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JIRÓN AYACUCHO N° 208, PUNO - PUNO - PUNO.",
+   "departamento": "Puno",
+   "telefono": "989320335 / 914171081",
+   "cobertura": [
+    "210101"
+   ]
+  },
+  {
+   "nombre": "CEM Santa Barbara (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JIRÓN LOS OLIVOS S/N ESQUINA CON AVENIDA MÁRTIRES 4 DE NOVIEMBRE, JULIACA - SAN ROMÁN - PUNO.",
+   "departamento": "Puno",
+   "telefono": "989329171 / 989211145",
+   "cobertura": [
+    "211101"
+   ]
+  },
+  {
+   "nombre": "CEM Chimbote (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. VICTOR RAUL HAYA DE LA TORRE N° 296, CHIMBOTE - SANTA - ANCASH. REFERENCIA: A LA ESPALDA DEL POLICLINICO DE LA SANIDAD.",
+   "departamento": "Ancash",
+   "telefono": "989388714 / 043-67068 / 966472586",
+   "cobertura": [
+    "021801"
+   ]
+  },
+  {
+   "nombre": "CEM Huancavelica (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. GRAU 126 - INT COMISARIA SECTORIAL HUANCAVELICA",
+   "departamento": "Huancavelica",
+   "telefono": "989388711 / 989321312",
+   "cobertura": [
+    "090101"
+   ]
+  },
+  {
+   "nombre": "CEM San José (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CLL. LIMA N° 601, SAN JOSE - PACASMAYO - LA LIBERTAD. REFERENCIA: AL LADO DE CENTRO DE SALUD SAN JOSE.",
+   "departamento": "La Libertad",
+   "telefono": "989366194 / 932876567",
+   "cobertura": [
+    "130705"
+   ]
+  },
+  {
+   "nombre": "CEM Pueblo Libre (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "PASAJE. GENERAL VIVANCO N° 101-PUEBLO LIBRE-LIMA-ALT. DE CDRA 5-6 DE LA AV. SUCRE",
+   "departamento": "Lima Metropolitana",
+   "telefono": "989308129 / 01-345947 / 941526977",
+   "cobertura": [
+    "150121"
+   ]
+  },
+  {
+   "nombre": "CEM De Familia Tumbes (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. TUPAC AMARU S/N MZ. G LOTE 09, 2DO PISO DE LA COMISARIA",
+   "departamento": "Tumbes",
+   "telefono": "989354263 / 989337084",
+   "cobertura": [
+    "240101"
+   ]
+  },
+  {
+   "nombre": "CEM Lurin (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. UNIÓN N° 160- COSTADO DE MUNI DE LURÍN",
+   "departamento": "Lima Metropolitana",
+   "telefono": "989252751 / 01-508567 / 991457373",
+   "cobertura": [
+    "150119"
+   ]
+  },
+  {
+   "nombre": "CEM San Borja (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. FEDOROVICH STRAVINSKY N° 200-SAN BORJA-LIMA-ALT. DE CDRA 34 DE AVIACIÓN",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994819213 / 01-508567 / 999052705",
+   "cobertura": [
+    "150130"
+   ]
+  },
+  {
+   "nombre": "CEM Talavera (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. AYACUCHO NO. 282 2DA CDRA. DEL DISTRITO TALAVERA",
+   "departamento": "Apurimac",
+   "telefono": "989264103 / 083-67010 / 982341267",
+   "cobertura": [
+    "030216"
+   ]
+  },
+  {
+   "nombre": "CEM Amarilis (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. LOS GIRASOLES S/N, PAUCARBAMBILLA - AMARILIS - HUÁNUCO - HUÁNUCO. REFERENCIA: FRENTE COLEGIO AMAUTA.",
+   "departamento": "Huanuco",
+   "telefono": "989298158 / 062-760073 / 958496106",
+   "cobertura": [
+    "100102"
+   ]
+  },
+  {
+   "nombre": "CEM Ica (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA JUAN JOSÉ ELIAS CUADRA 4 S/N, ICA - ICA - ICA.",
+   "departamento": "Ica",
+   "telefono": "989351131 / 999051814",
+   "cobertura": [
+    "110101"
+   ]
+  },
+  {
+   "nombre": "CEM Vitarte (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. NICOLAS AYLLON, CARRETERA CENTRAL S/N KM 7.5",
+   "departamento": "Lima Metropolitana",
+   "telefono": "989260351 / 01-508565 / 989355773",
+   "cobertura": [
+    "150103"
+   ]
+  },
+  {
+   "nombre": "CEM Chancay (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. BOLIVAR N° 150, CHANCAY - HUARAL - LIMA",
+   "departamento": "Lima Provincia",
+   "telefono": "932953676 / 01-508569 / 932870748",
+   "cobertura": [
+    "150605"
+   ]
+  },
+  {
+   "nombre": "CEM Naranjos (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. PARDO MIGUEL CON JIRON ANGELES S/N,- PARDO MIGUEL - RIOJA - SAN MARTIN.",
+   "departamento": "San Martin",
+   "telefono": "989219365 / 989252751",
+   "cobertura": [
+    "220805"
+   ]
+  },
+  {
+   "nombre": "CEM Campo Marte (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE ALFONSO UGARTE S/N ESQUINA CON JIRÓN GRAU",
+   "departamento": "Arequipa",
+   "telefono": "989295257 / 054-67980 / 958064615",
+   "cobertura": [
+    "040112"
+   ]
+  },
+  {
+   "nombre": "CEM Chincha (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE PLAZA DE ARMAS N° 400, CHINCHA ALTA, CHINCHA, ICA",
+   "departamento": "Ica",
+   "telefono": "989372772 / 914182840",
+   "cobertura": [
+    "110201"
+   ]
+  },
+  {
+   "nombre": "CEM Condevilla (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. BERMÚDEZ Y BILLINGHURST S/N-SAN MARTÍN DE PORRES-LIMA-ALT. DE LA 36 DE JOSÉ GRANDA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "989321312 / 999052839",
+   "cobertura": [
+    "150135"
+   ]
+  },
+  {
+   "nombre": "CEM Huacho (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE SALAVERRY N° 279, HUACHO - HUAURA - LIMA.",
+   "departamento": "Lima Provincia",
+   "telefono": "932971169 / 01-508568 / 999 052 458",
+   "cobertura": [
+    "150801"
+   ]
+  },
+  {
+   "nombre": "CEM Jicamarca (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "MZ Q-1 S/N , OVALO PRINCIPAL DE JICAMARCA, URBANIZACION JICAMARCA ANEXO 8 DE HUAROCHIRÍ, SAN ANTONIO - HUAROCHIRÍ",
+   "departamento": "Lima Provincia",
+   "telefono": "989205076 / 01-508568 / 989308129",
+   "cobertura": [
+    "150716"
+   ]
+  },
+  {
+   "nombre": "CEM Puerto Bermudez (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA CAPITAN LARRIE S/N, PUERTO BERMUDEZ - OXAPAMPA - PASCO",
+   "departamento": "Pasco",
+   "telefono": "989373576 / 932873976",
+   "cobertura": [
+    "190306"
+   ]
+  },
+  {
+   "nombre": "CEM Santa Clara (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "PASAJE GUARDIA CIVIL CON AV. ESTRELLA S/N-SANTA CLARA-ATE-LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "989209329 / 989353159",
+   "cobertura": [
+    "150103"
+   ]
+  },
+  {
+   "nombre": "CEM Santa Julia (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. DON BOSCO (AV. EX-CIRCUNVALACION) MZ G-14, LTE 13 - A.H. SANTA JULIA",
+   "departamento": "Piura",
+   "telefono": "989904685 / 073-67924 / 994819213",
+   "cobertura": [
+    "200115"
+   ]
+  },
+  {
+   "nombre": "CEM Andres Avelino Caceres (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. JUAN VELASCO ALVARADO MZ N LOTE 11, ESQUINA CON AVENIDA REVOLUCIÓN",
+   "departamento": "Arequipa",
+   "telefono": "932859513 / 932871293",
+   "cobertura": [
+    "040107"
+   ]
+  },
+  {
+   "nombre": "CEM De Familia Canto Rey (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE RÍO CHIRA S/N URB. CANTO REY - SAN JUAN DE LURIGANCHO-LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "932876567 / 932873123",
+   "cobertura": [
+    "150132"
+   ]
+  },
+  {
+   "nombre": "CEM Barranca (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE INDEPENDENCIA S/N, ESQUINA CON URB. SANTA SORAIDA, BARRANCA - BARRANCA - LIMA",
+   "departamento": "Lima Provincia",
+   "telefono": "914193059 / 01-508568 / 989292298",
+   "cobertura": [
+    "150201"
+   ]
+  },
+  {
+   "nombre": "CEM Chivay (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "ESQ. CALLE SUCRE CON 9 DE DICIEMBRE (PLAZA DE ARMAS S/N), CHIVAY - CAYLLOMA - AREQUIPA.",
+   "departamento": "Arequipa",
+   "telefono": "932860744 / 989215939",
+   "cobertura": [
+    "040501"
+   ]
+  },
+  {
+   "nombre": "CEM Santiago (Cusco) (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE JORGE OCHOA NRO.356 SANTIAGO - CUSCO - CUSCO.",
+   "departamento": "Cusco",
+   "telefono": "940410573 / 084-67983 / 989362475",
+   "cobertura": [
+    "080106"
+   ]
+  },
+  {
+   "nombre": "CEM San Antonio (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA ANTONIO CABELLO MZ J5 LOTE 01 ASOCIACIÓN EL ALTIPLANO",
+   "departamento": "Moquegua",
+   "telefono": "914178446 / 053-67011 / 989209329",
+   "cobertura": [
+    "180107"
+   ]
+  },
+  {
+   "nombre": "CEM Juan Ingunza Valdivia (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "URB. JUAN INGUNZA VALDIVIA, AV. TOMAS VALLE 34, CALLAO - CALLAO - CALLAO. REF. 1ER PISO DE LA COMISARIA JUAN INGUZA VALDIVIA",
+   "departamento": "Callao",
+   "telefono": "932974362 / 999053107",
+   "cobertura": [
+    "070101"
+   ]
+  },
+  {
+   "nombre": "CEM La Molina (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. ELIAS APARICIO CDRA 7 LA PLANICIE S/N-LA MOLINA-LIMA-COSTADO DE MUNICIPIO",
+   "departamento": "Lima Metropolitana",
+   "telefono": "932876770 / 01-694016 / 999052823",
+   "cobertura": [
+    "150114"
+   ]
+  },
+  {
+   "nombre": "CEM Casma (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. MAGDALENA S/N CUADRA 2, CASMA - CASMA - ANCASH. REFERENCIA:AL FRENTE DE LA PLAZA DE ARMAS DE CASMA.",
+   "departamento": "Ancash",
+   "telefono": "989274805 / 999052683",
+   "cobertura": [
+    "020801"
+   ]
+  },
+  {
+   "nombre": "CEM Tahuantinsuyo (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "URB. UQCHULLO GRANDE, PASAJE AMÉRICA S/N CUSCO - CUSCO - CUSCO.",
+   "departamento": "Cusco",
+   "telefono": "932865195 / 084-67985 / 932978593",
+   "cobertura": [
+    "080101"
+   ]
+  },
+  {
+   "nombre": "CEM La Tinguiña (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA VICTORIO GOTUZZO BIANCHI N° 432, LA TINGUIÑA - ICA - ICA",
+   "departamento": "Ica",
+   "telefono": "932867232 / 989260351",
+   "cobertura": [
+    "110102"
+   ]
+  },
+  {
+   "nombre": "CEM La Oroya (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. HORACIO ZEVALLOS GAMEZ N° 209, LA OROYA, REFERENCIA: INTERIOR DE LA COMISARIA SECTORIAL LA OROYA, ESQUINA CRUCE TARMA",
+   "departamento": "Junin",
+   "telefono": "932869547 / 064-67029 / 994841324",
+   "cobertura": [
+    "120801"
+   ]
+  },
+  {
+   "nombre": "CEM Apolo (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. 3 DE FEBRERO N° 1050-URB. APOLO-LA VICTORIA-PARADERO APOLO",
+   "departamento": "Lima Metropolitana",
+   "telefono": "932870914 / 01-698785 / 914158590",
+   "cobertura": [
+    "150115"
+   ]
+  },
+  {
+   "nombre": "CEM Puente Piedra (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. BUENOS AIRES S/N CDRA 2, ESQUINA CON REPÚBLICA DE VENEZUELA-PLAZA DE ARMAS DE PUENTE PIEDRA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "932873976 / 01-369252 / 994833796",
+   "cobertura": [
+    "150125"
+   ]
+  },
+  {
+   "nombre": "CEM Uchuglla (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. GRAU CDRA 01 - CON FERNANDO BELAUNDE TERRY",
+   "departamento": "San Martin",
+   "telefono": "932857407 / 940 414 738",
+   "cobertura": [
+    "220101"
+   ]
+  },
+  {
+   "nombre": "CEM Sectorial Buenos Aires (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. PACIFICO MZ E LOTE 45 URBANIZACION BUENOS AIRES, SEGUNDO PISO COMISARIA. REFERENCIA: AL COSTADO DEL MERCADO BUENOS AIRES.",
+   "departamento": "Ancash",
+   "telefono": "914152348 / 043-67067 / 994833882",
+   "cobertura": [
+    "021809"
+   ]
+  },
+  {
+   "nombre": "CEM Acequia Alta (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA MIGUEL GRAU Nº 903 , CAYMA - AREQUIPA - AREQUIPA.",
+   "departamento": "Arequipa",
+   "telefono": "932859159 / 994834249",
+   "cobertura": [
+    "040103"
+   ]
+  },
+  {
+   "nombre": "CEM Playa Rimac (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JIRÓN GRAU S/N, CALLAO - CALLAO - CALLAO. REF. A 2 CUADRAS DEL PARADERO QUILCA CON FAUCETT",
+   "departamento": "Callao",
+   "telefono": "932862476 / 01-403009 / 994841221",
+   "cobertura": [
+    "070101"
+   ]
+  },
+  {
+   "nombre": "CEM Sapallanga (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA FIDEL MIRANDA N° 1300 SAPALLANGA - HUANCAYO - JUNÍN. REFERENCIA: A 1 CUADRA DEL PARADERO PRINCIPAL DE SAPALLANGA.",
+   "departamento": "Junin",
+   "telefono": "932869536 / 064-67029 / 940404510",
+   "cobertura": [
+    "120133"
+   ]
+  },
+  {
+   "nombre": "CEM Zaña (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CLL. SAN FRANCISCO Nº 456, SAÑA - CHICLAYO - LAMBAYEQUE.",
+   "departamento": "Lambayeque",
+   "telefono": "932869698 / 994840474",
+   "cobertura": [
+    "140115"
+   ]
+  },
+  {
+   "nombre": "CEM San Isidro (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE ANTEQUERA N° 116-SAN ISIDRO-LIMA-ALT. DE CDRA 29 DE LA AV. AREQUIPA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "932871293 / 01-687448 / 948086456",
+   "cobertura": [
+    "150131"
+   ]
+  },
+  {
+   "nombre": "CEM Jauja (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JIRÓN JOSÉ GÁLVEZ Nº 335, JAUJA - JAUJA - JUNÍN",
+   "departamento": "Junin",
+   "telefono": "932869024 / 064-67030 / 994685036",
+   "cobertura": [
+    "120401"
+   ]
+  },
+  {
+   "nombre": "CEM Lambayeque (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CLL. DOS DE MAYO N° 316, LAMBAYEQUE - LAMBAYEQUE - LAMBAYEQUE.",
+   "departamento": "Lambayeque",
+   "telefono": "932869849 / 914168384",
+   "cobertura": [
+    "140301"
+   ]
+  },
+  {
+   "nombre": "CEM De Familia Yanacancha (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. LOS INCAS INTERSECCIÓN CON EL PASAJE 5 DE OCTUBRE, YANACANCHA - PASCO - PASCO",
+   "departamento": "Pasco",
+   "telefono": "932937502 / 992292286",
+   "cobertura": [
+    "190113"
+   ]
+  },
+  {
+   "nombre": "CEM La Esperanza (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. PROGRESO S/N CP. QUIULACOCHA. A 10 MINUTOS DE LA EX BASE MILITAR",
+   "departamento": "Pasco",
+   "telefono": "935851430 / 999052906",
+   "cobertura": [
+    "190109"
+   ]
+  },
+  {
+   "nombre": "CEM Azangaro (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JIRÓN TACNA N° 367 - AZÁNGARO - AZÁNGARO - PUNO.",
+   "departamento": "Puno",
+   "telefono": "932941641 / 051-79435 / 914171379",
+   "cobertura": [
+    "210201"
+   ]
+  },
+  {
+   "nombre": "CEM Bellavista (Apurimac) (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA PANAMERICANA Nº 1600 - ABANCAY - ABANCAY - APURIMAC",
+   "departamento": "Apurimac",
+   "telefono": "932857610 / 083-67010 / 941524323",
+   "cobertura": [
+    "030101"
+   ]
+  },
+  {
+   "nombre": "CEM Florencia De Mora (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "INTERSECCION CLL. 5 DE NOVIEMBRE CON 26 DE JULIO, FLORENCIA DE MORA - TRUJILLO - LA LIBERTAD.",
+   "departamento": "La Libertad",
+   "telefono": "963713868 / 989205076 - 932874885",
+   "cobertura": [
+    "130103"
+   ]
+  },
+  {
+   "nombre": "CEM San Vicente De Cañete (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JIRÓN MIGUEL GRAU CON CALLE SANTA RITA S/N - SAN VICENTE DE CAÑETE - CAÑETE - LIMA. REFERENCIA: A MEDIA CUADRA DE LA AGENCIA SOYUS DE CAÑETE.",
+   "departamento": "Lima Provincia",
+   "telefono": "994685036 / 01-508568 / 948097154",
+   "cobertura": [
+    "150501"
+   ]
+  },
+  {
+   "nombre": "CEM Curahuasi (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE SUCRE MZ Q2 LOTE 10",
+   "departamento": "Apurimac",
+   "telefono": "932858903 / 083-67011 / 932953676",
+   "cobertura": [
+    "030104"
+   ]
+  },
+  {
+   "nombre": "CEM Tournavista (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA LETERNAU S/N, TOURNAVISTA - PUERTO INCA - HUÁNUCO. REFERENCIA: FRENTE A LA PLAZA DE ARMAS DE TOURNAVISTA",
+   "departamento": "Huanuco",
+   "telefono": "953704701 / 989247924",
+   "cobertura": [
+    "100904"
+   ]
+  },
+  {
+   "nombre": "CEM San Miguel (Ica) (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA SAN MARTÍN DE PORRES CUADRA 3, CENTRO POBLADO SAN MIGUEL, PISCO - ICA",
+   "departamento": "Ica",
+   "telefono": "932867094 / 056-67017 / 938707272/994839924",
+   "cobertura": [
+    "110501"
+   ]
+  },
+  {
+   "nombre": "CEM Barranco (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. PROLONG. SAN MARTÍN Nº 250-BARRANCO-A 3 CDRAS DE PLAZA DE BARRANCO",
+   "departamento": "Lima Metropolitana",
+   "telefono": "932870471 / 01-694280",
+   "cobertura": [
+    "150104"
+   ]
+  },
+  {
+   "nombre": "CEM Lince (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. BERNARDO ALCEDO Nº 865 2DO PISO-LINCE-FRENTE DEL COLEGIO MELITÓN CARBAJAL",
+   "departamento": "Lima Metropolitana",
+   "telefono": "932870748 / 01-698449",
+   "cobertura": [
+    "150116"
+   ]
+  },
+  {
+   "nombre": "CEM San Antonio - Cañete (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA LIBERTAD Nº 434 - 436 SAN ANTONIO - CAÑETE - LIMA",
+   "departamento": "Lima Provincia",
+   "telefono": "948086456 / 01-508569",
+   "cobertura": [
+    "150513"
+   ]
+  },
+  {
+   "nombre": "CEM San Jerónimo (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA MANCO CAPAC Nº 161 SAN JERÓNIMO - CUSCO -CUSCO.",
+   "departamento": "Cusco",
+   "telefono": "932862503",
+   "cobertura": [
+    "080104"
+   ]
+  },
+  {
+   "nombre": "CEM San Luis (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE JOSÉ ORENGO N° 903 SAN LUIS-LIMA-ALT. DE CDRA 1105 DE LA AV. SAN JUAN",
+   "departamento": "Lima Metropolitana",
+   "telefono": "932873123 / 01-698742 / 914172763",
+   "cobertura": [
+    "150134"
+   ]
+  },
+  {
+   "nombre": "CEM El Triunfo (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE MIGUEL GRAU MZ.D LOTE 4 PUEBLO JOVEN EL TRIUNFO - LA JOYA - AREQUIPA - AREQUIPA.",
+   "departamento": "Arequipa",
+   "telefono": "932 980 0 / 994833526",
+   "cobertura": [
+    "040108"
+   ]
+  },
+  {
+   "nombre": "CEM De Familia Piura (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "URBANIZACION LA ALBORADA - CLL. 9 SIN NUMERO",
+   "departamento": "Piura",
+   "telefono": "932941273 / 073-57922",
+   "cobertura": [
+    "200101"
+   ]
+  },
+  {
+   "nombre": "CEM Aucayacu (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JIRÓN INDEPENDENCIA CUADRA 4, CRESPO Y CASTILLO - LEONCIO PRADO - HUÁNUCO. REFERENCIA: A ESPALDAS DE LA MUNICIPALIDAD DISTRITAL DE JOSÉ CRESPO Y CASTILLO.",
+   "departamento": "Huanuco",
+   "telefono": "970268112 / 994800484",
+   "cobertura": [
+    "100604"
+   ]
+  },
+  {
+   "nombre": "CEM Yurimaguas (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE CONDAMINE S/N -BARRIO MOISES TONG LEE",
+   "departamento": "Loreto",
+   "telefono": "932879233 / 065-76105 / 994833705",
+   "cobertura": [
+    "160201"
+   ]
+  },
+  {
+   "nombre": "CEM Juanjui (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JIRON LA MERCED N° 324 - JUANJUI - MARISCAL CACERES - SAN MARTIN. REFERENCIA: FRENTE A LA PLAZA DE ARMAS DE JUANJUI.",
+   "departamento": "San Martin",
+   "telefono": "932942045 / 042-594672 / 932958891",
+   "cobertura": [
+    "220601"
+   ]
+  },
+  {
+   "nombre": "CEM Bagua (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. HEROES DEL CENEPA N° 1000 - BAGUA - BAGUA - AMAZONAS - AL COSTADO DE LA MUNICIPALIDAD PROVINCIAL DE BAGUA.",
+   "departamento": "Amazonas",
+   "telefono": "932854358 / 041-79607 / 989379417/999923613",
+   "cobertura": [
+    "010201"
+   ]
+  },
+  {
+   "nombre": "CEM Alfonso Ugarte (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. ALFONSO UGARTE N° 1352-LIMA-FRENTE DEL PARADERO ESPAÑA DEL METROPOLITANO",
+   "departamento": "Lima Metropolitana",
+   "telefono": "932870341 / 932879233",
+   "cobertura": [
+    "150101"
+   ]
+  },
+  {
+   "nombre": "CEM Salvación (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA LA ESPERANZA S/N, VILLA SALVACIÓN",
+   "departamento": "Madre De Dios",
+   "telefono": "932937411",
+   "cobertura": [
+    "170201"
+   ]
+  },
+  {
+   "nombre": "CEM San Sebastián (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "PROLONGACIÓN AV. DE LA CULTURA S/N SAN SEBASTIÁN - CUSCO - CUSCO.",
+   "departamento": "Cusco",
+   "telefono": "932863448",
+   "cobertura": [
+    "080105"
+   ]
+  },
+  {
+   "nombre": "CEM Desaguadero (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA 28 DE JULIO Nº 325 - DESAGUADERO - CHUCUITO - PUNO.",
+   "departamento": "Puno",
+   "telefono": "932941794 / 051-67947",
+   "cobertura": [
+    "210402"
+   ]
+  },
+  {
+   "nombre": "CEM El Obrero (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CLL. 13 DE DICIEMBRE S/N, ASENTAMIENTO HUMANO EL OBRERO - SULLANA",
+   "departamento": "Piura",
+   "telefono": "932941302 / 073-78209",
+   "cobertura": [
+    "200601"
+   ]
+  },
+  {
+   "nombre": "CEM Mariano Melgar",
+   "tipo": "CEM",
+   "direccion": "AVENIDA SIMON BOLIVAR 818, CENTRO CÍVICO DE MARIANO MELGAR, 3ER PISO.",
+   "departamento": "Arequipa",
+   "telefono": "914184239",
+   "cobertura": [
+    "040109"
+   ]
+  },
+  {
+   "nombre": "CEM Sayan (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "PLAZA DE ARMAS DE SAYÁN S/N - SAYÁN - HUAURA - LIMA. REFERENCIA: PLAZA DE ARMAS DE SAYÁN. {COMISARÍA DE SAYÁN}",
+   "departamento": "Lima Provincia",
+   "telefono": "948097154 / 01-508569",
+   "cobertura": [
+    "150811"
+   ]
+  },
+  {
+   "nombre": "CEM Saylla",
+   "tipo": "CEM",
+   "direccion": "PLAZA MUNICIPAL S/N DISTRITO DE SAYLLA-PALACIO MUNICIPAL",
+   "departamento": "Cusco",
+   "telefono": "914186694 / 084-67953",
+   "cobertura": [
+    "080107"
+   ]
+  },
+  {
+   "nombre": "CEM Santa Elizabeth (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. NEVADO HUANDOY S/N MZ F LOTE 18-URB. SANTA ELIZABETH-SAN JUAN DE LURIGANCHO",
+   "departamento": "Lima Metropolitana",
+   "telefono": "999053107 / 01-508565",
+   "cobertura": [
+    "150132"
+   ]
+  },
+  {
+   "nombre": "CEM Sol De Oro (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE BUEN PASTOR S/N-LOS OLIVOS-LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "999052823 / 01-508567",
+   "cobertura": [
+    "150117"
+   ]
+  },
+  {
+   "nombre": "CEM Laredo (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CLL. LA FORTUNA S/N LAREDO - TRUJILLO - LA LIBERTAD",
+   "departamento": "La Libertad",
+   "telefono": "999052776",
+   "cobertura": [
+    "130106"
+   ]
+  },
+  {
+   "nombre": "CEM Alto Peru (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. MOQUEGUA MZ Q LOTE 6 AAHH ALTO PERU, CHIMBOTE - SANTA - ANCASH",
+   "departamento": "Ancash",
+   "telefono": "999053145",
+   "cobertura": [
+    "021801"
+   ]
+  },
+  {
+   "nombre": "CEM Chincha Baja (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "PLAZA DE ARMAS Nº 150 - CHINCHA BAJA - CHINCHA - ICA",
+   "departamento": "Ica",
+   "telefono": "999053324 / 056-67017",
+   "cobertura": [
+    "110204"
+   ]
+  },
+  {
+   "nombre": "CEM Caja De Agua (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE MOQUEGUA CON TRUJILLO-URB. CAJA DE AGUA - SAN JUAN DE LURIGANCHO",
+   "departamento": "Lima Metropolitana",
+   "telefono": "914171081",
+   "cobertura": [
+    "150132"
+   ]
+  },
+  {
+   "nombre": "CEM Huaycan (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. CARLOS MARIATEGUI SEGUNDO PISO, S/N-HUAYCÁN-ATE-LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "999052705 / 01-508567",
+   "cobertura": [
+    "150103"
+   ]
+  },
+  {
+   "nombre": "CEM Villa Alejandro (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "MZ O S/N 2DA ETAPA-AMPLIACIÓN VILLA ALEJANDRO-LURÍN-LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "999052683",
+   "cobertura": [
+    "150119"
+   ]
+  },
+  {
+   "nombre": "CEM De Familia Chiclayo (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. SAENZ PEÑA N° 2360, ESQUINA CON AV. CASIQUE COLLIQUE",
+   "departamento": "Lambayeque",
+   "telefono": "999053281",
+   "cobertura": [
+    "140105"
+   ]
+  },
+  {
+   "nombre": "CEM Ancon (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. JOSÉ CARLOS MARIATEGUI CRUCE CON AV. LAS COLINAS-AAHH ESTERAS II-ANCÓN-LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "999053319 / 01-312911",
+   "cobertura": [
+    "150102"
+   ]
+  },
+  {
+   "nombre": "CEM De Familia Santiago (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. ANTONIO LORENA S/N ESQUINA CON JOSE MANUVERA S/N - SANTIAGO - CUSCO -CUSCO",
+   "departamento": "Cusco",
+   "telefono": "999052866 / 084-67984",
+   "cobertura": [
+    "080106"
+   ]
+  },
+  {
+   "nombre": "CEM Yunguyo (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JIRÓN AUDIBERTH N° 273, YUNGUYO, YUNGUYO, PUNO.",
+   "departamento": "Puno",
+   "telefono": "999052854 / 051-67948",
+   "cobertura": [
+    "211301"
+   ]
+  },
+  {
+   "nombre": "CEM Bellavista (Callao)",
+   "tipo": "CEM",
+   "direccion": "AV. JUAN PABLO II. N° 140. INTERIOR DEL GOBIERNO REGIONAL DEL CALLAO. REF: FRENTE AL COLEGIO GENERAL PRADO.",
+   "departamento": "Callao",
+   "telefono": "994800923 / 994801062",
+   "cobertura": [
+    "070102"
+   ]
+  },
+  {
+   "nombre": "CEM Ramon Castilla (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. TALARA Nº S/N, URB. RAMON CASTILLA - CALLAO - CALLAO",
+   "departamento": "Callao",
+   "telefono": "932983153 / 01-404866",
+   "cobertura": [
+    "070101"
+   ]
+  },
+  {
+   "nombre": "CEM Pamplona Ii (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. EDILBERTO RAMOS S/N-LA RINCONADA-SAN JUAN DE MIRAFLORES-LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "999052458",
+   "cobertura": [
+    "150133"
+   ]
+  },
+  {
+   "nombre": "CEM Tamburco (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. SEÑOR DE LA EXALTACIONS/N TAMBURCO - ABANCAY - APURIMAC",
+   "departamento": "Apurimac",
+   "telefono": "932980943 / 083-67010 / 994834132",
+   "cobertura": [
+    "030109"
+   ]
+  },
+  {
+   "nombre": "CEM Sectorial Ayabaca (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CLL. CACERES Nº 105/107 - AYABACA - AYABACA - PIURA",
+   "departamento": "Piura",
+   "telefono": "999052010 / 073-47100",
+   "cobertura": [
+    "200201"
+   ]
+  },
+  {
+   "nombre": "CEM Palomino (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. SANTA JUSTINA CDRA 07-CERCADO DE LIMA-2DO PISO DE LA COMISARÍA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "999052839 / 01-309194 / 994374392",
+   "cobertura": [
+    "150101"
+   ]
+  },
+  {
+   "nombre": "CEM Villa Maria (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. INDEPENDENCIA S/N MZ D LOTE 1 - NUEVO CHIMBOTE - SANTA - ANCASH",
+   "departamento": "Ancash",
+   "telefono": "999053246 / 043-67068 / 994820150",
+   "cobertura": [
+    "021809"
+   ]
+  },
+  {
+   "nombre": "CEM Las Praderas (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. EL CORREGIDOR S/N, CDRA 34-LA MOLINA-LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "999051814",
+   "cobertura": [
+    "150114"
+   ]
+  },
+  {
+   "nombre": "CEM Alto De La Alianza (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE MARIANO SANTOS MZ-Y LOTE 2",
+   "departamento": "Tacna",
+   "telefono": "999052577 / 989904685",
+   "cobertura": [
+    "230102"
+   ]
+  },
+  {
+   "nombre": "CEM Parcona",
+   "tipo": "CEM",
+   "direccion": "AV. JOHN F. KENNEDY N° 500",
+   "departamento": "Ica",
+   "telefono": "994800933",
+   "cobertura": [
+    "110106"
+   ]
+  },
+  {
+   "nombre": "CEM Cartavio (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CLL. REAL S/N, CARTAVIO, SANTIAGO DE CAO, ASCOPE, LA LIBERTAD",
+   "departamento": "La Libertad",
+   "telefono": "999053332 / 932941302",
+   "cobertura": [
+    "130207"
+   ]
+  },
+  {
+   "nombre": "CEM Sectorial Tocache (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JIRON FREDY ALIAGA, CUADRA 4",
+   "departamento": "San Martin",
+   "telefono": "999051795",
+   "cobertura": [
+    "221001"
+   ]
+  },
+  {
+   "nombre": "CEM Huamachuco (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. SANCHEZ CARRION S/N, HUAMACHUCO, SANCHEZ CARRION, LA LIBERTAD.",
+   "departamento": "La Libertad",
+   "telefono": "999052831 / 994801203",
+   "cobertura": [
+    "130901"
+   ]
+  },
+  {
+   "nombre": "CEM Sectorial Olmos (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. AUGUSTO B. LEGUIA N° 430, OLMOS, LAMBAYEQUE, LAMBAYEQUE.",
+   "departamento": "Lambayeque",
+   "telefono": "999052882 / 989389118",
+   "cobertura": [
+    "140308"
+   ]
+  },
+  {
+   "nombre": "CEM Tabalosos (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CARRETERA FERNANDO BELAUNDE TERRY, KM 566+400, TABALOSOS, LAMAS, SAN MARTIN.",
+   "departamento": "San Martin",
+   "telefono": "999051930",
+   "cobertura": [
+    "220510"
+   ]
+  },
+  {
+   "nombre": "CEM Catacaos",
+   "tipo": "CEM",
+   "direccion": "AV. CAYETANO HEREDIA S/N - CATACAOS",
+   "departamento": "Piura",
+   "telefono": "994820150 / 999052773",
+   "cobertura": [
+    "200105"
+   ]
+  },
+  {
+   "nombre": "CEM Chao (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. VICTOR RAUL N° 757, CHAO, VIRU, LA LIBERTAD.",
+   "departamento": "La Libertad",
+   "telefono": "999051843 / 999052010",
+   "cobertura": [
+    "131202"
+   ]
+  },
+  {
+   "nombre": "CEM Bayovar (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. PRIMERO DE MAYO S/N CUADRA 3 III ZONA - BAYOVAR - SJL -LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994615483",
+   "cobertura": [
+    "150132"
+   ]
+  },
+  {
+   "nombre": "CEM El Porvenir (Arequipa) (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA SAN MARTÍN N° 4103(2DO PISO), MIRAFLORES, AREQUIPA, AREQUIPA.",
+   "departamento": "Arequipa",
+   "telefono": "999053099",
+   "cobertura": [
+    "040110"
+   ]
+  },
+  {
+   "nombre": "CEM Pacasmayo (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CLL. 2 DE MAYO N° 105, PACASMAYO, PACASMAYO, LA LIBERTAD.",
+   "departamento": "La Libertad",
+   "telefono": "999053097 / 994800923",
+   "cobertura": [
+    "130704"
+   ]
+  },
+  {
+   "nombre": "CEM De Familia Ayacucho (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. LIBERTAD N 1200 - PRIMER PISO EDIFICIO CASE FRENTE AL PARQUE DE LA MEMORIA",
+   "departamento": "Ayacucho",
+   "telefono": "999052607",
+   "cobertura": [
+    "050101"
+   ]
+  },
+  {
+   "nombre": "CEM Paramonga (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. CENTRAL N° 275 - INTERIOR DE LA COMISARÍA DE PARAMONGA",
+   "departamento": "Lima Provincia",
+   "telefono": "999052906 / 01-508568 / 994840257",
+   "cobertura": [
+    "150202"
+   ]
+  },
+  {
+   "nombre": "CEM Jicamarca Ii (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. TUPAC INCA YUPANQUI MANZANA O S/N OVALO PRINCIPAL DE SAN ANTONIO ANEXO 22",
+   "departamento": "Lima Provincia",
+   "telefono": "941524323 / 01-508569 / 994833661",
+   "cobertura": [
+    "150716"
+   ]
+  },
+  {
+   "nombre": "CEM Acora",
+   "tipo": "CEM",
+   "direccion": "AV. TITICACA S/N",
+   "departamento": "Puno",
+   "telefono": "940414726 / 051-67947 / 932975612",
+   "cobertura": [
+    "210102"
+   ]
+  },
+  {
+   "nombre": "CEM San Juan Bautista (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE RAMÓN CASTILLA N° 142 - PLAZA DE ARMAS , SAN JUAN BAUTISTA, ICA, ICA.",
+   "departamento": "Ica",
+   "telefono": "999053162 / 989388723",
+   "cobertura": [
+    "110110"
+   ]
+  },
+  {
+   "nombre": "CEM La Union (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CLL. UNION N° 403, LA UNION, PIURA, PIURA.",
+   "departamento": "Piura",
+   "telefono": "994801203 / 932860792",
+   "cobertura": [
+    "200110"
+   ]
+  },
+  {
+   "nombre": "CEM La Huaca (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CLL. FERROCARRIL N°.368, LA HUACA, PAITA, PIURA.",
+   "departamento": "Piura",
+   "telefono": "999053064 / 073-57923 / 932983153",
+   "cobertura": [
+    "200505"
+   ]
+  },
+  {
+   "nombre": "CEM Huaraz (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JIRON JOSE DE SUCRE S/N , CUADRA 2, HUARAZ, HUARAZ, ANCASH.",
+   "departamento": "Ancash",
+   "telefono": "999052175 / 043-67068",
+   "cobertura": [
+    "020101"
+   ]
+  },
+  {
+   "nombre": "CEM Pampa De Camarones (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA BRASIL Nº 617- 2 PISO (SACHACA, AREQUIPA, AREQUIPA.",
+   "departamento": "Arequipa",
+   "telefono": "999052633 / 940414726",
+   "cobertura": [
+    "040117"
+   ]
+  },
+  {
+   "nombre": "CEM Yungay (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. ARIAS GRACIANI CRUCE AV. 28 DE JULIO, YUNGAY, YUNGAY, ANCASH.",
+   "departamento": "Ancash",
+   "telefono": "999051952 / 043-67069 / 994834229",
+   "cobertura": [
+    "022001"
+   ]
+  },
+  {
+   "nombre": "CEM El Carmen (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "PLAZA DE ARMAS 179",
+   "departamento": "Ica",
+   "telefono": "999053181 / 994800520",
+   "cobertura": [
+    "110205"
+   ]
+  },
+  {
+   "nombre": "CEM San Martin De Porras (Lambayeque) (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CLL. CAPITAN ORBEGOZO Y SAN ANTONIO, PUEBLO JOVEN SAN MARTIN DE PORRAS",
+   "departamento": "Lambayeque",
+   "telefono": "999052525 / 994800968",
+   "cobertura": [
+    "140301"
+   ]
+  },
+  {
+   "nombre": "CEM Santiago (Ica) (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. PANAMERICANA SUR KM 316 SANTIAGO - ICA - ICA",
+   "departamento": "Ica",
+   "telefono": "999052587 / 951459484",
+   "cobertura": [
+    "110111"
+   ]
+  },
+  {
+   "nombre": "CEM Campodonico (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. JORGE CHAVEZ N° 801, CHICLAYO, CHICLAYO, LAMBAYEQUE.",
+   "departamento": "Lambayeque",
+   "telefono": "999052840 / 904801126",
+   "cobertura": [
+    "140101"
+   ]
+  },
+  {
+   "nombre": "CEM Picota (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CARRETERA FERNANDO BELAUNDE TERRY KM. 60 CON JR. MIGUEL GRAU CDRA 5",
+   "departamento": "San Martin",
+   "telefono": "999052861 / 042-67044 / 994800868",
+   "cobertura": [
+    "220701"
+   ]
+  },
+  {
+   "nombre": "CEM Chaclacayo",
+   "tipo": "CEM",
+   "direccion": "NICOLAS AYLLON CRUCE CON AV. GERANIOS S/N - CHACLACAYO",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994833688 / 01-508566 / 941524325",
+   "cobertura": [
+    "150107"
+   ]
+  },
+  {
+   "nombre": "CEM Ciudad Y Campo (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. JACINTO BENAVENTE Nº 258 URB. CIUDAD Y CAMPO-RIMAC-LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "966472586 / 01-508566 / 940396625",
+   "cobertura": [
+    "150128"
+   ]
+  },
+  {
+   "nombre": "CEM Rural Von Humbolt (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CARRETERA FEDERICO BASADRE KM 86",
+   "departamento": "Ucayali",
+   "telefono": "949252330 / 061-67028 / 994800957",
+   "cobertura": [
+    "250305"
+   ]
+  },
+  {
+   "nombre": "CEM Miguel Grau (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "INTERSECCIÓN AVENIDA MIGUEL GRAU CON AVENIDA VENEZUELA S/N",
+   "departamento": "Arequipa",
+   "telefono": "982483554 / 994800855",
+   "cobertura": [
+    "040112"
+   ]
+  },
+  {
+   "nombre": "CEM Rural Colasay (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CLL. SAN MARTIN S/N CUADRA 2",
+   "departamento": "Cajamarca",
+   "telefono": "999052147 / 994374400",
+   "cobertura": [
+    "060804"
+   ]
+  },
+  {
+   "nombre": "CEM Pampas De Hospital (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "PASAJE ALIPIO ROSALES S/N, PAMPAS DE HOSPITAL, TUMBES, TUMBES.",
+   "departamento": "Tumbes",
+   "telefono": "999051981 / 994800535",
+   "cobertura": [
+    "240104"
+   ]
+  },
+  {
+   "nombre": "CEM Sectorial Rural Camana (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AVENIDA MARISCAL CASTILLA N° 600 CAMANA, CAMANA, AREQUIPA",
+   "departamento": "Arequipa",
+   "telefono": "999053265 / 937422501",
+   "cobertura": [
+    "040201"
+   ]
+  },
+  {
+   "nombre": "CEM Rural Tambogrande (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. PAITA N°759 TAMBOGRANDE 2DO PISO DE LA COMISARIA",
+   "departamento": "Piura",
+   "telefono": "999052773 / 932941641",
+   "cobertura": [
+    "200114"
+   ]
+  },
+  {
+   "nombre": "CEM Mariscal Caceres (Lima) (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. CORONEL ALTHAUS MZ N-8 LT 1 Y 2-URB MARISCAL CACERES-SAN JUAN DE LURIGANCHO-LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "989313156 / 01-782346 / 989320335",
+   "cobertura": [
+    "150132"
+   ]
+  },
+  {
+   "nombre": "CEM Uchiza",
+   "tipo": "CEM",
+   "direccion": "AV. MARCELIANO ALVAREZ CRUCE CON JR. PUNO",
+   "departamento": "San Martin",
+   "telefono": "994800514 / 042-67044 / 989329171",
+   "cobertura": [
+    "221005"
+   ]
+  },
+  {
+   "nombre": "CEM Maranga (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. PRECURSORES CDRA 4, MARANGA-SAN MIGUEL-LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "958064615 / 01-508566 / 999052854",
+   "cobertura": [
+    "150136"
+   ]
+  },
+  {
+   "nombre": "CEM Independencia (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. LAS VIOLETAS N° 1098-INDEPENDENCIA-COSTADO DE MUNI DE INDEPENDENCIA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "982341267 / 01-777430 / 999053005",
+   "cobertura": [
+    "150112"
+   ]
+  },
+  {
+   "nombre": "CEM Jose Leonardo Ortiz (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV ARGENTINA Nº 2251 URB. BARSALLO - JOSE LEONARDO ORTIZ",
+   "departamento": "Lambayeque",
+   "telefono": "999052367 / 932941794",
+   "cobertura": [
+    "140105"
+   ]
+  },
+  {
+   "nombre": "CEM Ferreñafe (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. TACNA N° 620 - FERREÑAFE - FERREÑAFE - LAMBAYEQUE",
+   "departamento": "Lambayeque",
+   "telefono": "994833953 / 994839969",
+   "cobertura": [
+    "140201"
+   ]
+  },
+  {
+   "nombre": "CEM Huachipa (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CRUCE DE AV. LAS GARZAS Y AV. EL POLO, URB. EL CLUB SANTA MARIA DE HUACHIPA-LURIGANCHO-LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "991457373 / 01-508565 / 994820951",
+   "cobertura": [
+    "150118"
+   ]
+  },
+  {
+   "nombre": "CEM Magdalena Del Mar",
+   "tipo": "CEM",
+   "direccion": "JR. CORONEL ALFONSO UGARTE 622 - MAGDALENA DEL MAR",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994800591 / 01-769870 / 940396627",
+   "cobertura": [
+    "150120"
+   ]
+  },
+  {
+   "nombre": "CEM Piura (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. SANCHEZ CERRO Nº 1381 URB. LOS TOPOS - PIURA - PIURA - PIURA",
+   "departamento": "Piura",
+   "telefono": "982360531 / 994800916",
+   "cobertura": [
+    "200101"
+   ]
+  },
+  {
+   "nombre": "CEM Augusto B. Leguia (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "ES. CALLE JOSE GALVEZ CON CALLE 200 MILLAS - TACNA - TACNA - TACNA",
+   "departamento": "Tacna",
+   "telefono": "982646607 / 994800874",
+   "cobertura": [
+    "230101"
+   ]
+  },
+  {
+   "nombre": "CEM Ilo (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. PICHINCHA 327",
+   "departamento": "Moquegua",
+   "telefono": "982647382 / 053-67012 / 994800911",
+   "cobertura": [
+    "180301"
+   ]
+  },
+  {
+   "nombre": "CEM Sectorial Paita (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. INDEPENDENCIA N° 417 - PAITA - PAITA - PIURA",
+   "departamento": "Piura",
+   "telefono": "982360065 / 953953960",
+   "cobertura": [
+    "200501"
+   ]
+  },
+  {
+   "nombre": "CEM Sectorial Calca (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE ESPINAR N° 498 - CALCA - CALCA - CUSCO",
+   "departamento": "Cusco",
+   "telefono": "982660186 / 994820313",
+   "cobertura": [
+    "080401"
+   ]
+  },
+  {
+   "nombre": "CEM Sunampe (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE JOSE PARDO MZ U LOTE 18 - FRENTE A LA PLAZA DE ARMAS - SUNAMPE - CHINCHA - ICA",
+   "departamento": "Ica",
+   "telefono": "965363374 / 952309378",
+   "cobertura": [
+    "110210"
+   ]
+  },
+  {
+   "nombre": "CEM Sectorial Bolognesi Chiquian (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. COMERCIO CUADRA 13 S/N - CHIQUIAN - BOLOGNESI - ANCASH / COSTADO DEL BANCO DE LA NACION",
+   "departamento": "Ancash",
+   "telefono": "994834250 / 043-67069 / 994800910",
+   "cobertura": [
+    "020501"
+   ]
+  },
+  {
+   "nombre": "CEM Chalhuanca (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. PANAMERICANA S/N (COSTADO DE PLAZA BOLIVAR)",
+   "departamento": "Apurimac",
+   "telefono": "932987170 / 083-67011 / 966405461",
+   "cobertura": [
+    "030401"
+   ]
+  },
+  {
+   "nombre": "CEM Matarani (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. AREQUIPA S/N (COMISARÍA MATARANI), ISLAY - ISLAY - AREQUIPA",
+   "departamento": "Arequipa",
+   "telefono": "925377660 / 937409050",
+   "cobertura": [
+    "040704"
+   ]
+  },
+  {
+   "nombre": "CEM Sectorial Socabaya (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. SALAVERRY N° 150 MZ W LOTE 8 - PUEBLO TRADICIONAL ALTO BUENAVISTA - SOCABAYA - AREQUIPA - AREQUIPA",
+   "departamento": "Arequipa",
+   "telefono": "914157183 / 054-67982 / 999051930",
+   "cobertura": [
+    "040122"
+   ]
+  },
+  {
+   "nombre": "CEM Rural Huacullani (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR TACNA 160",
+   "departamento": "Puno",
+   "telefono": "999053005 / 051-67948 / 932942045",
+   "cobertura": [
+    "210403"
+   ]
+  },
+  {
+   "nombre": "CEM La Cruz (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CLL. PIURA N° 422 - LA CRUZ - TUMBES - TUMBES",
+   "departamento": "Tumbes",
+   "telefono": "979356526 / 932857407",
+   "cobertura": [
+    "240103"
+   ]
+  },
+  {
+   "nombre": "CEM Nueva Cajamarca (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. CAJAMARCA SUR N° 595 - NUEVA CAJAMARCA - RIOJA - SAN MARTIN",
+   "departamento": "San Martin",
+   "telefono": "948073870 / 999052861",
+   "cobertura": [
+    "220804"
+   ]
+  },
+  {
+   "nombre": "CEM San Alejandro (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CARRETERA FEDERICO BASADRE KM 111 INTERIOR DE LA COMISARIA SAN ALEJANDRO",
+   "departamento": "Ucayali",
+   "telefono": "932957783 / 061-67028 / 948073870",
+   "cobertura": [
+    "250302"
+   ]
+  },
+  {
+   "nombre": "CEM 09 De Octubre (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE TAHUANTINSUYO CON LA CALLE PROGRESO SIN #, DENTRO DE LA COMISARIA 09 DE OCTUBRE",
+   "departamento": "Loreto",
+   "telefono": "932958891 / 065-67036",
+   "cobertura": [
+    "160112"
+   ]
+  },
+  {
+   "nombre": "CEM Corrales (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CLL. SAN PEDRO N° 600 - 2DO PISO",
+   "departamento": "Tumbes",
+   "telefono": "979356535 / 921536026",
+   "cobertura": [
+    "240102"
+   ]
+  },
+  {
+   "nombre": "CEM Rural Sectorial Lamud (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. MIGUEL GRAU 451 - LAMUD (TERCER PISO DE LA COMISARIA RURAL SECTORIAL PNP LAMUD) ( REFERENCIA FRENTE AL PARQUE PRINCIPAL DE LAMUD)",
+   "departamento": "Amazonas",
+   "telefono": "950173329 / 994820255",
+   "cobertura": [
+    "010501"
+   ]
+  },
+  {
+   "nombre": "CEM Yangas (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "COMISARIA DE YANGAS, CARR. LIMA CANTA SN KM.56",
+   "departamento": "Lima Provincia",
+   "telefono": "914171379 / 01-508568 / 994800825",
+   "cobertura": [
+    "150407"
+   ]
+  },
+  {
+   "nombre": "CEM Yarinacocha (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. YARINACOCHA N° 376",
+   "departamento": "Ucayali",
+   "telefono": "999052548 / 061-67028 / 940414727",
+   "cobertura": [
+    "250105"
+   ]
+  },
+  {
+   "nombre": "CEM Campoverde (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. PRIMERO DE JUNIO MZ. \"F\" LT.10. CARRETERA FEDERICO BASADRE KM. 34",
+   "departamento": "Ucayali",
+   "telefono": "932989735 / 061-67028 / 994800850",
+   "cobertura": [
+    "250102"
+   ]
+  },
+  {
+   "nombre": "CEM Emilio Roman Saravia García (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. SAN MARTÍN NRO. 202",
+   "departamento": "Ica",
+   "telefono": "937401253 / 056-67016 / 999052577",
+   "cobertura": [
+    "110206"
+   ]
+  },
+  {
+   "nombre": "CEM Satipo (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JIRÓN FRANCISCO IRAZOLA N° 496, SATIPO",
+   "departamento": "Junin",
+   "telefono": "994840158 / 064-67030 / 982646607",
+   "cobertura": [
+    "120601"
+   ]
+  },
+  {
+   "nombre": "CEM San Jose De Sisa (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR COMERCIO CDRA 2",
+   "departamento": "San Martin",
+   "telefono": "937409050 / 989353178",
+   "cobertura": [
+    "220301"
+   ]
+  },
+  {
+   "nombre": "CEM Pampas De Tayacaja (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JIRON MILLER N° 100 - A UNA CUADRA DE LA PLAZA PRINCIPAL DE PAMPAS (SEGUNDO NIVEL)",
+   "departamento": "Huancavelica",
+   "telefono": "937410251 / 989336758",
+   "cobertura": [
+    "090701"
+   ]
+  },
+  {
+   "nombre": "CEM La Natividad (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE NUESTRA SEÑORA DE LA NATIVIDAD N° 1937",
+   "departamento": "Tacna",
+   "telefono": "932958709",
+   "cobertura": [
+    "230101"
+   ]
+  },
+  {
+   "nombre": "CEM Sectorial Cotahuasi (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE CABILDO N° 107 - COTAHUASI",
+   "departamento": "Arequipa",
+   "telefono": "937401645 / 940404508",
+   "cobertura": [
+    "040801"
+   ]
+  },
+  {
+   "nombre": "CEM Breña (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. GENERAL VARELA 1978-BREÑA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "992459041 / 994800877",
+   "cobertura": [
+    "150105"
+   ]
+  },
+  {
+   "nombre": "CEM Sectorial Huancané (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JIRON PEKOSANI Nº 109",
+   "departamento": "Puno",
+   "telefono": "937422501 / 994800813",
+   "cobertura": [
+    "210601"
+   ]
+  },
+  {
+   "nombre": "CEM Suyo (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "JR. LIMA N° 548 - SUYO - AYABACA - PIURA",
+   "departamento": "Piura",
+   "telefono": "997212909 / 979356535",
+   "cobertura": [
+    "200210"
+   ]
+  },
+  {
+   "nombre": "CEM Monserrat",
+   "tipo": "CEM",
+   "direccion": "JR. CAÑETE N° 100-LIMA",
+   "departamento": "Lima Metropolitana",
+   "telefono": "940404512 / 989354263",
+   "cobertura": [
+    "150101"
+   ]
+  },
+  {
+   "nombre": "CEM Alto Selva Alegre",
+   "tipo": "CEM",
+   "direccion": "AV. OBRERA CUADRA 2 MZ V LT 13",
+   "departamento": "Arequipa",
+   "telefono": "994840146 / 979356526",
+   "cobertura": [
+    "040102"
+   ]
+  },
+  {
+   "nombre": "CEM Satipo",
+   "tipo": "CEM",
+   "direccion": "JR. DEFENSORES DE LA PAZ S/N CON JR. LAS BEGONIAS",
+   "departamento": "Junin",
+   "telefono": "994833501 / 064-67029 / 999051981",
+   "cobertura": [
+    "120607"
+   ]
+  },
+  {
+   "nombre": "CEM Luya",
+   "tipo": "CEM",
+   "direccion": "JR. JOSE OLAYA N°420- REF. EN EL LOCAL DEL EX CENTRO DE SALUD ANTIGUO DE LUYA",
+   "departamento": "Amazonas",
+   "telefono": "994841220",
+   "cobertura": [
+    "010509"
+   ]
+  },
+  {
+   "nombre": "CEM Rural Huando (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. ATAHUALPA S/N LOCAL DE LA MUNICIPALIDAD DISTRITAL DE HUANDO (CARRETERA HUANCAYO - HUANCAVELICA)",
+   "departamento": "Huancavelica",
+   "telefono": "932866126",
+   "cobertura": [
+    "090119"
+   ]
+  },
+  {
+   "nombre": "CEM Yura",
+   "tipo": "CEM",
+   "direccion": "ASOCIACIÓN CIUDAD DE DIOS, COMITÉ 33, ZONA 3, SECTOR B, MZ. W, LOTES 2 Y 3",
+   "departamento": "Arequipa",
+   "telefono": "940397629",
+   "cobertura": [
+    "040128"
+   ]
+  },
+  {
+   "nombre": "CEM Salas",
+   "tipo": "CEM",
+   "direccion": "CALLE AREQUIPA MZ. X LT.1 N°210",
+   "departamento": "Ica",
+   "telefono": "994840133 / 056-67017",
+   "cobertura": [
+    "110108"
+   ]
+  },
+  {
+   "nombre": "CEM Sectorial Nasca (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "AV. LOS INCAS S/N PANAMERICANA SUR",
+   "departamento": "Ica",
+   "telefono": "914705415",
+   "cobertura": [
+    "110301"
+   ]
+  },
+  {
+   "nombre": "CEM Soritor",
+   "tipo": "CEM",
+   "direccion": "JR. MIGUEL GRAU Nº 748",
+   "departamento": "San Martin",
+   "telefono": "914704961",
+   "cobertura": [
+    "220105"
+   ]
+  },
+  {
+   "nombre": "CEM Mancora",
+   "tipo": "CEM",
+   "direccion": "CARRETERA PANAMERICANA KM 1166",
+   "departamento": "Piura",
+   "telefono": "932974586 / 073-57924",
+   "cobertura": [
+    "200706"
+   ]
+  },
+  {
+   "nombre": "CEM San Andrés",
+   "tipo": "CEM",
+   "direccion": "Centro Cívico Municipal, Calle. Simón Bolívar 528, distrito de San Andrés",
+   "departamento": "Ica",
+   "telefono": "996502036",
+   "cobertura": [
+    "110506"
+   ]
+  },
+  {
+   "nombre": "CEM Pomalca",
+   "tipo": "CEM",
+   "direccion": "CALLE ANDRÉS AVELINO CÁCERES N° 449 - 391.",
+   "departamento": "Lambayeque",
+   "telefono": "933032600",
+   "cobertura": [
+    "140118"
+   ]
+  },
+  {
+   "nombre": "CEM Pillco Marca",
+   "tipo": "CEM",
+   "direccion": "AV. JUAN VELASCO ALVARADO N° 1650",
+   "departamento": "Huanuco",
+   "telefono": "932866562",
+   "cobertura": [
+    "100111"
+   ]
+  },
+  {
+   "nombre": "CEM Manantay",
+   "tipo": "CEM",
+   "direccion": "JR. JOSE BALTA MZ \"D\" LOTE 1 - AA.HH TAHUANTISUYO",
+   "departamento": "Ucayali",
+   "telefono": "961900022",
+   "cobertura": [
+    "250107"
+   ]
+  },
+  {
+   "nombre": "CEM Trujillo I (24 Horas)",
+   "tipo": "CEM",
+   "direccion": "CALLE SEBASTIAN Y BARRANCA N° 189 - URB. LOS GRANADOS",
+   "departamento": "La Libertad",
+   "telefono": "999999999",
+   "cobertura": [
+    "130101"
+   ]
+  },
+  {
+   "nombre": "CEM Cerro Colorado",
+   "tipo": "CEM",
+   "direccion": "ASOCIACION PRO VIVIENDA DE INTERES SOCIAL DE LOS TRABAJADORES DEL IPSS - LAS GARDENIAS MZ. I LTE. 1",
+   "departamento": "Arequipa",
+   "telefono": "974745740",
+   "cobertura": [
+    "040104"
+   ]
+  },
+  {
+   "nombre": "HRT Huancavelica",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Huancavelica",
+   "telefono": "914162422",
+   "cobertura": [
+    "090101"
+   ]
+  },
+  {
+   "nombre": "HRT Carabayllo",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Lima Metropolitana",
+   "telefono": "937411310",
+   "cobertura": [
+    "150106"
+   ]
+  },
+  {
+   "nombre": "HRT Cayma",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Arequipa",
+   "telefono": "994839804 / 054-67982",
+   "cobertura": [
+    "040103"
+   ]
+  },
+  {
+   "nombre": "HRT Chincheros",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Apurimac",
+   "telefono": "914157686",
+   "cobertura": [
+    "030601"
+   ]
+  },
+  {
+   "nombre": "HRT Villarica",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Pasco",
+   "telefono": "937413316",
+   "cobertura": [
+    "190307"
+   ]
+  },
+  {
+   "nombre": "HRT Rioja",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "San Martin",
+   "telefono": "914163190",
+   "cobertura": [
+    "220801"
+   ]
+  },
+  {
+   "nombre": "HRT Pucallpa",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Ucayali",
+   "telefono": "914159642 / 061-67028",
+   "cobertura": [
+    "250101"
+   ]
+  },
+  {
+   "nombre": "HRT Zarumilla",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Tumbes",
+   "telefono": "914165477",
+   "cobertura": [
+    "240301"
+   ]
+  },
+  {
+   "nombre": "HRT Paucarpata",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Arequipa",
+   "telefono": "914150358 / 054-67982",
+   "cobertura": [
+    "040112"
+   ]
+  },
+  {
+   "nombre": "HRT Tacna",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Tacna",
+   "telefono": "914163457 / 052-67991",
+   "cobertura": [
+    "230110"
+   ]
+  },
+  {
+   "nombre": "HRT Sullana",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Piura",
+   "telefono": "914161004",
+   "cobertura": [
+    "200601"
+   ]
+  },
+  {
+   "nombre": "HRT Bagua",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Amazonas",
+   "telefono": "913152323",
+   "cobertura": [
+    "010201"
+   ]
+  },
+  {
+   "nombre": "HRT Iquitos",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Loreto",
+   "telefono": "914159895 / 065-67036",
+   "cobertura": [
+    "160101"
+   ]
+  },
+  {
+   "nombre": "HRT Cusco",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Cusco",
+   "telefono": "914165357 / 084-67986",
+   "cobertura": [
+    "080101"
+   ]
+  },
+  {
+   "nombre": "HRT Loretta Bonokoski",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Moquegua",
+   "telefono": "914703556 / 053 63705",
+   "cobertura": [
+    "180101"
+   ]
+  },
+  {
+   "nombre": "HRT Nuevo Imperial",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Lima Provincia",
+   "telefono": "963718014 / 01-508568",
+   "cobertura": [
+    "150510"
+   ]
+  },
+  {
+   "nombre": "HRT Huanuco",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Huanuco",
+   "telefono": "948073994 / 062-67007",
+   "cobertura": [
+    "100111"
+   ]
+  },
+  {
+   "nombre": "HRT Utcubamba",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Amazonas",
+   "telefono": "948072884",
+   "cobertura": [
+    "010701"
+   ]
+  },
+  {
+   "nombre": "HRT Sicuani",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Cusco",
+   "telefono": "958085386 / 084-67986",
+   "cobertura": [
+    "080601"
+   ]
+  },
+  {
+   "nombre": "HRT Caylloma",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Arequipa",
+   "telefono": "963718039 / 054-67982",
+   "cobertura": [
+    "040501"
+   ]
+  },
+  {
+   "nombre": "HRT Puno",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Puno",
+   "telefono": "914703559",
+   "cobertura": [
+    "210101"
+   ]
+  },
+  {
+   "nombre": "HRT Callao",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Callao",
+   "telefono": "914703554",
+   "cobertura": [
+    "070102"
+   ]
+  },
+  {
+   "nombre": "HRT Tambopata",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Madre De Dios",
+   "telefono": "999052560",
+   "cobertura": [
+    "170103"
+   ]
+  },
+  {
+   "nombre": "HRT Lima Cercado",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Lima Metropolitana",
+   "telefono": "989085288 / 01-508567",
+   "cobertura": [
+    "150101"
+   ]
+  },
+  {
+   "nombre": "HRT Renace La Esperanza",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "La Libertad",
+   "telefono": "914703824",
+   "cobertura": [
+    "130901"
+   ]
+  },
+  {
+   "nombre": "HRT Mazamari",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Junin",
+   "telefono": "984305077",
+   "cobertura": [
+    "120604"
+   ]
+  },
+  {
+   "nombre": "HRT Cajamarca",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Cajamarca",
+   "telefono": "989330281",
+   "cobertura": [
+    "060101"
+   ]
+  },
+  {
+   "nombre": "HRT Chimbote",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Ancash",
+   "telefono": "982921084",
+   "cobertura": [
+    "021808"
+   ]
+  },
+  {
+   "nombre": "HRT Ayacucho",
+   "tipo": "HRT",
+   "direccion": null,
+   "departamento": "Ayacucho",
+   "telefono": null,
+   "cobertura": [
+    "050111"
+   ]
+  },
+  {
+   "nombre": "SAU Lima",
+   "tipo": "SAU",
+   "direccion": "AV. SAN MARTIN Nº685 3ER PISO",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994839886",
+   "cobertura": [
+    "150121"
+   ]
+  },
+  {
+   "nombre": "SAU Arequipa",
+   "tipo": "SAU",
+   "direccion": "CALLE PAMPITA ZEVALLOS Nº175-A",
+   "departamento": "Arequipa",
+   "telefono": "914703766 / 054-67980",
+   "cobertura": [
+    "040126"
+   ]
+  },
+  {
+   "nombre": "SAU Madre De Dios",
+   "tipo": "SAU",
+   "direccion": "AVENIDA 2 DE MAYO N°710, PUERTO MALDONADO",
+   "departamento": "Madre De Dios",
+   "telefono": "989287117",
+   "cobertura": [
+    "170101"
+   ]
+  },
+  {
+   "nombre": "SAU Cusco",
+   "tipo": "SAU",
+   "direccion": "AV. ANTONIO LORENA C11 4TO PISO",
+   "departamento": "Cusco",
+   "telefono": "999052750 / 084-67984",
+   "cobertura": [
+    "080106"
+   ]
+  },
+  {
+   "nombre": "SAU Ayacucho",
+   "tipo": "SAU",
+   "direccion": "JR. LIBERTAD Nº1200 5TO PISO EDIFICIO CASE",
+   "departamento": "Ayacucho",
+   "telefono": "932977041",
+   "cobertura": [
+    "050101"
+   ]
+  },
+  {
+   "nombre": "SAU Huanuco",
+   "tipo": "SAU",
+   "direccion": "AV. MALECON LOS INCAS S/N CUADRA 5 CRUCE CON JR. OLLANTAY",
+   "departamento": "Huanuco",
+   "telefono": "914703902 / 062-01290",
+   "cobertura": [
+    "100102"
+   ]
+  },
+  {
+   "nombre": "SAU La Libertad",
+   "tipo": "SAU",
+   "direccion": "AV. WICHANZAO MZ. 27 LOTE 1 SECTOR RIO SECO BARRIO 4 - EL PORVENIR",
+   "departamento": "La Libertad",
+   "telefono": "914703817",
+   "cobertura": [
+    "130102"
+   ]
+  },
+  {
+   "nombre": "SAU Puno",
+   "tipo": "SAU",
+   "direccion": "JR JOSE DE LA MAR 230 - BARRIO SAN JOSE",
+   "departamento": "Puno",
+   "telefono": "999052170 / 051-67947",
+   "cobertura": [
+    "210101"
+   ]
+  },
+  {
+   "nombre": "SAR Pinto Recodo",
+   "tipo": "SAR",
+   "direccion": "MUNICIPALIDAD DISTRITAL DE PINTO RECODO",
+   "departamento": "San Martin",
+   "telefono": "914177498 / 042-670439",
+   "cobertura": [
+    "220506"
+   ]
+  },
+  {
+   "nombre": "SAR Huancano - Humay",
+   "tipo": "SAR",
+   "direccion": "AV. PRINCIPAL N° 1160 - HUANCANO ZONA B",
+   "departamento": "Ica",
+   "telefono": "914176300",
+   "cobertura": [
+    "110502"
+   ]
+  },
+  {
+   "nombre": "SAR San Pedro De Coris",
+   "tipo": "SAR",
+   "direccion": "PLAZA PRINCIPAL S/N",
+   "departamento": "Huancavelica",
+   "telefono": "914181129",
+   "cobertura": [
+    "090509"
+   ]
+  },
+  {
+   "nombre": "SAR Cristo Nos Valga",
+   "tipo": "SAR",
+   "direccion": "FRENTE A PLAZA DE ARMAS, COSTADO DE MUNICIPALIDAD",
+   "departamento": "Piura",
+   "telefono": "914704550 / 073-57923",
+   "cobertura": [
+    "200804"
+   ]
+  },
+  {
+   "nombre": "SAR El Parco",
+   "tipo": "SAR",
+   "direccion": "JR. AMAZONAS N° 221 - 2° PISO DE LA MUNICIPALIDAD DISTRITAL EL PARCO",
+   "departamento": "Amazonas",
+   "telefono": "914172299 / 041-67000",
+   "cobertura": [
+    "010204"
+   ]
+  },
+  {
+   "nombre": "SAR Tapo",
+   "tipo": "SAR",
+   "direccion": "CALLE 28 DE JULIO S/N - MUNICIPALIDAD DISTRITAL DE TAPO",
+   "departamento": "Junin",
+   "telefono": "914183587 / 064-67030",
+   "cobertura": [
+    "120709"
+   ]
+  },
+  {
+   "nombre": "SAR Polvora",
+   "tipo": "SAR",
+   "direccion": "MUNICIPALIDAD DISTRITAL DE POLVORA",
+   "departamento": "San Martin",
+   "telefono": "042-670441",
+   "cobertura": [
+    "221003"
+   ]
+  },
+  {
+   "nombre": "SAR Sama",
+   "tipo": "SAR",
+   "direccion": "AV. HÉROES DEL PACÍFICO S/N 2DO PISO DEL MERCADO DE LAS YARAS",
+   "departamento": "Tacna",
+   "telefono": "914178495 / 052-67991",
+   "cobertura": [
+    "230109"
+   ]
+  },
+  {
+   "nombre": "SAR Corani",
+   "tipo": "SAR",
+   "direccion": "PLAZA PRINCIPAL S/N",
+   "departamento": "Puno",
+   "telefono": "993552592",
+   "cobertura": [
+    "210305"
+   ]
+  },
+  {
+   "nombre": "SAR Chongoyape",
+   "tipo": "SAR",
+   "direccion": "CALLE LIMA N° 1225-CHONGOYAPE",
+   "departamento": "Lambayeque",
+   "telefono": "914168345",
+   "cobertura": [
+    "140102"
+   ]
+  },
+  {
+   "nombre": "SAR Chaglla",
+   "tipo": "SAR",
+   "direccion": "JR. SAN AGUSTIN CDRA 3 S/N",
+   "departamento": "Huanuco",
+   "telefono": "914166427 / 062-67007",
+   "cobertura": [
+    "100802"
+   ]
+  },
+  {
+   "nombre": "SAR San Pablo",
+   "tipo": "SAR",
+   "direccion": "CALLE MARIA BERNARD S/N",
+   "departamento": "Loreto",
+   "telefono": "914178654",
+   "cobertura": [
+    "160404"
+   ]
+  },
+  {
+   "nombre": "SAR Cenepa",
+   "tipo": "SAR",
+   "direccion": "JR. SENTAMAI N°201 - INTERIOR DE LA MUNICIPALIDAD DE LA CC.NN. HUAMPAMI,  DISTRITAL DEL CENEPA",
+   "departamento": "Amazonas",
+   "telefono": "0",
+   "cobertura": [
+    "010402"
+   ]
+  },
+  {
+   "nombre": "SAR Rio Tambo",
+   "tipo": "SAR",
+   "direccion": "INTERIOR DE LA MUNICIPALIDAD DISTRITAL DE RIO TAMBO.",
+   "departamento": "Junin",
+   "telefono": "958087791",
+   "cobertura": [
+    "120608"
+   ]
+  },
+  {
+   "nombre": "SAR Pisacoma",
+   "tipo": "SAR",
+   "direccion": "JR. PUNO S/N",
+   "departamento": "Puno",
+   "telefono": "993792641 / 051-47947",
+   "cobertura": [
+    "210405"
+   ]
+  },
+  {
+   "nombre": "SAR Coporaque",
+   "tipo": "SAR",
+   "direccion": "CALLE CAMANOCCA S/N, COPORAQUE, ESPINAR",
+   "departamento": "Cusco",
+   "telefono": "926012320 / 084-67984",
+   "cobertura": [
+    "080803"
+   ]
+  },
+  {
+   "nombre": "SAR Chumuch",
+   "tipo": "SAR",
+   "direccion": "A MEDIA CUADRA PLAZA DE ARMAS",
+   "departamento": "Cajamarca",
+   "telefono": "914169055",
+   "cobertura": [
+    "060302"
+   ]
+  },
+  {
+   "nombre": "SAR Ichuña",
+   "tipo": "SAR",
+   "direccion": "AV. SAN PEDRO S/N",
+   "departamento": "Moquegua",
+   "telefono": "914173457",
+   "cobertura": [
+    "180204"
+   ]
+  },
+  {
+   "nombre": "SAR Santa Rosa",
+   "tipo": "SAR",
+   "direccion": "JR. UNIÓN 485",
+   "departamento": "Ayacucho",
+   "telefono": "966007580",
+   "cobertura": [
+    "050507"
+   ]
+  },
+  {
+   "nombre": "SAR Ayna",
+   "tipo": "SAR",
+   "direccion": "JR. UNIÓN N° 485",
+   "departamento": "Ayacucho",
+   "telefono": "914165623",
+   "cobertura": [
+    "050507"
+   ]
+  },
+  {
+   "nombre": "SAR Parinari",
+   "tipo": "SAR",
+   "direccion": "CALLE EMILIA OLORTEGUI DE GARCIA S/N",
+   "departamento": "Loreto",
+   "telefono": "914175116",
+   "cobertura": [
+    "160302"
+   ]
+  },
+  {
+   "nombre": "SAR Tigre",
+   "tipo": "SAR",
+   "direccion": "CALLE. MANUEL TELLO ENCINAS S/N",
+   "departamento": "Loreto",
+   "telefono": "914183954",
+   "cobertura": [
+    "160303"
+   ]
+  },
+  {
+   "nombre": "SAR Pastaza",
+   "tipo": "SAR",
+   "direccion": "CALLE ALIPIO PONCE S/N",
+   "departamento": "Loreto",
+   "telefono": "914704293",
+   "cobertura": [
+    "160705"
+   ]
+  },
+  {
+   "nombre": "SAR Challhuahuacho",
+   "tipo": "SAR",
+   "direccion": "AV. 18 DE NOVIEMBRE S/N",
+   "departamento": "Apurimac",
+   "telefono": "914166514 / 083-67011",
+   "cobertura": [
+    "030506"
+   ]
+  },
+  {
+   "nombre": "SAR Tahuamanu",
+   "tipo": "SAR",
+   "direccion": "PLAZA DE ARMAS SAN LORENZO - TAHUAMANU",
+   "departamento": "Madre De Dios",
+   "telefono": "914185368",
+   "cobertura": [
+    "170303"
+   ]
+  },
+  {
+   "nombre": "SAR Las Piedras",
+   "tipo": "SAR",
+   "direccion": "JR. QUINTIN GRANADOS S/N - PLANCHON",
+   "departamento": "Madre De Dios",
+   "telefono": "914185448 / 082-67000",
+   "cobertura": [
+    "170103"
+   ]
+  },
+  {
+   "nombre": "SAR Masisea",
+   "tipo": "SAR",
+   "direccion": "AV. GARCILAZO DE LA VEGA S/N (AL COSTADO DEL AUDITORIO DE LA MUNICIPALIDAD)",
+   "departamento": "Ucayali",
+   "telefono": "995843668 / 061-67028",
+   "cobertura": [
+    "250104"
+   ]
+  },
+  {
+   "nombre": "SAR Imaza",
+   "tipo": "SAR",
+   "direccion": "AV. PRINCIPAL S/N - CENTRO POBLADO CHIRIACO",
+   "departamento": "Amazonas",
+   "telefono": "932949923",
+   "cobertura": [
+    "010205"
+   ]
+  },
+  {
+   "nombre": "SAR Churubamba",
+   "tipo": "SAR",
+   "direccion": "JR. JULIA ANDRADE S/N COSTADO DEL MUSEO MUNICIPAL DISTRITO DE CHURUBAMBA",
+   "departamento": "Huanuco",
+   "telefono": "932946691",
+   "cobertura": [
+    "100104"
+   ]
+  },
+  {
+   "nombre": "SAR Tuman",
+   "tipo": "SAR",
+   "direccion": "INTERIOR DE EDIFICIO DE UNIDAD DE SEGURIDAD CIUDADANA Y SERENAZGO",
+   "departamento": "Lambayeque",
+   "telefono": "932946703",
+   "cobertura": [
+    "140120"
+   ]
+  },
+  {
+   "nombre": "SAR Coasa",
+   "tipo": "SAR",
+   "direccion": "JIRON BUENOS AIRES S/N",
+   "departamento": "Puno",
+   "telefono": "994613363",
+   "cobertura": [
+    "210304"
+   ]
+  },
+  {
+   "nombre": "SAR Palca - Tacna",
+   "tipo": "SAR",
+   "direccion": "CARRETERA COLLPA LA PAZ S/N KM 52",
+   "departamento": "Tacna",
+   "telefono": "993207910",
+   "cobertura": [
+    "230107"
+   ]
+  },
+  {
+   "nombre": "SAR Bernal",
+   "tipo": "SAR",
+   "direccion": "LOCAL DE LA JUVENTUD - 2DO PISO",
+   "departamento": "Piura",
+   "telefono": "914197024",
+   "cobertura": [
+    "200803"
+   ]
+  },
+  {
+   "nombre": "SAR Palca - Tarma",
+   "tipo": "SAR",
+   "direccion": "JR. SAN MARTÍN Nº 462 - MUNICIPALIDAD DISTRITAL DE PALCA",
+   "departamento": "Junin",
+   "telefono": "914195261 / 064 67030",
+   "cobertura": [
+    "120706"
+   ]
+  },
+  {
+   "nombre": "SAR La Peca",
+   "tipo": "SAR",
+   "direccion": "AV. INDEPENDENCIA N° 619 - 2° PISO DE LA MUNICIPALIDAD DISTRITAL DE LA PECA",
+   "departamento": "Amazonas",
+   "telefono": "914195197",
+   "cobertura": [
+    "010206"
+   ]
+  },
+  {
+   "nombre": "SAR Pongo De Caynarachi",
+   "tipo": "SAR",
+   "direccion": "MUNICIPALIDAD DISTRITAL DE CAYNARACHI",
+   "departamento": "San Martin",
+   "telefono": "914194000",
+   "cobertura": [
+    "220504"
+   ]
+  },
+  {
+   "nombre": "SAR Anco",
+   "tipo": "SAR",
+   "direccion": "AV. HUANCAVELICA Y JR. 28 DE JULIO S/N",
+   "departamento": "Huancavelica",
+   "telefono": "914193535",
+   "cobertura": [
+    "090502"
+   ]
+  },
+  {
+   "nombre": "SAR Oyolo",
+   "tipo": "SAR",
+   "direccion": "PLAZA DE ARMAS S/N - INTERIOR DE LA MUNICIPALIDAD DISTRITAL DE OYOLO",
+   "departamento": "Ayacucho",
+   "telefono": "922501593",
+   "cobertura": [
+    "050806"
+   ]
+  },
+  {
+   "nombre": "SAR Casitas",
+   "tipo": "SAR",
+   "direccion": "FRENTE A LA PLAZA PRINCIPAL",
+   "departamento": "Tumbes",
+   "telefono": "986259042",
+   "cobertura": [
+    "240202"
+   ]
+  },
+  {
+   "nombre": "SAR Niepos",
+   "tipo": "SAR",
+   "direccion": "COSTADO DE LA COMISARIA PNP NIEPOS",
+   "departamento": "Cajamarca",
+   "telefono": "989341167",
+   "cobertura": [
+    "061109"
+   ]
+  },
+  {
+   "nombre": "SAR Vilcanchos",
+   "tipo": "SAR",
+   "direccion": "PARQUE PRINCIPAL - LOCAL MUNICIPAL DE VILCANCHOS -SEGUNDO PISO S/N",
+   "departamento": "Ayacucho",
+   "telefono": "932950318 / 066-67006",
+   "cobertura": [
+    "051012"
+   ]
+  },
+  {
+   "nombre": "SAR Bella Unión",
+   "tipo": "SAR",
+   "direccion": "JIRON CARCAMO LOTE 06",
+   "departamento": "Arequipa",
+   "telefono": "999053260 / 054-67981",
+   "cobertura": [
+    "040305"
+   ]
+  },
+  {
+   "nombre": "SAR Usquil",
+   "tipo": "SAR",
+   "direccion": "JR TACNA N° 270- USQUIL",
+   "departamento": "La Libertad",
+   "telefono": "932953196",
+   "cobertura": [
+    "130614"
+   ]
+  },
+  {
+   "nombre": "SAR Salcahuasi",
+   "tipo": "SAR",
+   "direccion": "PLAZA PRINCIPAL S/N",
+   "departamento": "Huancavelica",
+   "telefono": "999052636",
+   "cobertura": [
+    "090715"
+   ]
+  },
+  {
+   "nombre": "SAR Yanama",
+   "tipo": "SAR",
+   "direccion": "MERCADO DEL DISTRITO DE YANAMA",
+   "departamento": "Ancash",
+   "telefono": "969707709",
+   "cobertura": [
+    "022008"
+   ]
+  },
+  {
+   "nombre": "SAR Ocobamba",
+   "tipo": "SAR",
+   "direccion": "AVENIDA MAESTRANZA S/N LOCAL MUNICIPAL PRIMER PISO.",
+   "departamento": "Cusco",
+   "telefono": "999052975",
+   "cobertura": [
+    "080905"
+   ]
+  },
+  {
+   "nombre": "SAR Tantara",
+   "tipo": "SAR",
+   "direccion": "CALLE FELIPE MZ I LOTE 14 – 2DO PISO – OF. 202 - LOCAL COMUNAL",
+   "departamento": "Huancavelica",
+   "telefono": "914158139",
+   "cobertura": [
+    "090412"
+   ]
+  },
+  {
+   "nombre": "SAR Palcazu",
+   "tipo": "SAR",
+   "direccion": "AV. JUAN FRANTZEN S/N ( 2DO PISO MERCADO DE PRODUCTORES)",
+   "departamento": "Pasco",
+   "telefono": "964759295",
+   "cobertura": [
+    "190304"
+   ]
+  },
+  {
+   "nombre": "SAR Livitaca",
+   "tipo": "SAR",
+   "direccion": "CALLE CONCEPCIÓN S/N",
+   "departamento": "Cusco",
+   "telefono": "999053024",
+   "cobertura": [
+    "080705"
+   ]
+  },
+  {
+   "nombre": "SAR Mazan",
+   "tipo": "SAR",
+   "direccion": "CALLE SANTA ROSA S/N",
+   "departamento": "Loreto",
+   "telefono": "932949176",
+   "cobertura": [
+    "160106"
+   ]
+  },
+  {
+   "nombre": "SAR Sepahua",
+   "tipo": "SAR",
+   "direccion": "JR. SEMINARIO S/N BARRIO ROSARIO - CALLE SHELL S/N",
+   "departamento": "Ucayali",
+   "telefono": "914174353",
+   "cobertura": [
+    "250202"
+   ]
+  },
+  {
+   "nombre": "SAR Rio Santiago",
+   "tipo": "SAR",
+   "direccion": "AV. ZACARIAS S/N, CC.NN. PUERTO GALILEA",
+   "departamento": "Amazonas",
+   "telefono": "914703520",
+   "cobertura": [
+    "010403"
+   ]
+  },
+  {
+   "nombre": "SAR Kosñipata",
+   "tipo": "SAR",
+   "direccion": "MUNICIPALIDAD DISTRITAL DE KOSÑIPATA",
+   "departamento": "Cusco",
+   "telefono": "914176290",
+   "cobertura": [
+    "081106"
+   ]
+  },
+  {
+   "nombre": "SAR San Jose De Lourdes",
+   "tipo": "SAR",
+   "direccion": "TERCER PISO DE LA MUNICIPALIDAD DISTRITAL DE SAN JOSE DE LOURDES",
+   "departamento": "Cajamarca",
+   "telefono": "994800790 / 076-67019",
+   "cobertura": [
+    "060906"
+   ]
+  },
+  {
+   "nombre": "SAR El Carmen De La Frontera",
+   "tipo": "SAR",
+   "direccion": "PLAZA DE ARMAS S/N",
+   "departamento": "Piura",
+   "telefono": "914703519",
+   "cobertura": [
+    "200303"
+   ]
+  },
+  {
+   "nombre": "SAR Cañaris",
+   "tipo": "SAR",
+   "direccion": "CALLE SAN MARTIN MZ. 17. LOT.13",
+   "departamento": "Lambayeque",
+   "telefono": "914705116",
+   "cobertura": [
+    "140202"
+   ]
+  },
+  {
+   "nombre": "SAR Pariahuanca",
+   "tipo": "SAR",
+   "direccion": "JR. JOSE CARLOS ANEXO LAMPA MARIATEGUI S/N LAMPA",
+   "departamento": "Junin",
+   "telefono": "921178472",
+   "cobertura": [
+    "120124"
+   ]
+  },
+  {
+   "nombre": "SAR Morona",
+   "tipo": "SAR",
+   "direccion": "CALLE MALECON S/N PUERTO ALEGRIA",
+   "departamento": "Loreto",
+   "telefono": "979015132",
+   "cobertura": [
+    "160704"
+   ]
+  },
+  {
+   "nombre": "SAR Surcubamba",
+   "tipo": "SAR",
+   "direccion": "AV. HUANCAYO S/N ENTRE AV. DANIEL HERNANDEZ, PLAZA PRINCIPAL- SURCUBAMBA",
+   "departamento": "Huancavelica",
+   "telefono": "914705444",
+   "cobertura": [
+    "090717"
+   ]
+  },
+  {
+   "nombre": "SAR Santillana",
+   "tipo": "SAR",
+   "direccion": "AV. 28 DE JULIO S/N",
+   "departamento": "Ayacucho",
+   "telefono": "914703785",
+   "cobertura": [
+    "050406"
+   ]
+  },
+  {
+   "nombre": "SAR Vilcabamba",
+   "tipo": "SAR",
+   "direccion": "CALLE HERNAN BRICEÑO F16",
+   "departamento": "Cusco",
+   "telefono": "982925001",
+   "cobertura": [
+    "080909"
+   ]
+  },
+  {
+   "nombre": "SAR Anchihuay",
+   "tipo": "SAR",
+   "direccion": "PLAZA DE ARMAS S/N PALACIO MUNICIPAL",
+   "departamento": "Ayacucho",
+   "telefono": "942998838",
+   "cobertura": [
+    "050510"
+   ]
+  },
+  {
+   "nombre": "SAR Andarapa",
+   "tipo": "SAR",
+   "direccion": "JR.24 DE JUNIO CON JR ANDAHUAYLAS",
+   "departamento": "Apurimac",
+   "telefono": "991389670",
+   "cobertura": [
+    "030202"
+   ]
+  },
+  {
+   "nombre": "SAR Ocobamba - Apurimac",
+   "tipo": "SAR",
+   "direccion": "AV SAN MARTIN S/N",
+   "departamento": "Apurimac",
+   "telefono": "958960299",
+   "cobertura": [
+    "030605"
+   ]
+  },
+  {
+   "nombre": "SAR Santo Domingo De Acobamba",
+   "tipo": "SAR",
+   "direccion": "CALLE HUANCAYO S/N",
+   "departamento": "Junin",
+   "telefono": "993897158",
+   "cobertura": [
+    "120135"
+   ]
+  },
+  {
+   "nombre": "SAR Santa Rosa De Loreto",
+   "tipo": "SAR",
+   "direccion": "AV. MI PERU S/N",
+   "departamento": "Loreto",
+   "telefono": "998771160",
+   "cobertura": [
+    "160405"
+   ]
+  },
+  {
+   "nombre": "CAI Breña",
+   "tipo": "CAI",
+   "direccion": "JR. JANGAS N° 601",
+   "departamento": "Lima Metropolitana",
+   "telefono": "994820292",
+   "cobertura": [
+    "150105"
+   ]
+  },
+  {
+   "nombre": "CAI Callao",
+   "tipo": "CAI",
+   "direccion": "AV. MIGUEL GRAU 1170  - CALLAO",
+   "departamento": "Callao",
+   "telefono": "994840455",
+   "cobertura": [
+    "070101"
+   ]
+  },
+  {
+   "nombre": "CAI Huamanga",
+   "tipo": "CAI",
+   "direccion": "JR LIBERTAD 511",
+   "departamento": "Ayacucho",
+   "telefono": "940404532 / 066-67007",
+   "cobertura": [
+    "050101"
+   ]
+  },
+  {
+   "nombre": "CAI Saylla",
+   "tipo": "CAI",
+   "direccion": "AV. HUASCAR F7",
+   "departamento": "Cusco",
+   "telefono": "972771130 / 084-67984",
+   "cobertura": [
+    "080107"
+   ]
+  },
+  {
+   "nombre": "CAI Lima",
+   "tipo": "CAI",
+   "direccion": "AV. RIVA AGÜERO N° 114",
+   "departamento": "Lima Metropolitana",
+   "telefono": "972771783",
+   "cobertura": [
+    "150111"
+   ]
+  },
+  {
+   "nombre": "CAI Arequipa",
+   "tipo": "CAI",
+   "direccion": "CALLE MEXICO N° 414 URB. SATELITE GRANDE",
+   "departamento": "Arequipa",
+   "telefono": "914197759",
+   "cobertura": [
+    "040129"
+   ]
+  },
+  {
+   "nombre": "CAI Madre De Dios",
+   "tipo": "CAI",
+   "direccion": "JIRON UCAYALI MZ C LOTE 02",
+   "departamento": "Madre De Dios",
+   "telefono": "989287117",
+   "cobertura": [
+    "170101"
+   ]
+  },
+  {
+   "nombre": "PIAS Plataforma Itinerante De Acción Social Cuencas Amazonicas",
+   "tipo": "PIAS",
+   "direccion": "OFICINA ADMINISTRATIVA EN CEM - IQUITOS: AV. MARISCAL CÁCERES CUADRA 17 - AL COSTADO DE MIGRACIONES- PRIMER PISO- INTERIOR DE LA CASA DE LA MUJER Y LA JUVENTUD",
+   "departamento": "Loreto",
+   "telefono": "999051856",
+   "cobertura": [
+    "160101"
+   ]
+  },
+  {
+   "nombre": "PIAS Plataforma Itinerante De Acción Social Lago Titicaca",
+   "tipo": "PIAS",
+   "direccion": "JR JOSE DE LA MAR 230 - BARRIO SAN JOSE",
+   "departamento": "Puno",
+   "telefono": "914154711",
+   "cobertura": [
+    "210101"
+   ]
+  },
+  {
+   "nombre": "PIAS Plataforma Itinerante De Acción Social Cuencas Ucayali",
+   "tipo": "PIAS",
+   "direccion": "EMBARCACIONES PIAS RÍO UCAYALI I",
+   "departamento": "Ucayali",
+   "telefono": "994651173",
+   "cobertura": [
+    "250203"
+   ]
+  }
+ ]
+}

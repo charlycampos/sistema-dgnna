@@ -14,7 +14,7 @@ from fastapi.security import OAuth2PasswordBearer
 
 SECRET_KEY   = os.getenv("SESSION_SECRET", "dgnna-sistema-dgnna-secret-2026")
 ALGORITHM    = "HS256"
-EXPIRE_MINUTES = 15  # sesión expira a los 15 min de inactividad (se renueva desde el frontend)
+EXPIRE_MINUTES = 480  # sesión dura 8 horas (jornada laboral completa)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 

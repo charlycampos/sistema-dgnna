@@ -67,6 +67,7 @@ class ApelacionCreate(BaseModel):
     cargos:            Optional[str] = None
     observaciones:     Optional[str] = None
     revisorId:         Optional[str] = None
+    fechaRevisor:      Optional[datetime] = None
     apelantes:         Optional[List[ApelanteDetalleCreate]] = None
     nnas:              Optional[List[NnaDetalleCreate]] = None
 
@@ -124,6 +125,7 @@ class ApelacionOut(BaseModel):
     abogado:           Optional[AbogadoNested] = None
     revisorId:         Optional[str] = None
     revisor:           Optional[RevisorNested] = None
+    fechaRevisor:      Optional[datetime] = None
     fechaAsignacion:   datetime
     estado:            str
     numeroResolucion:  Optional[str] = None

@@ -8,7 +8,8 @@ from infrastructure.db.caso_repository_impl import CasoRepositoryImpl
 from infrastructure.api.schemas import (
     CasoSustracionCreate, CasoSustracionUpdate, CasoSustracionOut,
     BitacoraEntradaCreate, BitacoraEntradaOut,
-    HistorialJudicialCreate, HistorialJudicialOut,
+    HistorialJudicialCreate, HistorialJudicialOut, NnaCreate, NnaOut,
+    ProcesoOperativoUpdate,
 )
 from domain.services.sustracion_service import SustracionService
 
@@ -65,7 +66,7 @@ def actualizar(id: str, body: CasoSustracionUpdate, service: SustracionService =
     try:
         return _caso_out(service.actualizar(id, body.model_dump(exclude_unset=True)))
     except ValueError as e:
-        raise HTTPException(status_code=409 if "código" in str(e) else 404, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -76,7 +77,45 @@ def eliminar(id: str, service: SustracionService = Depends(get_service)):
         service.eliminar(id)
         return {"success": True}
     except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
+
+@router.put("/{id}/proceso-operativo", response_model=CasoSustracionOut)
+def actualizar_proceso(
+    id: str,
+    body: ProcesoOperativoUpdate,
+    service: SustracionService = Depends(get_service),
+    usuario: str = Depends(get_usuario),
+):
+    try:
+        datos = body.model_dump(exclude_unset=True)
+        return _caso_out(service.actualizar_proceso(id, datos, usuario=usuario))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{id}/nna", response_model=NnaOut, status_code=201)
+def agregar_nna(id: str, body: NnaCreate, service: SustracionService = Depends(get_service), usuario: str = Depends(get_usuario)):
+    try:
+        return service.agregar_nna(id, body.model_dump(), usuario=usuario)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.put("/{id}/nna/{nna_id}", response_model=NnaOut)
+def actualizar_nna(id: str, nna_id: str, body: NnaCreate, service: SustracionService = Depends(get_service)):
+    try:
+        return service.actualizar_nna(id, nna_id, body.model_dump())
+    except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+@router.delete("/{id}/nna/{nna_id}")
+def eliminar_nna(id: str, nna_id: str, service: SustracionService = Depends(get_service)):
+    try:
+        service.eliminar_nna(id, nna_id)
+        return {"success": True}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/{id}/bitacora", response_model=BitacoraEntradaOut, status_code=201)
@@ -98,7 +137,7 @@ def agregar_historial(id: str, body: HistorialJudicialCreate, service: Sustracio
     try:
         return service.agregar_historial(id, body.model_dump(), usuario=usuario)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.delete("/{id}/historial-judicial/{entrada_id}")
@@ -108,8 +147,11 @@ def eliminar_historial(id: str, entrada_id: str, service: SustracionService = De
 
 
 def _caso_out(c) -> dict:
+    proceso = c.procesoOperativo
     return {
-        "id": c.id, "codigo": c.codigo, "nnaNombre": c.nnaNombre, "nnaSexo": c.nnaSexo,
+        "id": c.id, "codigo": c.codigo, "nnaNombres": c.nnaNombres,
+        "nnaPrimerApellido": c.nnaPrimerApellido, "nnaSegundoApellido": c.nnaSegundoApellido,
+        "nnaSexo": c.nnaSexo,
         "nnaEdad": c.nnaEdad, "nnaTipoEdad": c.nnaTipoEdad, "nnaFechaNac": c.nnaFechaNac,
         "pais": c.pais, "etapa": c.etapa, "tipoSolicitud": c.tipoSolicitud, "acPeru": c.acPeru,
         "fechaIngreso": c.fechaIngreso, "fechaSalida": c.fechaSalida,
@@ -127,4 +169,36 @@ def _caso_out(c) -> dict:
         "createdAt": c.createdAt, "updatedAt": c.updatedAt,
         "bitacora": [{"id": b.id, "casoId": b.casoId, "fecha": b.fecha, "texto": b.texto, "creadoPor": b.creadoPor, "createdAt": b.createdAt} for b in c.bitacora],
         "historialJudicial": [{"id": h.id, "casoId": h.casoId, "etapa": h.etapa, "fecha": h.fecha, "descripcion": h.descripcion, "creadoPor": h.creadoPor, "createdAt": h.createdAt} for h in c.historialJudicial],
+        "nna": [{"id": n.id, "casoId": n.casoId, "nombres": n.nombres, "primerApellido": n.primerApellido, "segundoApellido": n.segundoApellido, "sexo": n.sexo, "fechaNacimiento": n.fechaNacimiento, "edad": n.edad, "tipoEdad": n.tipoEdad, "createdAt": n.createdAt} for n in c.nna],
+        "procesoOperativo": ({
+            "casoId": proceso.casoId,
+            "faseOperativa": proceso.faseOperativa,
+            "evaluacionResultado": proceso.evaluacionResultado,
+            "requisitos": proceso.requisitos,
+            "fechaObservacion": proceso.fechaObservacion,
+            "fechaNotificacion": proceso.fechaNotificacion,
+            "fechaLimiteSubsanacion": proceso.fechaLimiteSubsanacion,
+            "ampliacionSubsanacion": proceso.ampliacionSubsanacion,
+            "fechaRespuestaSubsanacion": proceso.fechaRespuestaSubsanacion,
+            "resultadoSubsanacion": proceso.resultadoSubsanacion,
+            "detalleSubsanacion": proceso.detalleSubsanacion,
+            "destinatarioGestion": proceso.destinatarioGestion,
+            "tipoComunicacion": proceso.tipoComunicacion,
+            "fechaEnvio": proceso.fechaEnvio,
+            "referenciaSgd": proceso.referenciaSgd,
+            "respuestaEsperada": proceso.respuestaEsperada,
+            "proximaAccion": proceso.proximaAccion,
+            "fechaLimite": proceso.fechaLimite,
+            "respuestaRecibida": proceso.respuestaRecibida,
+            "estadoCooperacion": proceso.estadoCooperacion,
+            "estadoRetornoVoluntario": proceso.estadoRetornoVoluntario,
+            "propuestaRetorno": proceso.propuestaRetorno,
+            "fechaPrevistaRetorno": proceso.fechaPrevistaRetorno,
+            "compromisosRetorno": proceso.compromisosRetorno,
+            "fechaAcuerdo": proceso.fechaAcuerdo,
+            "fechaLimitePasajes": proceso.fechaLimitePasajes,
+            "pasajesRecibidos": proceso.pasajesRecibidos,
+            "fechaRetornoEfectivo": proceso.fechaRetornoEfectivo,
+            "updatedAt": proceso.updatedAt,
+        } if proceso else None),
     }

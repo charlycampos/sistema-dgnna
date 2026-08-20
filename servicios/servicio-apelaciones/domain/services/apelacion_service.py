@@ -2,6 +2,7 @@
 Casos de uso del módulo de Apelaciones.
 Solo depende de entidades y puertos — cero imports de FastAPI o SQLAlchemy.
 """
+from datetime import datetime
 from typing import List, Optional
 from domain.entities.apelacion import Apelacion
 from domain.ports.apelacion_repository import ApelacionRepository
@@ -54,6 +55,8 @@ class ApelacionService:
             observaciones     = datos.get("observaciones"),
             apelantes         = datos.get("apelantes", []),
             nnas              = datos.get("nnas", []),
+            revisorId         = datos.get("revisorId"),
+            fechaRevisor      = (datos.get("fechaRevisor") or datetime.utcnow()) if datos.get("revisorId") else None,
         )
         apelacion.calcular_puntos(pts_ext, pts_comp)
         return self._apelaciones.guardar(apelacion)
@@ -89,7 +92,19 @@ class ApelacionService:
         if nnas_list is not None:
             apelacion.nnas = nnas_list
             
-        apelacion.revisorId         = datos.get("revisorId")
+        # Fecha de asignación del revisor: se respeta la enviada; solo se
+        # autocompleta al asignar un revisor distinto. Si el revisor no cambió
+        # y no llega fecha, se conserva la existente (incluso vacía).
+        nuevo_revisor = datos.get("revisorId")
+        if nuevo_revisor:
+            if datos.get("fechaRevisor"):
+                apelacion.fechaRevisor = datos["fechaRevisor"]
+            elif nuevo_revisor != apelacion.revisorId:
+                apelacion.fechaRevisor = datetime.utcnow()
+        else:
+            apelacion.fechaRevisor = None
+
+        apelacion.revisorId         = nuevo_revisor
         if datos.get("fechaAsignacion"):
             apelacion.fechaAsignacion = datos["fechaAsignacion"]
 

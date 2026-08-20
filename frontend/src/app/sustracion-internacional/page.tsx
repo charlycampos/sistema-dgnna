@@ -1,12 +1,16 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMe } from '@/lib/use-me'
 import {
-  Search, Plus, X, Trash2, Globe, User, FileText,
-  Scale, CheckCircle, Clock, Archive, Filter, ChevronDown,
-  LogOut, LayoutGrid, TrendingUp, Download,
+  Search, Plus, Trash2, Globe, FileText,
+  Scale, CheckCircle, Clock, Archive, Download,
+  ArrowLeft, ClipboardList, MessageSquare,
+  Save, AlertCircle, Eye, User, Edit3, X,
+  Check, ChevronRight, BarChart2,
+  TrendingUp, LayoutGrid, ChevronDown, LogOut,
+  Calendar, AlertTriangle, UserCheck, Info, Lock, Plane, Users
 } from 'lucide-react'
 import { descargarExcelSustracion } from '@/lib/export-excel'
 import { toast } from 'sonner'
@@ -23,9 +27,34 @@ type HistorialJudicial = {
   descripcion?: string; creadoPor?: string; createdAt: string
 }
 
+type RequisitoProceso = { id: string; nombre: string; estado: 'Pendiente' | 'Completo' | 'Observado' | 'No aplica' }
+
+type ProcesoOperativo = {
+  casoId?: string; faseOperativa: string; evaluacionResultado?: string
+  fechaEntrevista?: string; resultadoEntrevista?: string
+  requisitos: RequisitoProceso[]; fechaObservacion?: string; fechaNotificacion?: string
+  fechaLimiteSubsanacion?: string; ampliacionSubsanacion?: string; fechaRespuestaSubsanacion?: string
+  resultadoSubsanacion?: string; detalleSubsanacion?: string
+  destinatarioGestion?: string; tipoComunicacion?: string; fechaEnvio?: string
+  referenciaSgd?: string; respuestaEsperada?: string; proximaAccion?: string; fechaLimite?: string
+  respuestaRecibida?: string; estadoCooperacion?: string
+  estadoRetornoVoluntario?: string; propuestaRetorno?: string; fechaPrevistaRetorno?: string
+  compromisosRetorno?: string; fechaAcuerdo?: string; fechaLimitePasajes?: string
+  pasajesRecibidos?: string; fechaRetornoEfectivo?: string; updatedAt?: string
+}
+
+type ExpedienteTab = 'resumen' | 'datos' | 'personas' | 'evaluacion' | 'subsanacion' | 'internacional' | 'retorno' | 'bitacora' | 'judicial' | 'cierre'
+
+type Nna = {
+  id: string; casoId?: string
+  nombres: string; primerApellido: string; segundoApellido?: string
+  sexo?: string; fechaNacimiento?: string; edad?: string; tipoEdad?: string
+}
+
 type Caso = {
   id: string; codigo: string
   nnaNombre: string; nnaSexo?: string; nnaEdad?: string; nnaTipoEdad?: string; nnaFechaNac?: string
+  nna?: Nna[]
   pais: string; etapa?: string; tipoSolicitud?: string; acPeru?: string
   fechaIngreso: string; fechaSalida?: string
   solicitanteNombre?: string; solicitanteSexo?: string; solicitanteTelefono?: string
@@ -38,1339 +67,1333 @@ type Caso = {
   motivoCierre?: string; retorno?: string; observaciones?: string; creadoPor?: string
   bitacora: Bitacora[]
   historialJudicial?: HistorialJudicial[]
+  procesoOperativo?: ProcesoOperativo | null
 }
 
-// ── TOKENS ─────────────────────────────────────────────────────────────
-const NK='#111827', N2='#1E3A5F', BL='#2563EB', BLH='#1D4ED8';
-const SURF='#FFFFFF', BG='#F9FAFB', BR='#E2E8F0';
-const TX='#0F172A', TX2='#475569', TX3='#94A3B8';
+type NnaForm = {
+  nombres: string; primerApellido: string; segundoApellido?: string
+  sexo: string; fechaNacimiento: string; edad: string; tipoEdad: string
+}
 
-// ── Constantes ─────────────────────────────────────────────────────────
+// ── TOKENS DE DISEÑO ───────────────────────────────────────────────────
+const NK = '#111827', N2 = '#1E3A5F', BL = '#2563EB', BLH = '#1D4ED8';
+const SURF = '#FFFFFF', BG = '#F9FAFB', BR = '#E2E8F0';
+const TX = '#0F172A', TX2 = '#475569', TX3 = '#94A3B8';
 
-const ETAPAS_JUDICIALES = [
-  'Sin demanda','Demanda presentada','En audiencia',
-  'Sentencia 1ra instancia','Sentencia 2da instancia','Casación','Ejecución de sentencia','Archivado',
-]
-const PAISES = [
-  'Alemania','Argentina','Australia','Bolivia','Bosnia','Brasil','Canadá','Chile','Colombia',
-  'Ecuador','El Salvador','España','Estados Unidos','Francia','Honduras','Italia','México',
-  'Países Bajos','Paraguay','Perú','Portugal','Reino Unido','Uruguay','Venezuela','Otro',
-]
-const PROFESIONALES = ['EMMA','JANNY','CECILIA']
-const SEXOS = ['Hombre','Mujer']
-const TIPO_EDAD = ['Años','Meses','Días']
-const ETAPAS = ['Administrativo','Judicial']
-const TIPO_SOLICITUD = ['Restitución','Régimen de Visitas']
-const AC_PERU_OPTS = ['Requirente','Requerida']
-const RESULTADO_ENTREVISTA = ['Favorable','Desfavorable','Pendiente','No aplica']
-const RETORNO_OPTS = ['SI','NO','Pendiente','No aplica']
+const PAISES = ['Alemania','Argentina','Australia','Bolivia','Brasil','Canadá','Chile','Colombia','Ecuador','España','Estados Unidos','Francia','Italia','México','Países Bajos','Paraguay','Perú','Portugal','Reino Unido','Uruguay','Venezuela','Otro'];
+const PROFESIONALES = ['EMMA','JANNY','CECILIA'];
+const SEXOS = ['Hombre','Mujer'];
+const TIPO_EDAD = ['Años','Meses','Días'];
+const ETAPAS = ['Administrativo','Judicial'];
+const TIPO_SOL = ['Restitución','Régimen de Visitas'];
+const AC_PERU = ['Requirente','Requerida'];
+const RESULTADO_ENT = ['Pendiente','Acepta retorno voluntario','Rechaza retorno','No asiste','Reprogramada'];
+const RETORNO = ['SI','NO','Pendiente','No aplica'];
 const MOTIVOS_CIERRE = [
   'Retorno voluntario','Retorno por sentencia judicial','Acuerdo entre las partes','Sentencia infundada',
   'AC rechaza solicitud - Violencia familiar','AC rechaza solicitud - Art. 12',
   'No cumple requisitos del Convenio','Transcurrió plazo sin ubicar al NNA',
   'Desistimiento del solicitante','Sentencia infundada - Art. 13 A','Sentencia infundada - Art. 13 B',
   'Sentencia infundada - Art. 20','AC rechaza solicitud - Art. 27','Otro',
-]
+];
+const ETAPAS_JUD = ['Sin demanda','Demanda presentada','En audiencia','Sentencia 1ra instancia','Sentencia 2da instancia','Casación','Ejecución de sentencia','Archivado'];
+const REQ_BASE: RequisitoProceso[] = [
+  { id: 'r1', nombre: '1. Solicitud formal de restitución o régimen de visitas identificada', estado: 'Pendiente' },
+  { id: 'r2', nombre: '2. Identidad y datos del NNA acreditados', estado: 'Pendiente' },
+  { id: 'r3', nombre: '3. Residencia habitual acreditada', estado: 'Pendiente' },
+  { id: 'r4', nombre: '4. Derecho de custodia o visitas legalmente ejercido', estado: 'Pendiente' },
+  { id: 'r5', nombre: '5. Traslado o retención ilícita identificado', estado: 'Pendiente' },
+  { id: 'r6', nombre: '6. Documentación sustentatoria y partidas de nacimiento', estado: 'Pendiente' },
+  { id: 'r7', nombre: '7. Traducciones oficiales al español, cuando corresponda', estado: 'Pendiente' },
+  { id: 'r8', nombre: '8. Información para ubicación del NNA y del presunto sustractor', estado: 'Pendiente' },
+];
 
-// ── Helpers ────────────────────────────────────────────────────────────
-
-function estadoBadge(estado: string) {
-  switch (estado) {
-    case 'Tramite':   return { bg:'#EFF6FF', color:'#1D4ED8', border:'#BFDBFE', label:'En trámite', accent:'#2563EB' }
-    case 'Pendiente': return { bg:'#FFFBEB', color:'#92400E', border:'#FDE68A', label:'Pendiente', accent:'#D97706' }
-    case 'Archivado': return { bg:'#F1F5F9', color:'#475569', border:'#CBD5E1', label:'Archivado', accent:'#64748B' }
-    default:          return { bg:'#F1F5F9', color:'#475569', border:'#CBD5E1', label:estado, accent:'#64748B' }
-  }
+function estadoBadge(e: string) {
+  if (e === 'Tramite') return { bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE', label: 'En trámite', accent: BL };
+  if (e === 'Pendiente') return { bg: '#FFFBEB', color: '#92400E', border: '#FDE68A', label: 'Pendiente', accent: '#D97706' };
+  return { bg: '#F1F5F9', color: '#475569', border: '#CBD5E1', label: 'Archivado', accent: '#64748B' };
 }
 
-function today() { return new Date().toISOString().split('T')[0] }
+function todayStr() { return new Date().toISOString().split('T')[0]; }
 
-function mensajeApiError(data: Record<string, unknown> | null, fallback: string): string {
-  const detail = data?.detail
-  if (typeof detail === 'string') return detail
-  if (Array.isArray(detail)) {
-    return detail
-      .map((e) =>
-        typeof e === 'object' && e !== null && 'msg' in e ? String((e as { msg: unknown }).msg) : JSON.stringify(e)
-      )
-      .filter(Boolean)
-      .join(' ')
-  }
-  if (typeof data?.error === 'string') return data.error
-  return fallback
-}
-
-function compararFechaHistorial(a: HistorialJudicial, b: HistorialJudicial) {
-  return String(a?.fecha ?? '').localeCompare(String(b?.fecha ?? ''))
-}
-
-// ── Judicial embebido en bitácora ──────────────────────────────────────
-const JUD = '__JUD__:'
-
-function isJudicialEntry(b: Bitacora): boolean {
-  return b.texto.startsWith(JUD)
-}
-
-function parseJudicialEntry(b: Bitacora): HistorialJudicial | null {
-  if (!isJudicialEntry(b)) return null
+function fmtFecha(f?: string): string {
+  if (!f) return '—';
   try {
-    const j = JSON.parse(b.texto.slice(JUD.length))
-    return { id: b.id, casoId: b.casoId, etapa: j.etapa ?? '', fecha: b.fecha,
-             descripcion: j.descripcion ?? null, creadoPor: b.creadoPor, createdAt: b.createdAt }
-  } catch { return null }
+    const [y, m, d] = f.split('-');
+    const mes = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    return `${parseInt(d, 10)} ${mes[parseInt(m, 10) - 1]} ${y}`;
+  } catch { return f; }
 }
 
-function formatFechaEs(fecha: string): string {
-  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']
-  const [y,m,d] = fecha.split('-')
-  return `${parseInt(d)} ${meses[parseInt(m)-1]} ${y}`
+function nombreNna(n: { nombres?: string; primerApellido?: string; segundoApellido?: string }) {
+  return [n.nombres, n.primerApellido, n.segundoApellido].filter(Boolean).join(' ');
+}
+
+function nombreCaso(c: Caso): string {
+  if (c.nna && c.nna.length > 0) {
+    return c.nna.map(nombreNna).join(' / ');
+  }
+  return c.nnaNombre || (c as any).nnanombre || 'Sin NNA';
+}
+
+function vencido(f?: string): boolean {
+  return Boolean(f && f < todayStr());
+}
+
+function diasDesde(f?: string): number {
+  if (!f) return 0;
+  return Math.max(0, Math.floor((Date.now() - new Date(`${f}T00:00:00`).getTime()) / 86400000));
+}
+
+function sumarDiasHabiles(fechaIso: string, diasHabiles: number): string {
+  if (!fechaIso) return '';
+  const [y, m, d] = fechaIso.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  let count = 0;
+  while (count < diasHabiles) {
+    date.setDate(date.getDate() + 1);
+    const dayOfWeek = date.getDay();
+    const feriados = new Set(['1-1','5-1','6-7','6-29','7-23','7-28','7-29','8-6','8-30','10-8','11-1','12-8','12-9','12-25']);
+    const esFeriado = feriados.has(`${date.getMonth() + 1}-${date.getDate()}`);
+    if (dayOfWeek !== 0 && dayOfWeek !== 6 && !esFeriado) count++;
+  }
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function edadDesdeNacimiento(nacimientoIso: string, corteIso: string = todayStr()) {
+  if (!nacimientoIso) return { edad: '', tipoEdad: 'Años' };
+  const nac = new Date(nacimientoIso);
+  const corte = new Date(corteIso);
+  let años = corte.getFullYear() - nac.getFullYear();
+  const m = corte.getMonth() - nac.getMonth();
+  if (m < 0 || (m === 0 && corte.getDate() < nac.getDate())) años--;
+  if (años > 0) return { edad: String(años), tipoEdad: 'Años' };
+  const meses = (corte.getFullYear() - nac.getFullYear()) * 12 + corte.getMonth() - nac.getMonth();
+  if (meses > 0) return { edad: String(meses), tipoEdad: 'Meses' };
+  const dias = Math.floor((corte.getTime() - nac.getTime()) / (1000 * 60 * 60 * 24));
+  return { edad: String(Math.max(0, dias)), tipoEdad: 'Días' };
+}
+
+function emptyNnaForm(): NnaForm {
+  return { nombres: '', primerApellido: '', segundoApellido: '', sexo: '', fechaNacimiento: '', edad: '', tipoEdad: 'Años' };
 }
 
 function emptyForm(): Partial<Caso> {
   return {
-    codigo:'', nnaNombre:'', nnaSexo:'', nnaEdad:'', nnaTipoEdad:'Años', nnaFechaNac:'',
-    pais:'', etapa:'', tipoSolicitud:'', acPeru:'', fechaIngreso:today(), fechaSalida:'',
-    solicitanteNombre:'', solicitanteSexo:'', solicitanteTelefono:'', solicitanteCorreo:'', solicitanteDomicilio:'',
-    requeridoNombre:'', requeridoSexo:'', requeridoTelefono:'', requeridoCorreo:'', requeridoDomicilio:'',
-    profesional:'', estado:'Tramite', fechaEntrevista:'', resultadoEntrevista:'',
-    estadoJudicial:'Sin demanda', fechaDemanda:'', numExpedienteJudicial:'', juzgado:'',
-    sentencia1ra:'', sentencia2da:'', casacion:'', motivoCierre:'', retorno:'', observaciones:'',
+    codigo: '', nnaNombre: '', nnaSexo: '', nnaEdad: '', nnaTipoEdad: 'Años', nnaFechaNac: '',
+    pais: '', etapa: 'Administrativo', tipoSolicitud: 'Restitución', acPeru: 'Requerida',
+    fechaIngreso: todayStr(), fechaSalida: '',
+    solicitanteNombre: '', solicitanteSexo: '', solicitanteTelefono: '', solicitanteCorreo: '', solicitanteDomicilio: '',
+    requeridoNombre: '', requeridoSexo: '', requeridoTelefono: '', requeridoCorreo: '', requeridoDomicilio: '',
+    profesional: '', estado: 'Tramite', fechaEntrevista: '', resultadoEntrevista: 'Pendiente',
+    estadoJudicial: 'Sin demanda', fechaDemanda: '', numExpedienteJudicial: '', juzgado: '',
+    sentencia1ra: '', sentencia2da: '', casacion: '', motivoCierre: '', retorno: 'Pendiente', observaciones: '',
+  };
+}
+
+type FlowStage = {
+  id: ExpedienteTab
+  number: number
+  label: string
+  note: string
+  status: 'complete' | 'active' | 'locked' | 'skipped'
+}
+
+type CaseFlow = {
+  stages: FlowStage[]
+  current: FlowStage
+  nextAction: string
+  alerts: { tone: 'error' | 'warning' | 'info'; message: string }[]
+  progress: number
+  closed: boolean
+}
+
+function deriveCaseFlow(caso: Caso): CaseFlow {
+  if (!caso) {
+    return {
+      stages: [],
+      current: { id: 'resumen', number: 1, label: '', note: '', status: 'locked' },
+      nextAction: '',
+      alerts: [],
+      progress: 0,
+      closed: false,
+    }
+  }
+  const proceso = caso.procesoOperativo
+  const rawPhase = proceso?.faseOperativa || (caso.etapa === 'Judicial' ? 'Judicial' : 'Evaluación')
+  const phase = rawPhase.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  const atClosure = phase.includes('cierre')
+  const closed = caso.estado === 'Archivado'
+  const evaluacion = proceso?.evaluacionResultado || 'Pendiente'
+  const subsanacion = proceso?.resultadoSubsanacion || 'Pendiente'
+  const evaluacionTerminada = evaluacion !== 'Pendiente'
+  const requiereSubsanacion = evaluacion === 'Observada'
+  const subsanacionTerminada = subsanacion === 'Subsanó' || subsanacion === 'No subsanó'
+  const llegaGestion = evaluacion === 'Completa' || (requiereSubsanacion && subsanacion === 'Subsanó')
+  const enGestion = phase.includes('gestion') || phase.includes('retorno')
+  const enJudicial = phase.includes('judicial') || phase.includes('ejecucion')
+  const retornoEfectivo = Boolean(proceso?.fechaRetornoEfectivo)
+  const judicialAplicable = enJudicial || Boolean(caso.fechaDemanda || caso.numExpedienteJudicial)
+
+  const statuses: FlowStage['status'][] = [
+    evaluacionTerminada ? 'complete' : 'active',
+    !requiereSubsanacion ? 'skipped' : subsanacionTerminada ? 'complete' : phase.includes('subsan') ? 'active' : 'locked',
+    !llegaGestion ? 'skipped' : enGestion ? 'active' : (enJudicial || atClosure) ? 'complete' : 'locked',
+    !llegaGestion || retornoEfectivo || (atClosure && !judicialAplicable) ? 'skipped' : enJudicial ? 'active' : atClosure ? 'complete' : 'locked',
+    atClosure ? (closed ? 'complete' : 'active') : 'locked',
+  ]
+  const labels = [
+    'Evaluación inicial',
+    'Subsanación',
+    caso.acPeru === 'Requirente' ? 'Cooperación internacional' : 'Retorno voluntario',
+    caso.acPeru === 'Requirente' ? 'Seguimiento judicial exterior' : 'Proceso judicial',
+    'Cierre',
+  ]
+  const ids: ExpedienteTab[] = ['evaluacion', 'subsanacion', caso.acPeru === 'Requirente' ? 'internacional' : 'retorno', 'judicial', 'cierre']
+  const stages = ids.map((id, index): FlowStage => ({
+    id,
+    number: index + 1,
+    label: labels[index],
+    status: statuses[index],
+    note: statuses[index] === 'complete' ? 'Etapa completada' : statuses[index] === 'active' ? rawPhase : statuses[index] === 'skipped' ? 'No aplica a esta ruta' : 'Pendiente de habilitar',
+  }))
+  const current = stages.find(stage => stage.status === 'active') || stages[4]
+  const currentIndex = stages.indexOf(current)
+
+  const alerts: CaseFlow['alerts'] = []
+  const deadline = proceso?.fechaLimiteSubsanacion || proceso?.fechaLimite
+  if (deadline && vencido(deadline)) alerts.push({ tone: 'error', message: `Plazo vencido el ${fmtFecha(deadline)}.` })
+  if (!caso.acPeru) alerts.push({ tone: 'warning', message: 'Falta definir el rol de la AC Peru.' })
+  const olderNna = (caso.nna || []).find(n => {
+    if (!n.fechaNacimiento) return false
+    const birth = new Date(`${n.fechaNacimiento}T00:00:00`)
+    const entry = new Date(`${caso.fechaIngreso}T00:00:00`)
+    let age = entry.getFullYear() - birth.getFullYear()
+    const month = entry.getMonth() - birth.getMonth()
+    if (month < 0 || (month === 0 && entry.getDate() < birth.getDate())) age--
+    return age >= 16
+  })
+  if (olderNna) alerts.push({ tone: 'error', message: 'Un NNA tiene 16 anos o mas a la fecha de ingreso.' })
+
+  const defaults = [
+    'Completar la matriz de requisitos y emitir el resultado de la evaluación inicial.',
+    'Registrar la notificación y controlar el plazo de subsanación.',
+    caso.acPeru === 'Requirente' ? 'Continuar la coordinación con la Autoridad Central extranjera.' : 'Registrar la entrevista y el resultado de la propuesta de retorno.',
+    'Actualizar la actuación judicial pendiente del expediente.',
+    'Registrar el resultado final y completar el cierre del expediente.',
+  ]
+
+  return {
+    stages,
+    current,
+    nextAction: closed ? 'Expediente cerrado. No requiere una actuación pendiente.' : proceso?.proximaAccion || defaults[currentIndex],
+    alerts,
+    progress: closed ? 100 : Math.round((stages.filter(stage => stage.status === 'complete').length / stages.filter(stage => stage.status !== 'skipped').length) * 100),
+    closed,
   }
 }
 
-// ── CSS compartido ─────────────────────────────────────────────────────
+// ── NAVEGACIÓN Y SECCIONES DEL EXPEDIENTE ───────────────────────────────
+const SECCIONES = [
+  { label: 'Vista general', items: [['resumen', 'Resumen del caso']] },
+  { label: 'Registro', items: [['datos', 'Datos del caso'], ['personas', 'Personas involucradas']] },
+  { label: 'Evaluación', items: [['evaluacion', 'Evaluación inicial'], ['subsanacion', 'Requisitos y subsanación']] },
+  { label: 'Gestión', items: [['internacional', 'Gestión internacional'], ['retorno', 'Retorno voluntario'], ['bitacora', 'Historial de gestión']] },
+  { label: 'Resultado', items: [['judicial', 'Proceso judicial'], ['cierre', 'Cierre del caso']] },
+];
 
-const cellBase: React.CSSProperties = {
-  borderRight:'0.5px solid #F1F5F9', borderBottom:'0.5px solid #F1F5F9',
-  padding:'5px 9px', cursor:'pointer', position:'relative', minHeight:42,
-}
-const labelStyle: React.CSSProperties = {
-  fontSize:10, color:'#94A3B8', letterSpacing:'.3px', marginBottom:2, display:'block',
-  textTransform:'uppercase', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
-}
-const valueStyle: React.CSSProperties = { fontSize:12, color:'#1E293B', lineHeight:1.4 }
-const emptyValueStyle: React.CSSProperties = { ...valueStyle, color:'#CBD5E1', fontStyle:'italic' }
-const inpStyle: React.CSSProperties = {
-  width:'100%', border:'none', outline:'none', background:'transparent',
-  fontSize:12, color:'#1E293B', fontFamily:'inherit', padding:0,
-}
-const selStyle: React.CSSProperties = {
-  width:'100%', border:'none', outline:'none', background:'transparent',
-  fontSize:12, color:'#1E293B', fontFamily:'inherit', padding:0,
-}
-
-// ══════════════════════════════════════════════════════════════════════
-// CELDA EDITABLE
-// ══════════════════════════════════════════════════════════════════════
-
-type CeldaProps = {
-  label: string
-  value?: string | null
-  type?: 'text' | 'date' | 'select' | 'textarea'
-  opts?: string[]
-  onChange: (v: string) => void
-  span?: number
-}
-
-function Celda({ label, value, type='text', opts=[], onChange, span=1 }: CeldaProps) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(value || '')
-  const ref = useRef<HTMLInputElement & HTMLSelectElement & HTMLTextAreaElement>(null)
-
-  useEffect(() => { if (editing && ref.current) ref.current.focus() }, [editing])
-
-  const displayVal = value || ''
-
-  return (
-    <div
-      onClick={() => { if (!editing) { setDraft(value || ''); setEditing(true) } }}
-      style={{
-        ...cellBase,
-        gridColumn: span > 1 ? `span ${span}` : undefined,
-        background: editing ? '#F0F9FF' : 'transparent',
-        outline: editing ? '2px solid #2563EB' : 'none',
-        outlineOffset: -2,
-      }}>
-      <span style={labelStyle}>{label}</span>
-      {editing ? (
-        type === 'select' ? (
-          <select ref={ref} style={selStyle} value={draft}
-            onChange={e => { setDraft(e.target.value); onChange(e.target.value); setEditing(false) }}
-            onBlur={() => setEditing(false)}>
-            <option value="">—</option>
-            {opts.map(o => <option key={o} value={o}>{o}</option>)}
-          </select>
-        ) : type === 'textarea' ? (
-          <textarea ref={ref} style={{ ...inpStyle, resize:'none', minHeight:48 }} value={draft}
-            rows={2} onChange={e => { setDraft(e.target.value); onChange(e.target.value) }} onBlur={() => setEditing(false)}
-            onKeyDown={e => { if (e.key==='Escape') { setDraft(value||''); setEditing(false) } }} />
-        ) : (
-          <input ref={ref} type={type} style={inpStyle} value={draft}
-            onChange={e => { setDraft(e.target.value); onChange(e.target.value) }} onBlur={() => setEditing(false)}
-            onKeyDown={e => { if (e.key==='Enter') setEditing(false); if (e.key==='Escape') { setDraft(value||''); setEditing(false) } }} />
-        )
-      ) : (
-        <span style={displayVal ? valueStyle : emptyValueStyle}>{displayVal || '—'}</span>
-      )}
-    </div>
-  )
-}
+const TITULOS: Record<string, [string, string]> = {
+  resumen: ['Resumen del caso', 'Información vigente y situación general del expediente.'],
+  datos: ['Datos del caso', 'Identificación, clasificación y datos del trámite.'],
+  personas: ['Personas involucradas', 'NNA, solicitante y persona requerida vinculados al caso.'],
+  evaluacion: ['Evaluación inicial', 'Verificación de requisitos y resultado de la revisión inicial.'],
+  subsanacion: ['Requisitos y subsanación', 'Control de observaciones, respuesta y fechas aplicables.'],
+  internacional: ['Gestión internacional', 'Comunicaciones, referencia SGD y próxima actuación.'],
+  retorno: ['Retorno voluntario', 'Entrevista, propuesta, compromisos y resultado del retorno.'],
+  bitacora: ['Historial de gestión', 'Registro cronológico de las actuaciones realizadas.'],
+  judicial: ['Proceso judicial', 'Datos e historial de la intervención judicial.'],
+  cierre: ['Cierre del caso', 'Resultado final, retorno y motivo de cierre.'],
+};
 
 // ══════════════════════════════════════════════════════════════════════
 // COMPONENTE PRINCIPAL
 // ══════════════════════════════════════════════════════════════════════
 
 export default function SustracionPage() {
-  const router = useRouter()
-  const { me, loading: meLoading, hasAccess } = useMe()
-  const [casos, setCasos] = useState<Caso[]>([])
-  const [selected, setSelected] = useState<Caso | null>(null)
+  const router = useRouter();
+  const { me, loading: meLoading, hasAccess } = useMe();
+  const [casos, setCasos] = useState<Caso[]>([]);
+  const [selected, setSelected] = useState<Caso | null>(null);
+  const [view, setView] = useState<'casos' | 'nuevo'>('casos');
+  const [tab, setTab] = useState<ExpedienteTab>('resumen');
+  const [drawer, setDrawer] = useState<'ficha' | 'actividad' | null>(null);
+  const [fichaTab, setFichaTab] = useState<'datos' | 'personas'>('datos');
+  const [subBandeja, setSubBandeja] = useState<string>('todos');
+  const [loading, setLoading] = useState(true);
 
-  // Guard de acceso: solo admins y usuarios con módulo 'sustraccion'
+  // Guard de permisos
   useEffect(() => {
-    if (!meLoading && me && !hasAccess('sustraccion')) {
-      router.replace('/menu')
+    if (!meLoading && me && !hasAccess('sustraccion') && !hasAccess('sustracion') && me.rol !== 'admin') {
+      router.replace('/menu');
     }
-  }, [me, meLoading, hasAccess, router])
+  }, [me, meLoading, hasAccess, router]);
 
-  const [view, setView] = useState<'casos'|'dashboard'>('casos')
-  const [tab, setTab] = useState<'ficha'|'bitacora'|'judicial'>('ficha')
-  const [loading, setLoading] = useState(true)
+  // Filtros de Bandeja
+  const [search, setSearch] = useState('');
+  const [fEstado, setFEstado] = useState('');
+  const [fProfesional, setFProfesional] = useState('');
+  const [fPais, setFPais] = useState('');
 
-  // Filtros sidebar
-  const [search, setSearch] = useState('')
-  const [fEstado, setFEstado] = useState('')
-  const [fProfesional, setFProfesional] = useState('')
-  const [fPais, setFPais] = useState('')
-  const [fDesde, setFDesde] = useState('')
-  const [fHasta, setFHasta] = useState('')
-  const [showFiltros, setShowFiltros] = useState(false)
+  // Edición
+  const [pending, setPending] = useState<Partial<Caso>>({});
+  const [saving, setSaving] = useState(false);
+  const hasPending = Object.keys(pending).length > 0;
 
-  // Cambios pendientes
-  const [pending, setPending] = useState<Partial<Caso>>({})
-  const [saving, setSaving] = useState(false)
-  const hasPending = Object.keys(pending).length > 0
-
-  // Modal nuevo caso
-  const [showNew, setShowNew] = useState(false)
-  const [formNew, setFormNew] = useState<Partial<Caso>>(emptyForm())
-  const [savingNew, setSavingNew] = useState(false)
-  const [errorNew, setErrorNew] = useState('')
+  // Nuevo caso
+  const [formNew, setFormNew] = useState<Partial<Caso>>(emptyForm());
+  const [nnaNew, setNnaNew] = useState<NnaForm[]>([emptyNnaForm()]);
+  const [savingNew, setSavingNew] = useState(false);
+  const [errorNew, setErrorNew] = useState('');
 
   // Bitácora
-  const [bitTexto, setBitTexto] = useState('')
-  const [savingBit, setSavingBit] = useState(false)
+  const [bitTexto, setBitTexto] = useState('');
+  const [savingBit, setSavingBit] = useState(false);
 
-  // Historial judicial
-  const [hjEtapa, setHjEtapa] = useState('')
-  const [hjFecha, setHjFecha] = useState(today())
-  const [hjDesc, setHjDesc] = useState('')
-  const [savingHj, setSavingHj] = useState(false)
-  const [errorHj, setErrorHj] = useState('')
-
-  // ── Fetch ─────────────────────────────────────────────────────────
-
+  // Cargar casos desde el backend
   const fetchCasos = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await fetch('/api/sustracion')
+      const res = await fetch('/api/sustracion');
       if (res.ok) {
-        const data = await res.json()
-        setCasos(data)
+        const data = await res.json();
+        const lista = Array.isArray(data) ? data : [];
+        setCasos(lista);
         if (selected) {
-          const upd = data.find((c: Caso) => c.id === selected.id)
-          if (upd) setSelected(upd)
+          const upd = lista.find((c: Caso) => c && c.id === selected.id);
+          if (upd) setSelected(upd);
         }
-      }
-    } finally { setLoading(false) }
-  }, [selected])
-
-  useEffect(() => { fetchCasos() }, []) // eslint-disable-line
-
-  // ── Filtrado ─────────────────────────────────────────────────────
-
-  const casosFiltrados = casos.filter(c => {
-    if (search && !c.nnaNombre.toLowerCase().includes(search.toLowerCase()) &&
-        !c.codigo.toLowerCase().includes(search.toLowerCase())) return false
-    if (fEstado && c.estado !== fEstado) return false
-    if (fProfesional && c.profesional !== fProfesional) return false
-    if (fPais && c.pais !== fPais) return false
-    if (fDesde && c.fechaIngreso < fDesde) return false
-    if (fHasta && c.fechaIngreso > fHasta) return false
-    return true
-  })
-
-  const filtrosActivos = [fEstado,fProfesional,fPais,fDesde,fHasta].filter(Boolean).length
-
-  // ── Cambios inline ────────────────────────────────────────────────
-
-  function onChange(field: keyof Caso, val: string) {
-    setPending(prev => ({ ...prev, [field]: val }))
-  }
-
-  function getVal(field: keyof Caso): string {
-    if (field in pending) return (pending as Record<string, unknown>)[field] as string ?? ''
-    if (!selected) return ''
-    return (selected as Record<string, unknown>)[field] as string ?? ''
-  }
-
-  async function guardar() {
-    if (!selected || !hasPending) return
-    setSaving(true)
-    const body = { ...pending }
-    try {
-      const res = await fetch(`/api/sustracion/${selected.id}`, {
-        method:'PUT', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(body),
-      })
-      if (res.ok) {
-        const updated = await res.json() as Caso
-        
-        // Actualizamos la lista y el seleccionado con la respuesta oficial del servidor
-        setCasos(prev => prev.map(c => c.id === updated.id ? updated : c))
-        setSelected(updated)
-        
-        // Limpiamos de pending SOLO lo que enviamos (por si hubo cambios concurrentes)
-        setPending(prev => {
-          const next = { ...prev }
-          Object.keys(body).forEach(k => delete (next as Record<string, unknown>)[k])
-          return next
-        })
-        
-        toast.success('Cambios guardados')
       } else {
-        const err = await res.json().catch(() => null)
-        toast.error(mensajeApiError(err, `Error al guardar (${res.status})`))
+        setCasos([]);
       }
     } catch {
-      toast.error('Error de conexión al guardar')
-    } finally { setSaving(false) }
-  }
+      setCasos([]);
+    } finally { setLoading(false); }
+  }, [selected]);
 
-  function descartar() { setPending({}) }
+  useEffect(() => { fetchCasos(); }, []);
 
-  async function handleLogout() {
-    if (hasPending && !confirm('Tienes cambios sin guardar. ¿Deseas salir de todas formas?')) return
-    await fetch('/api/auth/logout', { method: 'POST' })
-    router.push('/login')
-  }
-
-  function irAModulos() {
-    if (hasPending && !confirm('Tienes cambios sin guardar. ¿Deseas volver al menú?')) return
-    router.push('/menu')
-  }
-
-  // ── Crear caso ────────────────────────────────────────────────────
-
-  async function crearCaso() {
-    if (!formNew.codigo || !formNew.nnaNombre || !formNew.pais || !formNew.fechaIngreso) {
-      setErrorNew('Código, nombre del NNA, país y fecha de ingreso son obligatorios.')
-      return
+  useEffect(() => {
+    if (!drawer) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setDrawer(null)
     }
-    setSavingNew(true); setErrorNew('')
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [drawer]);
+
+  // Borrador automático en LocalStorage
+  const DRAFT_KEY = 'sustracion_nuevo_draft_v2';
+  useEffect(() => {
+    if (view === 'nuevo') {
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ form: formNew, nna: nnaNew })); } catch {}
+    }
+  }, [view, formNew, nnaNew]);
+
+  const cargarBorrador = () => {
     try {
-      const res = await fetch('/api/sustracion', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ ...formNew, creadoPor: me?.nombre }),
-      })
-      if (res.status === 409) { const d = await res.json(); setErrorNew(d.detail || 'Código duplicado.'); return }
-      if (!res.ok) throw new Error()
-      const nuevo = await res.json()
-      setCasos(prev => [nuevo, ...prev])
-      setSelected(nuevo); setTab('ficha')
-      setShowNew(false); setFormNew(emptyForm())
-    } catch { setErrorNew('Error de conexión.') }
-    finally { setSavingNew(false) }
-  }
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.form) setFormNew(parsed.form);
+        if (parsed.nna && parsed.nna.length) setNnaNew(parsed.nna);
+        toast.info('Borrador restaurado correctamente');
+      }
+    } catch {}
+  };
 
-  // ── Eliminar caso ─────────────────────────────────────────────────
+  // Filtrado de la bandeja
+  const visibles = useMemo(() => {
+    const list = Array.isArray(casos) ? casos : [];
+    return list.filter(c => {
+      if (!c) return false;
+      const p = c.procesoOperativo;
+      const fase = p?.faseOperativa || (c.etapa === 'Judicial' ? 'Judicial' : 'Recepción');
 
-  async function eliminarCaso() {
-    if (!selected || !confirm(`¿Eliminar el caso ${selected.codigo}?`)) return
-    await fetch(`/api/sustracion/${selected.id}`, { method:'DELETE' })
-    setCasos(prev => prev.filter(c => c.id !== selected.id))
-    setSelected(null); setPending({})
-  }
+      if (subBandeja === 'revision') return !p || fase === 'Recepción' || fase === 'Evaluación' || fase === 'Evaluacion';
+      if (subBandeja === 'subsanacion') return fase === 'Subsanación' || fase === 'Subsanacion';
+      if (subBandeja === 'retorno') return fase === 'Retorno voluntario' || fase === 'Retorno';
+      if (subBandeja === 'judicial') return fase === 'Judicial' || c.etapa === 'Judicial';
+      if (subBandeja === 'vencidos') return vencido(p?.fechaLimite) || vencido(p?.fechaLimiteSubsanacion);
+      if (subBandeja === 'activos') return !deriveCaseFlow(c).closed;
+      if (subBandeja === 'alerta') return deriveCaseFlow(c).alerts.some(a => a.tone === 'error');
+      if (subBandeja === 'cerrados') return c.estado === 'Archivado';
+      return true;
+    }).filter(c => {
+      if (!c) return false;
+      const q = search.toLowerCase();
+      if (q && !nombreCaso(c).toLowerCase().includes(q) && !(c.codigo || '').toLowerCase().includes(q) && !(c.solicitanteNombre || '').toLowerCase().includes(q)) return false;
+      if (fEstado && c.estado !== fEstado) return false;
+      if (fProfesional && c.profesional !== fProfesional) return false;
+      if (fPais && c.pais !== fPais) return false;
+      return true;
+    });
+  }, [casos, search, fEstado, fProfesional, fPais, subBandeja]);
 
-  // ── Bitácora ──────────────────────────────────────────────────────
+  const flows = useMemo(() => new Map((Array.isArray(casos) ? casos : []).filter(Boolean).map(c => [c.id, deriveCaseFlow(c)])), [casos]);
+  const counters = useMemo(() => {
+    const list = (Array.isArray(casos) ? casos : []).filter(Boolean);
+    return [
+      { label: 'Expedientes', value: list.length, color: N2 },
+      { label: 'Activos', value: list.filter(c => !flows.get(c.id)?.closed).length, color: BL },
+      { label: 'Con alerta crítica', value: list.filter(c => flows.get(c.id)?.alerts.some(a => a.tone === 'error')).length, color: '#DC2626' },
+      { label: 'Cerrados', value: list.filter(c => flows.get(c.id)?.closed).length, color: '#16A34A' },
+    ];
+  }, [casos, flows]);
 
-  async function agregarBitacora() {
-    if (!selected || !bitTexto.trim()) return
-    setSavingBit(true)
+  const tabsSubBandeja = [
+    ['todos', 'Todos'],
+    ['revision', 'Por revisar'],
+    ['subsanacion', 'Subsanación'],
+    ['retorno', 'Retorno voluntario'],
+    ['judicial', 'Judiciales'],
+    ['vencidos', 'Plazos vencidos'],
+    ['cerrados', 'Cerrados'],
+  ];
+
+  const onChange = (field: keyof Caso, val: any) => {
+    setPending(p => ({ ...p, [field]: val }));
+  };
+
+  const getVal = (field: keyof Caso) => {
+    if (field in pending) return (pending as any)[field];
+    if (selected) return (selected as any)[field];
+    return '';
+  };
+
+  const guardar = async () => {
+    if (!selected) return;
+    setSaving(true);
     try {
-      const res = await fetch(`/api/sustracion/${selected.id}/bitacora`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ fecha: today(), texto: bitTexto.trim(), creadoPor: me?.nombre }),
-      })
-      if (!res.ok) throw new Error()
-      const entrada = await res.json()
-      const updated = { ...selected, bitacora: [...selected.bitacora, entrada].sort((a,b)=>a.fecha.localeCompare(b.fecha)) }
-      setSelected(updated); setCasos(prev => prev.map(c => c.id === updated.id ? updated : c))
-      setBitTexto('')
-    } finally { setSavingBit(false) }
-  }
-
-  async function eliminarBitacora(entradaId: string) {
-    if (!selected || !confirm('¿Eliminar esta entrada?')) return
-    await fetch(`/api/sustracion/${selected.id}/bitacora/${entradaId}`, { method:'DELETE' })
-    const updated = { ...selected, bitacora: selected.bitacora.filter(b => b.id !== entradaId) }
-    setSelected(updated); setCasos(prev => prev.map(c => c.id === updated.id ? updated : c))
-  }
-
-  // ── Historial Judicial ────────────────────────────────────────────
-
-  async function agregarHistorialJudicial() {
-    if (!selected || !hjEtapa || !hjFecha) return
-    setSavingHj(true)
-    setErrorHj('')
-    try {
-      // Guardamos el evento judicial en la bitácora usando el endpoint que ya funciona
-      const texto = JUD + JSON.stringify({ etapa: hjEtapa, descripcion: hjDesc.trim() || null })
-      const res = await fetch(`/api/sustracion/${selected.id}/bitacora`, {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ fecha: hjFecha, texto, creadoPor: me?.nombre }),
-      })
-      const payload = await res.json().catch(() => null) as Record<string, unknown> | null
+      const payload = { ...selected, ...pending };
+      const res = await fetch(`/api/sustracion/${selected.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
       if (!res.ok) {
-        setErrorHj(mensajeApiError(payload, `No se pudo registrar (${res.status})`))
-        return
+        const error = await res.json().catch(() => null);
+        throw new Error(error?.detail || 'Error al actualizar');
       }
+      const updated = await res.json();
+      setSelected(updated);
+      setPending({});
+      setCasos(prev => prev.map(c => (c.id === updated.id ? updated : c)));
+      toast.success('Expediente actualizado correctamente');
+    } catch (error: any) {
+      toast.error(error?.message || 'No se pudo guardar los cambios');
+    } finally { setSaving(false); }
+  };
 
-      // También actualizamos estadoJudicial en el caso
-      await fetch(`/api/sustracion/${selected.id}`, {
-        method:'PUT', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ estadoJudicial: hjEtapa }),
-      })
-
-      const nuevaBit: Bitacora = payload as unknown as Bitacora
-      const updated = {
-        ...selected,
-        estadoJudicial: hjEtapa,
-        bitacora: [...selected.bitacora, nuevaBit].sort((a,b) => a.fecha.localeCompare(b.fecha)),
+  const guardarProceso = async (proc: ProcesoOperativo) => {
+    if (!selected) return;
+    try {
+      const res = await fetch(`/api/sustracion/${selected.id}/proceso-operativo`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(proc),
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => null);
+        throw new Error(error?.detail || 'Error al actualizar el flujo');
       }
-      setSelected(updated)
-      setCasos(prev => prev.map(c => c.id === updated.id ? updated : c))
-      
-      // Limpiamos de pending si existía una edición manual de este campo
-      setPending(prev => {
-        if (!('estadoJudicial' in prev)) return prev
-        const next = { ...prev }; delete next.estadoJudicial; return next
-      })
+      const updated = await res.json();
+      setSelected(updated);
+      setCasos(prev => prev.map(c => (c.id === updated.id ? updated : c)));
+      setPending(current => {
+        const rest = { ...current }
+        delete rest.fechaEntrevista
+        delete rest.resultadoEntrevista
+        return rest
+      });
+      setTab(deriveCaseFlow(updated).current.id);
+      toast.success('Flujo operativo actualizado');
+    } catch (error: any) {
+      toast.error(error?.message || 'Error al actualizar el flujo de la directiva');
+    }
+  };
 
-      setHjEtapa(''); setHjFecha(today()); setHjDesc('')
+  const crearCasoDesdePagina = async () => {
+    if (!formNew.codigo || !formNew.pais || !formNew.fechaIngreso) {
+      setErrorNew('Hoja de Trámite, País y Fecha de Ingreso son obligatorios.');
+      return;
+    }
+    const primerNna = nnaNew[0];
+    const nombreMenor = primerNna ? [primerNna.nombres, primerNna.primerApellido, primerNna.segundoApellido].filter(Boolean).join(' ') : '';
+    if (!nombreMenor.trim()) {
+      setErrorNew('Debes ingresar al menos el nombre y apellido del menor involucrado.');
+      return;
+    }
+    setSavingNew(true);
+    setErrorNew('');
+    try {
+      const payload = {
+        ...formNew,
+        nnaNombre: nombreMenor,
+        nnaSexo: primerNna.sexo,
+        nnaEdad: primerNna.edad,
+        nnaTipoEdad: primerNna.tipoEdad,
+        nnaFechaNac: primerNna.fechaNacimiento,
+        creadoPor: me?.nombre || 'Usuario',
+        bitacora: [],
+      };
+      const res = await fetch('/api/sustracion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.detail || 'Error al registrar expediente');
+      }
+      const nuevo = await res.json();
+      setCasos(prev => [nuevo, ...prev]);
+      setSelected(nuevo);
+      setView('casos');
+      setTab('resumen');
+      try { localStorage.removeItem(DRAFT_KEY); } catch {}
+      toast.success('Caso registrado correctamente');
+    } catch (e: any) {
+      setErrorNew(e.message || 'Error al guardar');
+    } finally { setSavingNew(false); }
+  };
+
+  const eliminarCaso = async () => {
+    if (!selected || !confirm(`¿Seguro que deseas eliminar el caso ${selected.codigo}?`)) return;
+    try {
+      const res = await fetch(`/api/sustracion/${selected.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const error = await res.json().catch(() => null);
+        throw new Error(error?.detail || 'No se pudo eliminar el caso');
+      }
+      setCasos(prev => prev.filter(c => c.id !== selected.id));
+      setSelected(null);
+      setPending({});
+      toast.success('Caso eliminado');
+    } catch (error: any) {
+      toast.error(error?.message || 'No se pudo eliminar el caso');
+    }
+  };
+
+  const agregarBitacora = async () => {
+    if (!selected || !bitTexto.trim()) return;
+    setSavingBit(true);
+    try {
+      const res = await fetch(`/api/sustracion/${selected.id}/bitacora`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fecha: todayStr(), texto: bitTexto.trim(), creadoPor: me?.nombre || 'Usuario' }),
+      });
+      if (!res.ok) throw new Error();
+      const nueva = await res.json();
+      const upd = { ...selected, bitacora: [...(selected.bitacora || []), nueva] };
+      setSelected(upd);
+      setCasos(prev => prev.map(c => (c.id === upd.id ? upd : c)));
+      setBitTexto('');
+      toast.success('Entrada de bitácora registrada');
     } catch {
-      setErrorHj('Error de conexión.')
-    } finally { setSavingHj(false) }
-  }
+      toast.error('No se pudo agregar a la bitácora');
+    } finally { setSavingBit(false); }
+  };
 
-  async function eliminarHistorialJudicial(entradaId: string) {
-    if (!selected || !confirm('¿Eliminar este evento judicial?')) return
-    const res = await fetch(`/api/sustracion/${selected.id}/bitacora/${entradaId}`, { method:'DELETE' })
-    if (!res.ok) return
+  const fieldInputStyle: React.CSSProperties = {
+    padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11, color: TX, background: SURF, outline: 'none', width: '100%', boxSizing: 'border-box',
+  };
+  const fieldLabelStyle: React.CSSProperties = {
+    display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3, textTransform: 'uppercase', letterSpacing: '.04em',
+  };
 
-    const nuevaBit = selected.bitacora.filter(b => b.id !== entradaId)
-    // Recalcular estadoJudicial desde eventos restantes
-    const judicialRestante = nuevaBit
-      .filter(isJudicialEntry)
-      .map(parseJudicialEntry)
-      .filter((h): h is HistorialJudicial => h !== null)
-      .sort((a,b) => b.fecha.localeCompare(a.fecha))
-    const ultimaEtapa = judicialRestante.length > 0 ? judicialRestante[0].etapa : 'Sin demanda'
-
-    await fetch(`/api/sustracion/${selected.id}`, {
-      method:'PUT', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ estadoJudicial: ultimaEtapa }),
-    })
-
-    const updated = { ...selected, bitacora: nuevaBit, estadoJudicial: ultimaEtapa }
-    setSelected(updated); setCasos(prev => prev.map(c => c.id === updated.id ? updated : c))
-
-    // Limpiamos de pending si existía una edición manual de este campo
-    setPending(prev => {
-      if (!('estadoJudicial' in prev)) return prev
-      const next = { ...prev }; delete next.estadoJudicial; return next
-    })
-  }
-
-  // ── Render ────────────────────────────────────────────────────────
-
-  const selEstado = getVal('estado') || 'Tramite'
-  const bSelEstado = estadoBadge(selEstado)
+  const selectedFlow = selected ? deriveCaseFlow({ ...selected, ...pending }) : null;
 
   return (
-    <div style={{display:'flex',flexDirection:'column',height:'100vh',background:BG}}>
-      {/* Header */}
-      <header style={{background:SURF,flexShrink:0,borderBottom:`1px solid ${BR}`,boxShadow:'0 1px 3px rgba(0,0,0,.05)'}}>
-        <div style={{padding:'0 20px',display:'flex',alignItems:'center',gap:12,height:56}}>
-          <div style={{display:'flex',alignItems:'center',gap:10}}>
-            <div style={{width:32,height:32,borderRadius:9,background:BL,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <Globe size={15} color="#fff"/>
-            </div>
-            <div>
-              <div style={{fontSize:10,color:TX3,textTransform:'uppercase',letterSpacing:'.5px',lineHeight:1}}>DGNNA — MIMP</div>
-              <div style={{fontSize:14,fontWeight:800,color:TX,lineHeight:1.2,letterSpacing:'-.01em'}}>Sustracción Internacional</div>
-            </div>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: BG, color: TX, fontFamily: "'DM Sans', system-ui, -apple-system, sans-serif" }}>
+      <style jsx global>{`
+        .si-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+        .si-filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .si-exp-header { display: flex; align-items: center; justify-content: space-between; }
+        .si-exp-body { display: flex; }
+        .si-rail { width: 250px; }
+        .si-drawer { width: min(760px, calc(100vw - 24px)); }
+        @media (max-width: 900px) {
+          .si-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .si-exp-header { align-items: flex-start; flex-direction: column; }
+          .si-exp-body { flex-direction: column; overflow: auto !important; }
+          .si-rail { width: 100%; border-right: 0 !important; border-bottom: 1px solid ${BR}; display: flex; overflow-x: auto; }
+          .si-rail-label { display: none; }
+          .si-rail-summary { min-width: 170px; }
+          .si-rail-progress { min-width: 180px; margin: 7px 8px 0 !important; }
+          .si-rail-item { min-width: 210px; }
+          .si-drawer { width: min(680px, calc(100vw - 12px)); }
+        }
+        @media (max-width: 620px) {
+          .si-kpis { grid-template-columns: 1fr; }
+          .si-page { padding: 18px 14px !important; }
+          .si-filters > * { width: 100% !important; flex-basis: 100% !important; }
+          .si-content > .main-scroll > div { grid-template-columns: 1fr !important; }
+          .si-content > .main-scroll > div > * { grid-column: 1 / -1 !important; border-right: 0 !important; }
+          .si-drawer .main-scroll > div { grid-template-columns: 1fr !important; }
+          .si-drawer .main-scroll > div > * { grid-column: 1 / -1 !important; border-right: 0 !important; }
+        }
+      `}</style>
+
+      {/* Header Institucional */}
+      <header style={{ background: SURF, borderBottom: `1px solid ${BR}`, padding: '0 20px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: N2, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+            <Globe size={16} />
           </div>
-          <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:8}}>
-            {me && (
-              <div style={{ display:'flex', alignItems:'center', gap:7, background:BG, borderRadius:999, padding:'4px 12px 4px 5px', marginRight:5, border:`1px solid ${BR}` }}>
-                <div style={{ width:24, height:24, borderRadius:'50%', background:BL, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:700, color:'#fff' }}>
-                  {me.nombre?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase()}
-                </div>
-                <span style={{ color:TX, fontSize:12, fontWeight:600 }}>{me.nombre}</span>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.5px' }}>DGNNA · MIMP</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: TX }}>Sustracción Internacional</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button onClick={() => router.push('/menu')} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 6, border: `1px solid ${BR}`, background: SURF, color: TX2, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+            <LayoutGrid size={13} /> Módulos
+          </button>
+          {me && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#F1F5F9', padding: '4px 10px 4px 6px', borderRadius: 99, border: `1px solid ${BR}`, marginLeft: 6 }}>
+              <div style={{ width: 22, height: 22, borderRadius: '50%', background: BL, color: '#fff', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {me.nombre?.charAt(0).toUpperCase()}
               </div>
-            )}
-            <button onClick={irAModulos} title="Volver al menú de módulos"
-              style={{display:'flex',alignItems:'center',gap:6,background:SURF,color:TX2,border:`1px solid ${BR}`,borderRadius:8,padding:'7px 12px',fontSize:12,cursor:'pointer',fontWeight:600}}>
-              <LayoutGrid size={14} /> Módulos
-            </button>
-            <button onClick={handleLogout} title="Cerrar sesión"
-              style={{display:'flex',alignItems:'center',gap:6,background:'#FEF2F2',color:'#DC2626',border:'1px solid #FECACA',borderRadius:8,padding:'7px 12px',fontSize:12,cursor:'pointer',fontWeight:600}}>
-              <LogOut size={14} /> Salir
-            </button>
-            <div style={{width:1,height:20,background:BR,margin:'0 4px'}}/>
-            <button onClick={() => setView(view === 'casos' ? 'dashboard' : 'casos')}
-              style={{display:'flex',alignItems:'center',gap:6,background:view==='dashboard'?BL:BG,color:view==='dashboard'?'#fff':TX2,border:`1px solid ${view==='dashboard'?BL:BR}`,borderRadius:8,padding:'7px 13px',fontSize:12,fontWeight:600}}>
-              {view === 'casos' ? (
-                <><TrendingUp size={13} color={TX2} /> Estadísticas</>
-              ) : (
-                <><FileText size={13} color="#fff" /> Registro</>
-              )}
-            </button>
-            <button onClick={() => { setFormNew(emptyForm()); setShowNew(true) }}
-              style={{display:'flex',alignItems:'center',gap:5,background:BL,color:'#fff',border:'none',borderRadius:8,padding:'7px 13px',fontSize:12,fontWeight:700,boxShadow:'0 2px 8px rgba(37,99,235,.4)',cursor:'pointer'}}>
-              <Plus size={13} /> Nuevo caso
-            </button>
-          </div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: TX }}>{me.nombre}</span>
+            </div>
+          )}
         </div>
       </header>
 
-      <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
-        {view === 'dashboard' ? (
-          <div style={{ flex:1, overflowY:'auto', background:'#F8FAFC' }}>
-            <div style={{ maxWidth:1200, margin:'0 auto' }}>
-              <div style={{ padding:'20px 20px 0', display:'flex', alignItems:'center', gap:10 }}>
-                <TrendingUp style={{ color:'#1E3A5F', width:24, height:24 }} />
-                <h2 style={{ fontSize:20, fontWeight:700, color:'#1E3A5F', margin:0 }}>Panel de Estadísticas Globales</h2>
-              </div>
-              <TabDashboard casos={casos} />
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* ── SIDEBAR ──────────────────────────────────────────────── */}
-            <div style={{width:340,background:N2,display:'flex',flexDirection:'column',overflow:'hidden',flexShrink:0}}>
-              <div style={{padding:'10px 12px',borderBottom:'1px solid rgba(255,255,255,.08)'}}>
-                <div style={{position:'relative',marginBottom:8}}>
-                  <span style={{position:'absolute',left:9,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}><Search size={14} color="rgba(255,255,255,.3)"/></span>
-                  <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar por nombre o código…"
-                    style={{width:'100%',background:'rgba(255,255,255,.1)',border:'1px solid rgba(255,255,255,.14)',borderRadius:8,padding:'7px 9px 7px 30px',color:'#fff',fontSize:12,outline:'none',boxSizing:'border-box'}}/>
-                </div>
-                <button onClick={()=>setShowFiltros(v=>!v)} style={{display:'flex',alignItems:'center',justifyContent:'space-between',width:'100%',background:'none',border:'1px solid rgba(255,255,255,.15)',borderRadius:7,padding:'6px 10px',color:'rgba(255,255,255,.65)',fontSize:11,cursor:'pointer'}}>
-                  <span style={{display:'flex',alignItems:'center',gap:5}}><Filter size={13} color="rgba(255,255,255,.5)"/>Filtros {filtrosActivos>0&&<span style={{background:BL,color:'#fff',borderRadius:99,padding:'0 5px',fontSize:10,fontWeight:700}}>{filtrosActivos}</span>}</span>
-                  <ChevronDown size={12} color="rgba(255,255,255,.4)"/>
-                </button>
-                {showFiltros&&(
-                  <div style={{marginTop:8, display:'flex', flexDirection:'column', gap:6}}>
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
-                      <div>
-                        <p style={{ color:'rgba(255,255,255,.4)', fontSize:10, marginBottom:3, textTransform:'uppercase', letterSpacing:'.3px' }}>Desde</p>
-                        <input type="date" value={fDesde} onChange={e => setFDesde(e.target.value)}
-                          style={{ width:'100%', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.14)', borderRadius:6, padding:'5px 8px', color:'#fff', fontSize:11, outline:'none', boxSizing:'border-box' }} />
-                      </div>
-                      <div>
-                        <p style={{ color:'rgba(255,255,255,.4)', fontSize:10, marginBottom:3, textTransform:'uppercase', letterSpacing:'.3px' }}>Hasta</p>
-                        <input type="date" value={fHasta} onChange={e => setFHasta(e.target.value)}
-                          style={{ width:'100%', background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.14)', borderRadius:6, padding:'5px 8px', color:'#fff', fontSize:11, outline:'none', boxSizing:'border-box' }} />
-                      </div>
-                    </div>
-                    <select value={fEstado} onChange={e=>setFEstado(e.target.value)} style={{width:'100%',background:'rgba(255,255,255,.1)',border:'1px solid rgba(255,255,255,.14)',borderRadius:7,padding:'6px 9px',color:fEstado?'#fff':'rgba(255,255,255,.4)',fontSize:11,outline:'none'}}>
-                      <option value="">Estado: todos</option>
-                      <option value="Tramite">En trámite</option>
-                      <option value="Pendiente">Pendiente</option>
-                      <option value="Archivado">Archivado</option>
-                    </select>
-                    <select value={fProfesional} onChange={e => setFProfesional(e.target.value)}
-                      style={{ background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.14)', borderRadius:6, padding:'5px 8px', color: fProfesional ? '#fff' : 'rgba(255,255,255,.4)', fontSize:11, outline:'none' }}>
-                      <option value="">Profesional: todas</option>
-                      {PROFESIONALES.map(p => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                    <select value={fPais} onChange={e => setFPais(e.target.value)}
-                      style={{ background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.14)', borderRadius:6, padding:'5px 8px', color: fPais ? '#fff' : 'rgba(255,255,255,.4)', fontSize:11, outline:'none' }}>
-                      <option value="">País: todos</option>
-                      {PAISES.map(p => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
-                      <button 
-                        onClick={() => {
-                          if (casosFiltrados.length === 0) { toast.error('No hay datos para exportar'); return }
-                          try {
-                            descargarExcelSustracion(casosFiltrados);
-                            toast.success(`Exportados ${casosFiltrados.length} casos correctamente`);
-                          } catch {
-                            toast.error('Error al exportar a Excel');
-                          }
-                        }}
-                        style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, background:BL, border:'none', borderRadius:6, padding:'6px 10px', color:'#fff', fontSize:11, cursor:'pointer', fontWeight:600 }}>
-                        <Download size={12} /> Exportar
-                      </button>
-                      <button onClick={() => { setFEstado(''); setFProfesional(''); setFPais(''); setFDesde(''); setFHasta('') }}
-                        style={{ background:'rgba(255,100,100,.2)', border:'none', borderRadius:6, padding:'6px 10px', color:'#FCA5A5', fontSize:11, cursor:'pointer' }}>
-                        Limpiar filtros
-                      </button>
-                    </div>
-                  </div>
-                )}
-                <div style={{fontSize:10,color:'rgba(255,255,255,.28)',margin:'6px 1px 0',fontWeight:500}}>{casosFiltrados.length} caso{casosFiltrados.length!==1?'s':''} {filtrosActivos>0 ? '(filtrado)' : ''}</div>
-              </div>
-              <div style={{flex:1,overflowY:'auto',padding:'6px 8px'}} className="main-scroll">
-                {loading && <p style={{ color:'rgba(255,255,255,.35)', fontSize:12, textAlign:'center', padding:20 }}>Cargando...</p>}
-                {!loading && casosFiltrados.length === 0 && (
-                  <p style={{ color:'rgba(255,255,255,.3)', fontSize:11, textAlign:'center', padding:'24px 12px', lineHeight:1.6 }}>
-                    {search || filtrosActivos > 0 ? 'Sin resultados para los filtros aplicados.' : 'No hay casos registrados.\nUsa "Nuevo caso" para agregar uno.'}
-                  </p>
-                )}
-                {casosFiltrados.map(c=>{
-                  const active = selected?.id===c.id;
-                  const b = estadoBadge(c.estado);
-                  const diasDesde = (f: string) => { if (!f) return 0; const diff=Date.now()-new Date(f).getTime(); return Math.floor(diff/(1000*60*60*24)) };
-                  const dias = diasDesde(c.fechaIngreso);
-                  return (
-                    <div key={c.id} onClick={()=>{if(hasPending&&!confirm('¿Descartar cambios no guardados?'))return;setSelected(c);setPending({});setTab('ficha')}} 
-                      style={{padding:'12px 14px',marginBottom:2,borderRadius:8,cursor:'pointer',background:active?'rgba(255,255,255,.14)':'transparent',border:`1px solid ${active?'rgba(255,255,255,.2)':'transparent'}`,borderLeft:`3px solid ${active?b.accent:'transparent'}`,transition:'all .12s'}}>
-                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:4}}>
-                        <span style={{color:'#fff',fontSize:13,fontWeight:600,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginRight:8}}>{c.nnaNombre}</span>
-                        <span style={{fontSize:10,padding:'2px 8px',borderRadius:99,background:b.bg,color:b.color,fontWeight:700,flexShrink:0,whiteSpace:'nowrap'}}>{b.label}</span>
-                      </div>
-                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:3}}>
-                        <span style={{color:'rgba(255,255,255,.4)',fontSize:10,fontWeight:600}}>{c.codigo}</span>
-                        <span style={{display:'flex',alignItems:'center',gap:3,color:'rgba(255,255,255,.35)',fontSize:10}}><Globe size={9} color="rgba(255,255,255,.35)"/>{c.pais}</span>
-                      </div>
-                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                        <span style={{fontSize:10,color:'rgba(255,255,255,.3)'}}>{c.profesional||'—'} · {c.etapa||'Sin etapa'}</span>
-                        {dias>0&&c.estado!=='Archivado'&&<span style={{fontSize:10,padding:'1px 7px',borderRadius:99,background:'rgba(255,255,255,.08)',color:'rgba(255,255,255,.4)',fontWeight:600}}>{dias}d</span>}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+      {/* Vistas Principales */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-            {/* Main panel */}
-            {!selected?(
-              <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10,color:TX3}}>
-                <Scale size={40} color={BR}/>
-                <div style={{fontSize:13}}>Selecciona un caso del panel izquierdo</div>
-                <button onClick={() => { setFormNew(emptyForm()); setShowNew(true) }}
-                  style={{display:'flex',alignItems:'center',gap:5,background:N2,color:'#fff',border:'none',borderRadius:8,padding:'8px 14px',fontSize:12,fontWeight:700,cursor:'pointer',marginTop:6}}>
-                  <Plus size={14} /> Registrar primer caso
-                </button>
-              </div>
-            ):(
-              <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}} className="anim-r">
-                {/* Case header */}
-                <div style={{background:SURF,padding:'12px 20px',borderBottom:`1px solid ${BR}`,display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0,gap:12}}>
-                  <div style={{flex:1,overflow:'hidden'}}>
-                    <div style={{fontSize:10,color:TX3,textTransform:'uppercase',letterSpacing:'.04em',fontWeight:700,marginBottom:1}}>{selected.codigo} · {selected.pais}</div>
-                    <div style={{fontSize:16,fontWeight:800,color:TX,lineHeight:1.2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{selected.nnaNombre}</div>
-                  </div>
-                  <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
-                    <select value={selEstado} onChange={e=>onChange('estado',e.target.value)}
-                      style={{fontSize:12,padding:'5px 10px',borderRadius:99,background:bSelEstado.bg,color:bSelEstado.color,border:`1px solid ${bSelEstado.border}`,fontWeight:700,outline:'none',cursor:'pointer'}}>
-                      <option value="Tramite">En trámite</option>
-                      <option value="Pendiente">Pendiente</option>
-                      <option value="Archivado">Archivado</option>
-                    </select>
-                    <button onClick={eliminarCaso} title="Eliminar caso"
-                      style={{width:32,height:32,borderRadius:8,border:'1px solid #FECACA',background:'#FEF2F2',display:'flex',alignItems:'center',justifyContent:'center',color:'#DC2626',cursor:'pointer'}}>
-                      <Trash2 size={13} color="#DC2626"/>
-                    </button>
+        {view === 'nuevo' ? (
+          /* FICHA DE NUEVO REGISTRO EN PANTALLA COMPLETA */
+          <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px' }} className="main-scroll">
+            <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <button onClick={() => setView('casos')} style={{ width: 34, height: 34, borderRadius: 7, border: `1px solid ${BR}`, background: SURF, color: TX2, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                    <ArrowLeft size={16} />
+                  </button>
+                  <div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: TX }}>Nuevo Expediente de Sustracción</div>
+                    <div style={{ fontSize: 11, color: TX3 }}>Registro inicial según Directiva N.° 006-2021-MIMP.</div>
                   </div>
                 </div>
-                {/* Pending bar */}
-                {hasPending&&(
-                  <div style={{background:'#FFFBEB',borderBottom:'1px solid #FDE68A',padding:'8px 20px',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0,zIndex:10}}>
-                    <span style={{fontSize:12,color:'#92400E',fontWeight:600}}>{Object.keys(pending).length} cambio{Object.keys(pending).length!==1?'s':''} sin guardar</span>
-                    <div style={{display:'flex',gap:8}}>
-                      <button onClick={descartar} style={{padding:'5px 12px',borderRadius:7,border:`1px solid ${BR}`,background:SURF,color:TX2,fontSize:12,fontWeight:600,cursor:'pointer'}}>Descartar</button>
-                      <button onClick={guardar} disabled={saving} style={{padding:'5px 16px',borderRadius:7,border:'none',background:N2,color:'#fff',fontSize:12,fontWeight:700,cursor:saving?'not-allowed':'pointer'}}>{saving ? 'Guardando...' : 'Guardar'}</button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button onClick={cargarBorrador} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 6, border: `1px solid ${BR}`, background: SURF, color: TX2, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                    <Save size={13} /> Cargar Borrador
+                  </button>
+                  <button onClick={crearCasoDesdePagina} disabled={savingNew} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 6, border: 'none', background: BL, color: '#fff', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
+                    <Plus size={14} /> {savingNew ? 'Registrando...' : 'Registrar Caso'}
+                  </button>
+                </div>
+              </div>
+
+              {errorNew && (
+                <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', padding: '10px 14px', borderRadius: 7, color: '#991B1B', fontSize: 12, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <AlertCircle size={15} /> {errorNew}
+                </div>
+              )}
+
+              {/* BLOQUE 1: DATOS DEL TRÁMITE */}
+              <section style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 18, marginBottom: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 12, paddingBottom: 6, borderBottom: `1px solid ${BR}` }}>1. Datos del Trámite Institucional</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14 }}>
+                  <label style={fieldLabelStyle}>Hoja de Trámite / Código *<input value={formNew.codigo || ''} onChange={e => setFormNew(p => ({ ...p, codigo: e.target.value }))} placeholder="Ej. HT-2026-0045" style={fieldInputStyle} /></label>
+                  <label style={fieldLabelStyle}>Fecha de Ingreso *<input type="date" value={formNew.fechaIngreso || ''} onChange={e => setFormNew(p => ({ ...p, fechaIngreso: e.target.value }))} style={fieldInputStyle} /></label>
+                  <label style={fieldLabelStyle}>País Contraparte *<select value={formNew.pais || ''} onChange={e => setFormNew(p => ({ ...p, pais: e.target.value }))} style={fieldInputStyle}><option value="">Seleccionar país</option>{PAISES.map(p => <option key={p} value={p}>{p}</option>)}</select></label>
+                  <label style={fieldLabelStyle}>Tipo de Solicitud<select value={formNew.tipoSolicitud || 'Restitución'} onChange={e => setFormNew(p => ({ ...p, tipoSolicitud: e.target.value }))} style={fieldInputStyle}>{TIPO_SOL.map(t => <option key={t} value={t}>{t}</option>)}</select></label>
+                  <label style={fieldLabelStyle}>Rol AC Perú<select value={formNew.acPeru || 'Requerida'} onChange={e => setFormNew(p => ({ ...p, acPeru: e.target.value }))} style={fieldInputStyle}>{AC_PERU.map(a => <option key={a} value={a}>{a} {a === 'Requerida' ? '(Menor en Perú)' : '(Menor en Exterior)'}</option>)}</select></label>
+                  <label style={fieldLabelStyle}>Profesional Asignado<select value={formNew.profesional || me?.nombre || ''} onChange={e => setFormNew(p => ({ ...p, profesional: e.target.value }))} style={fieldInputStyle}><option value="">Sin asignar</option>{PROFESIONALES.map(p => <option key={p} value={p}>{p}</option>)}</select></label>
+                </div>
+              </section>
+
+              {/* BLOQUE 2: MENORES INVOLUCRADOS */}
+              <section style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 18, marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.4px' }}>2. Menores Involucrados (NNA)</div>
+                  <button type="button" onClick={() => setNnaNew(p => [...p, emptyNnaForm()])} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 6, border: '1px solid #BFDBFE', background: '#EFF6FF', color: BL, fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
+                    <Plus size={13} /> Agregar otro menor
+                  </button>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {nnaNew.map((n, idx) => (
+                    <div key={idx} style={{ border: `1px solid ${BR}`, borderRadius: 8, padding: 14, background: '#F8FAFC' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                        <div style={{ fontSize: 11, fontWeight: 800, color: N2 }}>Menor Involucrado N.° {idx + 1}</div>
+                        {nnaNew.length > 1 && (
+                          <button type="button" onClick={() => setNnaNew(p => p.filter((_, i) => i !== idx))} style={{ border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626', borderRadius: 6, padding: '4px 8px', fontSize: 10, cursor: 'pointer' }}>
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12 }}>
+                        <label style={fieldLabelStyle}>Nombres *<input value={n.nombres} onChange={e => { const val = e.target.value; setNnaNew(p => p.map((item, i) => i === idx ? { ...item, nombres: val } : item)) }} style={fieldInputStyle} /></label>
+                        <label style={fieldLabelStyle}>Primer Apellido *<input value={n.primerApellido} onChange={e => { const val = e.target.value; setNnaNew(p => p.map((item, i) => i === idx ? { ...item, primerApellido: val } : item)) }} style={fieldInputStyle} /></label>
+                        <label style={fieldLabelStyle}>Segundo Apellido<input value={n.segundoApellido || ''} onChange={e => { const val = e.target.value; setNnaNew(p => p.map((item, i) => i === idx ? { ...item, segundoApellido: val } : item)) }} style={fieldInputStyle} /></label>
+                        <label style={fieldLabelStyle}>Sexo<select value={n.sexo || ''} onChange={e => { const val = e.target.value; setNnaNew(p => p.map((item, i) => i === idx ? { ...item, sexo: val } : item)) }} style={fieldInputStyle}><option value="">Seleccionar</option>{SEXOS.map(s => <option key={s} value={s}>{s}</option>)}</select></label>
+                        <label style={fieldLabelStyle}>Fecha de Nacimiento<input type="date" value={n.fechaNacimiento || ''} onChange={e => { const val = e.target.value; const ed = edadDesdeNacimiento(val, formNew.fechaIngreso || todayStr()); setNnaNew(p => p.map((item, i) => i === idx ? { ...item, fechaNacimiento: val, edad: ed.edad, tipoEdad: ed.tipoEdad } : item)) }} style={fieldInputStyle} /></label>
+                        <label style={fieldLabelStyle}>Edad Calculada<input value={n.edad ? `${n.edad} ${n.tipoEdad}` : ''} readOnly style={{ ...fieldInputStyle, background: '#E2E8F0', fontWeight: 700 }} /></label>
+                      </div>
                     </div>
-                  </div>
-                )}
-                {/* Tabs */}
-                <div style={{background:SURF,display:'flex',borderBottom:`1px solid ${BR}`,padding:'0 20px',flexShrink:0}}>
-                  {([['ficha','Ficha del caso',<FileText size={12} key="ficha"/>],['bitacora','Historial de gestión',<svg key="bitacora" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>],['judicial','Proceso judicial',<Scale size={12} key="judicial"/>]] as const).map(([id,lbl,ico])=>(
-                    <button key={id} onClick={()=>setTab(id)}
-                      style={{display:'flex',alignItems:'center',gap:6,padding:'10px 14px',fontSize:12,background:'none',border:'none',borderBottom:`2px solid ${tab===id?N2:'transparent'}`,color:tab===id?N2:TX2,fontWeight:tab===id?700:500,marginBottom:-1,cursor:'pointer'}}>
-                      {ico}{lbl}
-                    </button>
                   ))}
                 </div>
-                {/* Tab content */}
-                <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-                  {tab==='ficha'&&<TabFicha caso={{...(selected||{}), ...pending}} onChange={onChange} />}
-                  {tab==='bitacora'&&<TabBitacora caso={selected} bitTexto={bitTexto} setBitTexto={setBitTexto} saving={savingBit} onAgregar={agregarBitacora} onEliminar={eliminarBitacora}/>}
-                  {tab==='judicial'&&<TabJudicial getVal={getVal} onChange={onChange} caso={selected} hjEtapa={hjEtapa} setHjEtapa={setHjEtapa} hjFecha={hjFecha} setHjFecha={setHjFecha} hjDesc={hjDesc} setHjDesc={setHjDesc} savingHj={savingHj} errorHj={errorHj} onAgregarHj={agregarHistorialJudicial} onEliminarHj={eliminarHistorialJudicial}/>}
+              </section>
+
+              {/* BLOQUE 3: SUJETOS DEL PROCEDIMIENTO */}
+              <section style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 18, marginBottom: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 12, paddingBottom: 6, borderBottom: `1px solid ${BR}` }}>3. Sujetos del Procedimiento</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                  <div style={{ border: `1px solid ${BR}`, borderRadius: 8, padding: 12, background: '#F8FAFC' }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: BL, marginBottom: 8 }}>Parte Solicitante (Requirente)</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <label style={fieldLabelStyle}>Nombres y Apellidos<input value={formNew.solicitanteNombre || ''} onChange={e => setFormNew(p => ({ ...p, solicitanteNombre: e.target.value }))} style={fieldInputStyle} /></label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                        <label style={fieldLabelStyle}>Sexo<select value={formNew.solicitanteSexo || ''} onChange={e => setFormNew(p => ({ ...p, solicitanteSexo: e.target.value }))} style={fieldInputStyle}><option value="">Seleccionar</option>{SEXOS.map(s => <option key={s} value={s}>{s}</option>)}</select></label>
+                        <label style={fieldLabelStyle}>Teléfono<input value={formNew.solicitanteTelefono || ''} onChange={e => setFormNew(p => ({ ...p, solicitanteTelefono: e.target.value }))} style={fieldInputStyle} /></label>
+                      </div>
+                      <label style={fieldLabelStyle}>Correo Electrónico<input value={formNew.solicitanteCorreo || ''} onChange={e => setFormNew(p => ({ ...p, solicitanteCorreo: e.target.value }))} style={fieldInputStyle} /></label>
+                      <label style={fieldLabelStyle}>Domicilio en el Extranjero<input value={formNew.solicitanteDomicilio || ''} onChange={e => setFormNew(p => ({ ...p, solicitanteDomicilio: e.target.value }))} style={fieldInputStyle} /></label>
+                    </div>
+                  </div>
+
+                  <div style={{ border: `1px solid ${BR}`, borderRadius: 8, padding: 12, background: '#F8FAFC' }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: '#D97706', marginBottom: 8 }}>Parte Requerida (Sustractor / Retenedor)</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <label style={fieldLabelStyle}>Nombres y Apellidos<input value={formNew.requeridoNombre || ''} onChange={e => setFormNew(p => ({ ...p, requeridoNombre: e.target.value }))} style={fieldInputStyle} /></label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                        <label style={fieldLabelStyle}>Sexo<select value={formNew.requeridoSexo || ''} onChange={e => setFormNew(p => ({ ...p, requeridoSexo: e.target.value }))} style={fieldInputStyle}><option value="">Seleccionar</option>{SEXOS.map(s => <option key={s} value={s}>{s}</option>)}</select></label>
+                        <label style={fieldLabelStyle}>Teléfono<input value={formNew.requeridoTelefono || ''} onChange={e => setFormNew(p => ({ ...p, requeridoTelefono: e.target.value }))} style={fieldInputStyle} /></label>
+                      </div>
+                      <label style={fieldLabelStyle}>Correo Electrónico<input value={formNew.requeridoCorreo || ''} onChange={e => setFormNew(p => ({ ...p, requeridoCorreo: e.target.value }))} style={fieldInputStyle} /></label>
+                      <label style={fieldLabelStyle}>Domicilio / Ubicación en el Perú<input value={formNew.requeridoDomicilio || ''} onChange={e => setFormNew(p => ({ ...p, requeridoDomicilio: e.target.value }))} style={fieldInputStyle} /></label>
+                    </div>
+                  </div>
                 </div>
+              </section>
+
+              {/* BLOQUE 4: ESTADO Y OBSERVACIONES */}
+              <section style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 18, marginBottom: 20 }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 12, paddingBottom: 6, borderBottom: `1px solid ${BR}` }}>4. Estado y Observaciones Iniciales</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+                  <label style={fieldLabelStyle}>Estado Inicial<select value={formNew.estado || 'Tramite'} onChange={e => setFormNew(p => ({ ...p, estado: e.target.value }))} style={fieldInputStyle}><option value="Tramite">En trámite</option><option value="Pendiente">Pendiente</option></select></label>
+                  <label style={fieldLabelStyle}>Etapa Inicial<select value={formNew.etapa || 'Administrativo'} onChange={e => setFormNew(p => ({ ...p, etapa: e.target.value }))} style={fieldInputStyle}><option value="Administrativo">Administrativo</option><option value="Judicial">Judicial</option></select></label>
+                </div>
+                <label style={fieldLabelStyle}>Observaciones / Resumen de Hechos Iniciales<textarea value={formNew.observaciones || ''} onChange={e => setFormNew(p => ({ ...p, observaciones: e.target.value }))} rows={3} style={{ ...fieldInputStyle, resize: 'vertical' }} /></label>
+              </section>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingBottom: 40 }}>
+                <button onClick={() => setView('casos')} style={{ padding: '9px 18px', borderRadius: 7, border: `1px solid ${BR}`, background: SURF, color: TX2, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                  Cancelar
+                </button>
+                <button onClick={crearCasoDesdePagina} disabled={savingNew} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 24px', borderRadius: 7, border: 'none', background: BL, color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>
+                  <Plus size={14} /> {savingNew ? 'Registrando expediente...' : 'Registrar y Abrir Expediente'}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : !selected ? (
+          <main className="main-scroll si-page" style={{ flex: 1, overflowY: 'auto', background: BG, padding: '22px 24px' }}>
+            <div style={{ maxWidth: 1240, margin: '0 auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
+                <div>
+                  <h1 style={{ fontSize: 20, fontWeight: 800, color: TX, margin: 0 }}>Bandeja de expedientes</h1>
+                  <p style={{ fontSize: 11.5, color: TX3, margin: '4px 0 0' }}>Seguimiento del flujo operativo de Sustracción Internacional.</p>
+                </div>
+                <button onClick={() => { setFormNew(emptyForm()); setNnaNew([emptyNnaForm()]); setErrorNew(''); setView('nuevo') }} style={{ display: 'flex', alignItems: 'center', gap: 6, background: N2, color: '#fff', border: 0, borderRadius: 8, padding: '9px 15px', fontSize: 12, fontWeight: 700 }}>
+                  <Plus size={13} /> Nuevo expediente
+                </button>
+              </div>
+
+              <div className="si-kpis" style={{ marginBottom: 14 }}>
+                {counters.map(item => (
+                  <div key={item.label} style={{ background: SURF, border: `1px solid ${BR}`, borderLeft: `3px solid ${item.color}`, borderRadius: 8, padding: '13px 15px' }}>
+                    <div style={{ fontSize: 9.5, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.05em' }}>{item.label}</div>
+                    <div style={{ fontSize: 23, fontWeight: 800, color: item.color, marginTop: 3 }}>{item.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 10, overflow: 'hidden' }}>
+                <div className="si-filters" style={{ padding: 12, borderBottom: `1px solid ${BR}` }}>
+                  <div style={{ position: 'relative', flex: '1 1 260px' }}>
+                    <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: TX3 }} />
+                    <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por NNA u hoja de trámite" style={{ width: '100%', padding: '8px 10px 8px 30px', border: `1px solid ${BR}`, borderRadius: 7, fontSize: 12, outline: 'none' }} />
+                  </div>
+                  <select value={fProfesional} onChange={e => setFProfesional(e.target.value)} style={{ width: 175, padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 7, color: TX2, fontSize: 11, background: SURF }}>
+                    <option value="">Todos los profesionales</option>{PROFESIONALES.map(p => <option key={p}>{p}</option>)}
+                  </select>
+                  {[['todos', 'Todos'], ['activos', 'Activos'], ['alerta', 'Con alerta'], ['cerrados', 'Cerrados']].map(([id, label]) => {
+                    const active = subBandeja === id
+                    return <button key={id} onClick={() => setSubBandeja(id)} style={{ padding: '7px 12px', borderRadius: 7, border: `1px solid ${active ? BL : BR}`, background: active ? '#EFF6FF' : SURF, color: active ? BL : TX2, fontSize: 11, fontWeight: 700 }}>{label}</button>
+                  })}
+                  <button title="Exportar reporte Excel" onClick={() => descargarExcelSustracion(visibles)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 11px', border: `1px solid ${BR}`, borderRadius: 7, background: SURF, color: TX2, fontSize: 11, fontWeight: 600, marginLeft: 'auto' }}><Download size={13} /> Exportar</button>
+                </div>
+
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', minWidth: 980, borderCollapse: 'collapse' }}>
+                    <thead><tr style={{ background: '#F8FAFC', borderBottom: `1px solid ${BR}`, textAlign: 'left' }}>
+                      {['NNA', 'Hoja de trámite', 'Rol / País', 'Etapa actual', 'Próxima acción', 'Avance', ''].map(label => <th key={label} style={{ padding: '10px 12px', fontSize: 9, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</th>)}
+                    </tr></thead>
+                    <tbody>
+                      {loading && <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: TX3, fontSize: 12 }}>Cargando expedientes...</td></tr>}
+                      {!loading && visibles.length === 0 && <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: TX3, fontSize: 12 }}>Sin resultados.</td></tr>}
+                      {!loading && visibles.map(caso => {
+                        const flow = flows.get(caso.id) || deriveCaseFlow(caso)
+                        const critical = flow.alerts.some(a => a.tone === 'error')
+                        const nnaCount = caso.nna?.length || 1
+                        return (
+                          <tr key={caso.id} onClick={() => { setSelected(caso); setPending({}); setDrawer(null); setTab(flow.current.id) }} style={{ borderBottom: `1px solid ${BR}`, cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'} onMouseLeave={e => e.currentTarget.style.background = SURF}>
+                            <td style={{ padding: '11px 12px', minWidth: 220 }}><div style={{ fontSize: 12, fontWeight: 700 }}>{nombreCaso(caso)}</div><div style={{ fontSize: 10, color: TX3, marginTop: 2 }}>{nnaCount} NNA · ingreso {fmtFecha(caso.fechaIngreso)}</div></td>
+                            <td style={{ padding: '11px 12px', fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: N2 }}>{caso.codigo}</td>
+                            <td style={{ padding: '11px 12px', color: TX2 }}><div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11 }}>{caso.acPeru === 'Requirente' ? <Plane size={11} /> : <Users size={11} />}{caso.acPeru || 'Sin rol'}</div><div style={{ fontSize: 10, color: TX3, marginTop: 2 }}>{caso.pais}</div></td>
+                            <td style={{ padding: '11px 12px' }}><span style={{ display: 'inline-flex', gap: 5, alignItems: 'center', padding: '3px 9px', borderRadius: 99, color: flow.closed ? '#15803D' : BL, background: flow.closed ? '#F0FDF4' : '#EFF6FF', border: `1px solid ${flow.closed ? '#BBF7D0' : '#BFDBFE'}`, fontSize: 10, fontWeight: 700 }}>{flow.closed ? 'Cerrado' : `${flow.current.number}. ${flow.current.label}`}</span>{critical && <div style={{ marginTop: 4, color: '#DC2626', fontSize: 10, fontWeight: 700, display: 'flex', gap: 4, alignItems: 'center' }}><AlertTriangle size={10} /> Alerta</div>}</td>
+                            <td style={{ padding: '11px 12px', maxWidth: 270, fontSize: 11, lineHeight: 1.45, color: TX2 }}>{flow.nextAction}</td>
+                            <td style={{ padding: '11px 12px', width: 115 }}><div style={{ display: 'flex', alignItems: 'center', gap: 7 }}><div style={{ flex: 1, height: 5, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}><div style={{ width: `${flow.progress}%`, height: '100%', background: flow.closed ? '#16A34A' : BL }} /></div><span style={{ fontSize: 10, fontWeight: 700, color: TX3 }}>{flow.progress}%</span></div></td>
+                            <td style={{ padding: '11px 12px', textAlign: 'right' }}><ChevronRight size={14} color={TX3} /></td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </main>
+        ) : selectedFlow ? (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div className="si-exp-header" style={{ background: SURF, borderBottom: `1px solid ${BR}`, padding: '12px 20px', gap: 14, flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                <button onClick={() => { setSelected(null); setPending({}); setDrawer(null) }} title="Volver a la bandeja" style={{ width: 34, height: 34, borderRadius: 8, border: `1px solid ${BR}`, background: SURF, color: TX2, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><ArrowLeft size={16} /></button>
+                <div style={{ minWidth: 0 }}><div style={{ fontSize: 9.5, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.04em' }}>Expediente · <span style={{ fontFamily: 'monospace' }}>{selected.codigo}</span></div><div style={{ fontSize: 17, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombreCaso(selected)}</div></div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+                <button onClick={() => { setFichaTab('datos'); setDrawer('ficha') }} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 7, border: `1px solid ${BR}`, background: SURF, color: TX2, fontSize: 11, fontWeight: 700 }}><FileText size={13} /> Ficha</button>
+                <button onClick={() => setDrawer('actividad')} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 7, border: `1px solid ${BR}`, background: SURF, color: TX2, fontSize: 11, fontWeight: 700 }}><MessageSquare size={13} /> Actividad</button>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 99, background: '#F1F5F9', border: `1px solid ${BR}`, color: TX2, fontSize: 10, fontWeight: 700 }}>{selected.acPeru === 'Requirente' ? <Plane size={10} /> : <Users size={10} />} AC {selected.acPeru || 'sin rol'}</span>
+                <span style={{ padding: '3px 9px', borderRadius: 99, background: '#F1F5F9', border: `1px solid ${BR}`, color: TX2, fontSize: 10, fontWeight: 700 }}>{selected.pais}</span>
+                <select value={getVal('estado') || 'Tramite'} onChange={e => onChange('estado', e.target.value)} style={{ padding: '4px 9px', borderRadius: 99, background: estadoBadge(getVal('estado') || 'Tramite').bg, color: estadoBadge(getVal('estado') || 'Tramite').color, border: `1px solid ${estadoBadge(getVal('estado') || 'Tramite').border}`, fontSize: 10, fontWeight: 700 }}><option value="Tramite">En trámite</option><option value="Pendiente">Pendiente</option><option value="Archivado">Archivado</option></select>
+                {hasPending && <button onClick={guardar} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 7, border: 0, background: '#16A34A', color: '#fff', fontSize: 11, fontWeight: 700 }}><Save size={13} /> {saving ? 'Guardando...' : 'Guardar'}</button>}
+                <button onClick={eliminarCaso} title="Eliminar expediente" style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={14} /></button>
+              </div>
+            </div>
+
+            <div style={{ background: selectedFlow.alerts.some(a => a.tone === 'error') ? '#FEF2F2' : '#EFF6FF', borderBottom: `1px solid ${selectedFlow.alerts.some(a => a.tone === 'error') ? '#FECACA' : '#BFDBFE'}`, padding: '10px 20px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}><span style={{ width: 26, height: 26, borderRadius: 7, background: SURF, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{selectedFlow.alerts.some(a => a.tone === 'error') ? <AlertTriangle size={13} color="#DC2626" /> : <Info size={13} color={BL} />}</span><div><div style={{ fontSize: 9.5, fontWeight: 800, color: selectedFlow.alerts.some(a => a.tone === 'error') ? '#991B1B' : BL, textTransform: 'uppercase', letterSpacing: '.05em' }}>Próxima acción</div><div style={{ fontSize: 12.5, fontWeight: 700, marginTop: 2 }}>{selectedFlow.nextAction}</div>{selectedFlow.alerts.length > 0 && <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>{selectedFlow.alerts.map((alert, index) => <span key={index} style={{ padding: '3px 8px', borderRadius: 99, background: SURF, border: `1px solid ${alert.tone === 'error' ? '#FECACA' : '#FDE68A'}`, color: alert.tone === 'error' ? '#B91C1C' : '#92400E', fontSize: 10, fontWeight: 700 }}>{alert.message}</span>)}</div>}</div></div>
+            </div>
+
+            <div className="si-exp-body" style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
+              <aside className="main-scroll si-rail" style={{ flexShrink: 0, background: SURF, borderRight: `1px solid ${BR}`, padding: '16px 14px', overflowY: 'auto' }}>
+                <div className="si-rail-label" style={{ padding: '0 10px 6px', fontSize: 9, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.08em' }}>Vista general</div>
+                <button className="si-rail-summary" onClick={() => setTab('resumen')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 11px', marginBottom: 14, borderRadius: 8, border: `1px solid ${tab === 'resumen' ? '#BFDBFE' : 'transparent'}`, background: tab === 'resumen' ? '#EFF6FF' : 'transparent', color: tab === 'resumen' ? BL : TX2, textAlign: 'left', fontSize: 12, fontWeight: tab === 'resumen' ? 800 : 700 }}><LayoutGrid size={15} /> Resumen del caso</button>
+                <div className="si-rail-label" style={{ padding: '0 10px 8px', fontSize: 9, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.08em' }}>Proceso</div>
+                <div className="si-rail-progress" style={{ marginBottom: 16 }}><div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 9.5, fontWeight: 800, color: TX3, textTransform: 'uppercase' }}><span>Avance</span><span style={{ color: BL }}>{selectedFlow.progress}%</span></div><div style={{ height: 5, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}><div style={{ width: `${selectedFlow.progress}%`, height: '100%', background: selectedFlow.closed ? '#16A34A' : BL }} /></div></div>
+                {selectedFlow.stages.map((stage, index) => {
+                  const active = tab === stage.id
+                  const complete = stage.status === 'complete'
+                  const locked = stage.status === 'locked'
+                  const skipped = stage.status === 'skipped'
+                  const disabled = locked || skipped
+                  return <div className="si-rail-item" key={stage.id}><button disabled={disabled} title={disabled ? stage.note : stage.label} onClick={() => setTab(stage.id)} style={{ width: '100%', display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 11px', borderRadius: 8, border: `1px solid ${active ? '#BFDBFE' : 'transparent'}`, background: active ? '#EFF6FF' : 'transparent', textAlign: 'left', cursor: disabled ? 'not-allowed' : 'pointer', opacity: skipped ? .65 : 1 }}><span style={{ width: 22, height: 22, borderRadius: '50%', background: complete ? '#16A34A' : disabled ? '#F1F5F9' : BL, color: disabled ? TX3 : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{complete ? <Check size={11} /> : locked ? <Lock size={10} /> : skipped ? '—' : stage.number}</span><span style={{ minWidth: 0 }}><span style={{ display: 'block', color: disabled ? TX3 : active ? BL : TX, fontSize: 12, fontWeight: active ? 800 : 700 }}>{stage.label}</span><span style={{ display: 'block', color: TX3, fontSize: 10, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{stage.note}</span></span></button>{index < selectedFlow.stages.length - 1 && <div style={{ width: 2, height: 8, background: BR, marginLeft: 22 }} />}</div>
+                })}
+              </aside>
+
+              <div className="si-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+                <div style={{ padding: '11px 20px', background: SURF, borderBottom: `1px solid ${BR}`, flexShrink: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: TX }}>{TITULOS[tab]?.[0]}</div>
+                  <div style={{ fontSize: 10.5, color: TX3, marginTop: 2 }}>{TITULOS[tab]?.[1]}</div>
+                </div>
+                {tab === 'resumen' && <TabResumen caso={selected} onSelectTab={setTab} />}
+                {tab === 'evaluacion' && <TabEvaluacion caso={selected} onGuardarProceso={guardarProceso} />}
+                {tab === 'subsanacion' && <TabSubsanacion caso={selected} onGuardarProceso={guardarProceso} />}
+                {tab === 'internacional' && <TabInternacional caso={selected} onGuardarProceso={guardarProceso} />}
+                {tab === 'retorno' && <TabRetorno caso={selected} getVal={getVal} onChange={onChange} onGuardarProceso={guardarProceso} />}
+                {tab === 'judicial' && <TabJudicial caso={selected} getVal={getVal} onChange={onChange} onRefresh={fetchCasos} />}
+                {tab === 'cierre' && <TabCierre caso={selected} getVal={getVal} onChange={onChange} />}
+              </div>
+            </div>
+
+            {drawer && (
+              <div onMouseDown={() => setDrawer(null)} style={{ position: 'fixed', inset: 0, zIndex: 80, display: 'flex', justifyContent: 'flex-end', background: 'rgba(15, 23, 42, .28)' }}>
+                <section className="si-drawer" role="dialog" aria-modal="true" aria-label={drawer === 'ficha' ? 'Ficha del expediente' : 'Actividad del expediente'} onMouseDown={event => event.stopPropagation()} style={{ height: '100%', display: 'flex', flexDirection: 'column', background: SURF, boxShadow: '-12px 0 36px rgba(15, 23, 42, .16)' }}>
+                  <div style={{ minHeight: 58, padding: '12px 16px', borderBottom: `1px solid ${BR}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexShrink: 0 }}>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: TX }}>{drawer === 'ficha' ? 'Ficha del expediente' : 'Actividad'}</div>
+                      <div style={{ fontSize: 10.5, color: TX3, marginTop: 2 }}>{selected.codigo} · {nombreCaso(selected)}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      {drawer === 'ficha' && hasPending && <button onClick={guardar} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 7, border: 0, background: '#16A34A', color: '#fff', fontSize: 11, fontWeight: 700 }}><Save size={13} /> {saving ? 'Guardando...' : 'Guardar cambios'}</button>}
+                      <button onClick={() => setDrawer(null)} title="Cerrar panel" style={{ width: 34, height: 34, borderRadius: 8, border: `1px solid ${BR}`, background: '#F8FAFC', color: TX2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={15} /></button>
+                    </div>
+                  </div>
+
+                  {drawer === 'ficha' ? (
+                    <>
+                      <div style={{ display: 'flex', gap: 4, padding: '10px 14px 0', borderBottom: `1px solid ${BR}`, flexShrink: 0 }}>
+                        {([['datos', 'Datos del caso'], ['personas', 'Personas involucradas']] as const).map(([id, label]) => <button key={id} onClick={() => setFichaTab(id)} style={{ padding: '8px 12px', border: 0, borderBottom: `2px solid ${fichaTab === id ? BL : 'transparent'}`, background: 'transparent', color: fichaTab === id ? BL : TX2, fontSize: 11.5, fontWeight: fichaTab === id ? 800 : 600 }}>{label}</button>)}
+                      </div>
+                      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+                        {fichaTab === 'datos' ? <TabDatos caso={selected} getVal={getVal} onChange={onChange} /> : <TabPersonas caso={selected} getVal={getVal} onChange={onChange} onRefresh={fetchCasos} />}
+                      </div>
+                    </>
+                  ) : (
+                    <TabBitacora caso={selected} bitTexto={bitTexto} setBitTexto={setBitTexto} savingBit={savingBit} onAgregarBitacora={agregarBitacora} />
+                  )}
+                </section>
               </div>
             )}
-          </>
-        )}
-      </div>
+          </div>
+        ) : null}
 
-      {/* Modal nuevo caso */}
-      {showNew && (
-        <ModalOverlay onClose={() => setShowNew(false)}>
-          <ModalNuevoCaso form={formNew} setForm={setFormNew} error={errorNew}
-            saving={savingNew} onSave={crearCaso} onClose={() => setShowNew(false)} />
-        </ModalOverlay>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// COMPONENTES DE APOYO Y PESTAÑAS
+// ══════════════════════════════════════════════════════════════════════
+
+function SummaryValue({ label, value, wide }: { label: string; value?: string | null; wide?: boolean }) {
+  return (
+    <div style={{ gridColumn: wide ? 'span 2' : 'span 1', padding: '13px 14px', borderBottom: `1px solid ${BR}` }}>
+      <div style={{ fontSize: 9, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 12, fontWeight: 600, color: value ? TX : TX3, lineHeight: 1.45 }}>{value || 'Sin registrar'}</div>
+    </div>
+  );
+}
+
+function Row({ label, value, type = 'text', opts = [], span = 1, onChange }: { label: string; value?: string | null; type?: string; opts?: string[]; span?: number; onChange: (v: string) => void }) {
+  const inpS: React.CSSProperties = { width: '100%', padding: '7px 10px', border: `1.5px solid ${BR}`, borderRadius: 7, fontSize: 12, color: TX, background: '#FAFBFD', outline: 'none' };
+  return (
+    <div style={{ gridColumn: `span ${span}`, padding: '12px 14px', borderRight: `1px solid ${BR}`, borderBottom: `1px solid ${BR}` }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: TX3, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 5 }}>{label}</div>
+      {type === 'select' ? (
+        <select value={value || ''} onChange={e => onChange(e.target.value)} style={{ ...inpS, cursor: 'pointer' }}>
+          <option value="">—</option>{opts.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      ) : type === 'textarea' ? (
+        <textarea rows={2} value={value || ''} onChange={e => onChange(e.target.value)} style={{ ...inpS, resize: 'none' }} />
+      ) : (
+        <input type={type} value={value || ''} onChange={e => onChange(e.target.value)} style={inpS} />
       )}
     </div>
-  )
+  );
 }
 
-// ══════════════════════════════════════════════════════════════════════
-// TAB FICHA (maqueta HTML)
-// ══════════════════════════════════════════════════════════════════════
+function Sec({ title }: { title: string }) {
+  return <div style={{ gridColumn: 'span 4', background: '#F1F5F9', padding: '8px 14px', borderBottom: `1px solid ${BR}`, fontSize: 10, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.06em' }}>{title}</div>;
+}
 
-function TabFicha({ caso, onChange }: { caso: Caso | Partial<Caso>; onChange: (f: keyof Caso, v: string) => void }) {
-  const inpS: React.CSSProperties = { width: '100%', padding: '7px 10px', border: `1.5px solid ${BR}`, borderRadius: 7, fontSize: 12, color: TX, background: '#FAFBFD', outline: 'none' };
-  const selS: React.CSSProperties = { ...inpS, cursor: 'pointer' };
-
-  const Row = ({ label, field, type = 'text', opts, span = 1, val }: { label: string, field: keyof Caso, type?: 'text'|'date'|'select'|'textarea', opts?: string[], span?: number, val?: string }) => {
-    const v = val !== undefined ? val : ((caso as any)[field] ?? '');
-    return (
-      <div style={{ gridColumn: `span ${span}`, padding: '12px 14px', borderRight: `1px solid ${BR}`, borderBottom: `1px solid ${BR}` }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: TX3, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 5 }}>{label}</div>
-        {type === 'select' ? (
-          <select value={v} onChange={e => onChange(field, e.target.value)} style={selS}>
-            <option value="">—</option>
-            {opts?.map(o => <option key={o} value={o}>{o}</option>)}
-          </select>
-        ) : type === 'textarea' ? (
-          <textarea rows={2} value={v} onChange={e => onChange(field, e.target.value)} style={{ ...inpS, resize: 'none' }} />
-        ) : (
-          <input type={type} value={v} onChange={e => onChange(field, e.target.value)} style={inpS} />
-        )}
-      </div>
-    );
+// ── PESTAÑA: RESUMEN DEL CASO (IDÉNTICO A IMAGEN 2) ───────────────────
+function TabResumen({ caso, onSelectTab }: { caso: Caso; onSelectTab: (t: ExpedienteTab) => void }) {
+  const b = estadoBadge(caso.estado);
+  const proceso = caso.procesoOperativo || {
+    faseOperativa: caso.etapa === 'Judicial' ? 'Judicial' : 'Evaluación',
+    proximaAccion: '',
+    fechaLimite: '',
+    requisitos: REQ_BASE,
   };
-
-  const Sec = ({ title, icon }: { title: string, icon: React.ReactNode }) => (
-    <div style={{ gridColumn: 'span 4', background: '#F1F5F9', padding: '8px 14px', borderBottom: `1px solid ${BR}`, display: 'flex', alignItems: 'center', gap: 8 }}>
-      <span style={{ color: N2, display: 'flex' }}>{icon}</span>
-      <span style={{ fontSize: 10, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.06em' }}>{title}</span>
-    </div>
-  );
+  const reqPend = (proceso.requisitos || []).filter(r => r.estado === 'Pendiente' || r.estado === 'Observado').length;
+  const fechaLimite = proceso.fechaLimiteSubsanacion || proceso.fechaLimite || proceso.fechaLimitePasajes;
+  const plazoVencido = vencido(fechaLimite);
+  const ultima = [...(caso.bitacora || [])].sort((a, b2) => b2.fecha.localeCompare(a.fecha))[0];
+  const flow = deriveCaseFlow(caso);
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto' }} className="main-scroll">
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)' }}>
-        <Sec title="Datos del NNA" icon={<User size={13} color={N2} />} />
-        <Row label="Nombre completo" field="nnaNombre" span={2} />
-        <Row label="Sexo" field="nnaSexo" type="select" opts={SEXOS} />
-        <Row label="Fecha de nacimiento" field="nnaFechaNac" type="date" />
-        <Row label="Edad" field="nnaEdad" />
-        <Row label="Tipo edad" field="nnaTipoEdad" type="select" opts={TIPO_EDAD} />
-        <Row label="País contraparte" field="pais" type="select" opts={PAISES} />
+    <div className="main-scroll" style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+      <div style={{ maxWidth: 1080, margin: '0 auto', display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(280px, .65fr)', gap: 16 }}>
 
-        <Sec title="Trámite" icon={<FileText size={13} color={N2} />} />
-        <Row label="Código / Hoja de trámite" field="codigo" />
-        <Row label="Etapa" field="etapa" type="select" opts={ETAPAS} />
-        <Row label="Tipo de solicitud" field="tipoSolicitud" type="select" opts={TIPO_SOLICITUD} />
-        <Row label="AC Perú" field="acPeru" type="select" opts={AC_PERU_OPTS} />
-        <Row label="Profesional" field="profesional" type="select" opts={PROFESIONALES} />
-        <Row label="Fecha ingreso" field="fechaIngreso" type="date" />
-        <Row label="Fecha salida/cierre" field="fechaSalida" type="date" />
-        <Row label="Fecha entrevista" field="fechaEntrevista" type="date" />
-        <Row label="Resultado entrevista" field="resultadoEntrevista" type="select" opts={RESULTADO_ENTREVISTA} />
-        <Row label="Retorno" field="retorno" type="select" opts={RETORNO_OPTS} />
-        <Row label="Motivo de cierre" field="motivoCierre" type="select" opts={MOTIVOS_CIERRE} span={2} />
+        {/* BANNER DE PRÓXIMA ACCIÓN */}
+        <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'center', background: plazoVencido ? '#FEF2F2' : '#EFF6FF', border: `1px solid ${plazoVencido ? '#FECACA' : '#BFDBFE'}`, borderRadius: 8, padding: '14px 18px' }}>
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 800, color: plazoVencido ? '#B91C1C' : BL, textTransform: 'uppercase', letterSpacing: '.04em' }}>Próxima acción · {proceso.faseOperativa || (caso.etapa === 'Judicial' ? 'Judicial' : 'Recepción')}</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: TX, marginTop: 5 }}>{flow.nextAction}</div>
+            <div style={{ fontSize: 10, color: TX3, marginTop: 5 }}>{reqPend} requisito{reqPend === 1 ? '' : 's'} pendiente{reqPend === 1 ? '' : 's'}</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 9, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.04em' }}>Fecha límite</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: plazoVencido ? '#B91C1C' : N2, marginTop: 5 }}>{fechaLimite ? fmtFecha(fechaLimite) : 'Sin fecha'}</div>
+            <button onClick={() => onSelectTab(flow.current.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 10, padding: '7px 10px', borderRadius: 7, border: 0, background: BL, color: '#fff', fontSize: 10.5, fontWeight: 800 }}>{flow.closed ? 'Ver cierre' : 'Continuar etapa'} <ChevronRight size={12} /></button>
+          </div>
+        </div>
 
-        <Sec title="Solicitante" icon={<User size={13} color={N2} />} />
-        <Row label="Nombre" field="solicitanteNombre" span={2} />
-        <Row label="Sexo" field="solicitanteSexo" type="select" opts={SEXOS} />
-        <Row label="Teléfono" field="solicitanteTelefono" />
-        <Row label="Correo electrónico" field="solicitanteCorreo" span={2} />
-        <Row label="Domicilio" field="solicitanteDomicilio" span={2} />
+        {/* DATOS VIGENTES DEL EXPEDIENTE */}
+        <div style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ padding: '13px 14px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, fontSize: 10, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.04em' }}>Datos vigentes del expediente</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
+            <SummaryValue label="Hoja de Trámite" value={caso.codigo} />
+            <SummaryValue label="Estado" value={b.label} />
+            <SummaryValue label="Tipo de solicitud" value={caso.tipoSolicitud || 'Restitución'} />
+            <SummaryValue label="AC Perú" value={caso.acPeru || 'Requerida'} />
+            <SummaryValue label="País" value={caso.pais} />
+            <SummaryValue label="Etapa" value={caso.etapa || 'Administrativo'} />
+            <SummaryValue label="Profesional" value={caso.profesional || 'Sin asignar'} />
+            <SummaryValue label="Fecha de ingreso" value={fmtFecha(caso.fechaIngreso)} />
+          </div>
+        </div>
 
-        <Sec title="Requerido / Presunto sustractor" icon={<User size={13} color={N2} />} />
-        <Row label="Nombre" field="requeridoNombre" span={2} />
-        <Row label="Sexo" field="requeridoSexo" type="select" opts={SEXOS} />
-        <Row label="Teléfono" field="requeridoTelefono" />
-        <Row label="Correo electrónico" field="requeridoCorreo" span={2} />
-        <Row label="Domicilio en el exterior" field="requeridoDomicilio" span={2} />
+        {/* NNA INVOLUCRADOS + ÚLTIMA GESTIÓN */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 16 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: TX3, textTransform: 'uppercase', marginBottom: 10 }}>NNA involucrados</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: N2, lineHeight: 1 }}>{caso.nna?.length || 1}</div>
+            <div style={{ fontSize: 11, color: TX3, marginTop: 6 }}>{nombreCaso(caso)}</div>
+          </div>
+          <div style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 16 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: TX3, textTransform: 'uppercase', marginBottom: 10 }}>Última gestión</div>
+            <div style={{ fontSize: 12, color: ultima ? TX : TX3, lineHeight: 1.55 }}>{ultima?.texto || 'Sin gestiones registradas'}</div>
+            {ultima && <div style={{ fontSize: 10, color: TX3, marginTop: 8 }}>{fmtFecha(ultima.fecha)}{ultima.creadoPor ? ` · ${ultima.creadoPor}` : ''}</div>}
+          </div>
+        </div>
 
-        <Sec title="Proceso judicial" icon={<Scale size={13} color={N2} />} />
-        <Row label="Estado judicial" field="estadoJudicial" type="select" opts={ETAPAS_JUDICIALES} />
-        <Row label="Fecha de demanda" field="fechaDemanda" type="date" />
-        <Row label="N° expediente" field="numExpedienteJudicial" span={2} />
-        <Row label="Juzgado" field="juzgado" span={2} />
-        <Row label="Sentencia 1ra instancia" field="sentencia1ra" span={2} />
-        <Row label="Sentencia 2da instancia" field="sentencia2da" span={2} />
-        <Row label="Casación" field="casacion" span={4} />
+        {/* SITUACIÓN DEL CASO */}
+        <div style={{ gridColumn: '1 / -1', background: SURF, border: `1px solid ${BR}`, borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ padding: '13px 14px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, fontSize: 10, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.04em' }}>Situación del caso</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+            <SummaryValue label="Resultado de entrevista" value={caso.resultadoEntrevista || 'Pendiente'} />
+            <SummaryValue label="Retorno" value={caso.retorno || 'Pendiente'} />
+            <SummaryValue label="Proceso judicial" value={caso.estadoJudicial || 'Sin demanda'} />
+          </div>
+        </div>
 
-        <Sec title="Observaciones" icon={<FileText size={13} color={N2} />} />
-        <Row label="Observaciones generales" field="observaciones" type="textarea" span={4} />
-      </div>
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════
-// TAB HISTORIAL DE GESTIÓN (maqueta HTML)
-// ══════════════════════════════════════════════════════════════════════
-
-function TabBitacora({ caso, bitTexto, setBitTexto, saving, onAgregar, onEliminar }: {
-  caso: Caso; bitTexto: string; setBitTexto:(v:string)=>void
-  saving: boolean; onAgregar:()=>void; onEliminar:(id:string)=>void
-}) {
-  const entries=[...caso.bitacora].filter(b => !isJudicialEntry(b)).sort((a,b)=>b.fecha.localeCompare(a.fecha));
-  return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <div style={{flex:1,overflowY:'auto',padding:'20px 24px'}} className="main-scroll">
-        {entries.length===0&&<div style={{textAlign:'center',padding:'48px 0',color:TX3,fontSize:13}}>Sin entradas registradas.</div>}
-        <div style={{position:'relative',paddingLeft:32}}>
-          <div style={{position:'absolute',left:10,top:4,bottom:4,width:2,background:BR,borderRadius:99}}></div>
-          {entries.map((b)=>(
-            <div key={b.id} className="anim-u" style={{position:'relative',marginBottom:20}}>
-              <div style={{position:'absolute',left:-28,top:4,width:14,height:14,borderRadius:'50%',background:'#EEF2FF',border:`2px solid #A5B4FC`,display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              </div>
-              <div style={{background:SURF,borderRadius:10,border:`1px solid ${BR}`,padding:'12px 14px',boxShadow:'0 1px 4px rgba(0,0,0,.04)'}}>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
-                  <div style={{fontSize:11,fontWeight:700,color:TX2}}>{formatFechaEs(b.fecha)}</div>
-                  <div style={{display:'flex',alignItems:'center',gap:8}}>
-                    {b.creadoPor&&<div style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color:TX3}}><User style={{ width:10, height:10 }} color={TX3}/>{b.creadoPor}</div>}
-                    <button onClick={()=>onEliminar(b.id)} style={{background:'none',border:'none',color:'#CBD5E1',padding:2,display:'flex',lineHeight:1,cursor:'pointer'}}><Trash2 style={{ width:11, height:11 }} color="#CBD5E1"/></button>
+        {/* LÍNEA DE TIEMPO DEL EXPEDIENTE */}
+        <div style={{ gridColumn: '1 / -1', background: SURF, border: `1px solid ${BR}`, borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ padding: '13px 14px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, fontSize: 10, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.04em' }}>Línea de tiempo del expediente</div>
+          <div style={{ padding: '16px 18px' }}>
+            {(() => {
+              const eventos = [
+                ...(caso.bitacora || []).map(b2 => ({ fecha: b2.fecha, tipo: 'gestión', texto: b2.texto, autor: b2.creadoPor })),
+                ...(caso.historialJudicial || []).map(h => ({ fecha: h.fecha, tipo: 'judicial', texto: `${h.etapa}${h.descripcion ? ': ' + h.descripcion : ''}`, autor: h.creadoPor })),
+              ].sort((a, b2) => b2.fecha.localeCompare(a.fecha)).slice(0, 5);
+              if (!eventos.length) return <div style={{ fontSize: 12, color: TX3, textAlign: 'center', padding: '12px 0' }}>Sin eventos registrados en la línea de tiempo.</div>;
+              return eventos.map((e, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: i === eventos.length - 1 ? 0 : 12 }}>
+                  <div style={{ width: 20, height: 20, borderRadius: '50%', background: e.tipo === 'judicial' ? BL : '#EEF2FF', color: e.tipo === 'judicial' ? '#fff' : '#6366F1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{e.tipo === 'judicial' ? <Scale size={10} color="#fff" /> : <Clock size={10} />}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, color: TX, lineHeight: 1.5 }}>{e.texto}</div>
+                    <div style={{ fontSize: 9, color: TX3, marginTop: 2 }}>{fmtFecha(e.fecha)}{e.autor ? ` · ${e.autor}` : ''} · <span style={{ textTransform: 'uppercase', fontWeight: 700 }}>{e.tipo}</span></div>
                   </div>
                 </div>
-                <div style={{fontSize:12,color:TX,lineHeight:1.6}}>{b.texto}</div>
-              </div>
-            </div>
-          ))}
+              ));
+            })()}
+          </div>
         </div>
-      </div>
-      <div style={{padding:'14px 24px',borderTop:`1px solid ${BR}`,background:SURF,flexShrink:0}}>
-        <div style={{display:'flex',gap:8,alignItems:'flex-end'}}>
-          <textarea rows={2} value={bitTexto} onChange={e=>setBitTexto(e.target.value)} placeholder="Escribe una nueva gestión o seguimiento…" style={{flex:1,padding:'10px 12px',border:`1.5px solid ${BR}`,borderRadius:8,fontSize:13,color:TX,background:BG,outline:'none',resize:'none'}} onKeyDown={e => { if (e.key==='Enter' && (e.ctrlKey||e.metaKey)) onAgregar() }}/>
-          <button onClick={onAgregar} disabled={saving||!bitTexto.trim()} style={{padding:'10px 18px',borderRadius:8,border:'none',background:saving||!bitTexto.trim()?'#F1F5F9':BL,color:saving||!bitTexto.trim()?'#94A3B8':'#fff',fontSize:13,fontWeight:700,boxShadow:saving||!bitTexto.trim()?'none':'0 2px 8px rgba(37,99,235,.3)',height:60,cursor:saving||!bitTexto.trim()?'not-allowed':'pointer'}}>{saving?'Guardando...':'Agregar'}</button>
-        </div>
+
       </div>
     </div>
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════
-// TAB PROCESO JUDICIAL (con historial diferido)
-// ══════════════════════════════════════════════════════════════════════
-
-function JudicialStepper({currentStage}: {currentStage: string}){
-  const idx=ETAPAS_JUDICIALES.indexOf(currentStage);
-  return(
-    <div style={{padding:'20px 24px 16px',borderBottom:`1px solid ${BR}`,background:'#FAFBFD'}}>
-      <div style={{fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Proceso judicial</div>
-      <div style={{position:'relative'}}>
-        <div style={{position:'absolute',top:14,left:14,right:14,height:2,background:BR,zIndex:0}}></div>
-        <div style={{position:'absolute',top:14,left:14,height:2,background:BL,zIndex:1,transition:'width .4s ease-out',width:idx<=0?0:`calc(${Math.min(idx/(ETAPAS_JUDICIALES.length-1),1)*100}% - 0px)`}}></div>
-        <div style={{display:'flex',justifyContent:'space-between',position:'relative',zIndex:2}}>
-          {ETAPAS_JUDICIALES.map((e,i)=>{
-            const done=i<idx, active=i===idx;
-            return(
-              <div key={e} style={{display:'flex',flexDirection:'column',alignItems:'center',flex:1,gap:6}}>
-                <div style={{width:28,height:28,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',border:`2px solid ${done||active?BL:BR}`,background:done?BL:active?'#EFF6FF':SURF,transition:'all .3s',boxShadow:active?`0 0 0 4px #EFF6FF`:'none'}}>
-                  {done?<CheckCircle style={{ width:11, height:11, color:'#fff' }} />:<span style={{width:8,height:8,borderRadius:'50%',background:active?BL:BR}}></span>}
-                </div>
-                <div style={{fontSize:9,fontWeight:active?700:500,color:active?BL:done?TX2:TX3,textAlign:'center',lineHeight:1.3,maxWidth:68,wordBreak:'break-word'}}>{e}</div>
-              </div>
-            );
-          })}
-        </div>
+// ── PESTAÑA: DATOS DEL CASO (v2) ──────────────────────────────────────
+function TabDatos({ caso, getVal, onChange }: { caso: Caso; getVal: (f: keyof Caso) => string; onChange: (f: keyof Caso, v: any) => void }) {
+  return (
+    <div className="main-scroll" style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <Sec title="Identificación del trámite" />
+        <Row label="Hoja de trámite / Código" value={getVal('codigo')} onChange={v => onChange('codigo', v)} />
+        <Row label="País contraparte" value={getVal('pais')} type="select" opts={PAISES} onChange={v => onChange('pais', v)} />
+        <Row label="Etapa" value={getVal('etapa')} type="select" opts={ETAPAS} onChange={v => onChange('etapa', v)} />
+        <Row label="Tipo de solicitud" value={getVal('tipoSolicitud')} type="select" opts={TIPO_SOL} onChange={v => onChange('tipoSolicitud', v)} />
+        <Row label="AC Perú" value={getVal('acPeru')} type="select" opts={AC_PERU} onChange={v => onChange('acPeru', v)} />
+        <Row label="Profesional" value={getVal('profesional')} type="select" opts={PROFESIONALES} onChange={v => onChange('profesional', v)} />
+        <Row label="Fecha de ingreso" value={getVal('fechaIngreso')} type="date" onChange={v => onChange('fechaIngreso', v)} />
+        <Row label="Fecha de salida / cierre" value={getVal('fechaSalida')} type="date" onChange={v => onChange('fechaSalida', v)} />
+        <Sec title="Observaciones" />
+        <Row label="Observaciones generales" value={getVal('observaciones')} type="textarea" span={4} onChange={v => onChange('observaciones', v)} />
       </div>
     </div>
   );
 }
 
-function TabJudicial({ getVal, onChange, caso, hjEtapa, setHjEtapa, hjFecha, setHjFecha, hjDesc, setHjDesc, savingHj, errorHj, onAgregarHj, onEliminarHj }: {
-  getVal:(f:keyof Caso)=>string; onChange:(f:keyof Caso,v:string)=>void
-  caso: Caso
-  hjEtapa: string; setHjEtapa:(v:string)=>void
-  hjFecha: string; setHjFecha:(v:string)=>void
-  hjDesc: string; setHjDesc:(v:string)=>void
-  savingHj: boolean
-  errorHj: string
-  onAgregarHj:()=>void
-  onEliminarHj:(id:string)=>void
-}) {
-  const historial = caso.bitacora
-    .filter(isJudicialEntry)
-    .map(parseJudicialEntry)
-    .filter((h): h is HistorialJudicial => h !== null)
-    .sort(compararFechaHistorial)
-
-  const inpS: React.CSSProperties = {width:'100%',padding:'8px 11px',border:`1.5px solid ${BR}`,borderRadius:8,fontSize:12,color:TX,background:BG,outline:'none'};
-
-  return(
-    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
-      <JudicialStepper currentStage={getVal('estadoJudicial')||'Sin demanda'}/>
-      <div style={{flex:1,overflowY:'auto',padding:'20px 24px', display:'grid', gridTemplateColumns:'1fr 276px', gap: 20}} className="main-scroll">
-        
-        {/* Lado izquierdo: Historial real */}
-        <div style={{ overflowY:'auto', borderRight:`1px solid ${BR}`, paddingRight: 20 }}>
-          <p style={{ fontSize:11, fontWeight:700, color:TX3, textTransform:'uppercase', letterSpacing:'.06em', margin:'0 0 14px' }}>
-            Historial · {historial.length} evento{historial.length !== 1 ? 's' : ''}
-          </p>
-
-          {historial.length === 0 && (
-            <div style={{ textAlign:'center', padding:'32px 0', color:TX3 }}>
-              <Scale style={{ width:28, height:28, opacity:.25, margin:'0 auto 8px' }} />
-              <p style={{ fontSize:12 }}>Sin eventos registrados.</p>
-            </div>
-          )}
-
-          {historial.map((h, i) => {
-            const isLast = i === historial.length - 1
-            return (
-              <div key={h.id} style={{ display:'flex', gap:10, marginBottom: isLast ? 0 : 18, position:'relative' }}>
-                {!isLast && (
-                  <div style={{ position:'absolute', left:11, top:22, bottom:-18, width:2, background:BR }} />
-                )}
-                <div style={{ width:24, height:24, borderRadius:'50%', background:BL, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, zIndex:1 }}>
-                  <Scale style={{ width:11, height:11, color:'#fff' }} />
-                </div>
-                <div style={{ flex:1, background:SURF, border:`1px solid ${BR}`, borderRadius:8, padding:'8px 12px' }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                    <div>
-                      <span style={{ fontSize:11, fontWeight:700, color:BL, display:'block', textTransform:'uppercase', letterSpacing:'.3px' }}>{h.etapa}</span>
-                      <span style={{ fontSize:11, color:TX2 }}>{formatFechaEs(h.fecha)}</span>
-                      {h.creadoPor && <span style={{ fontSize:10, color:TX3 }}> · {h.creadoPor}</span>}
-                    </div>
-                    <button onClick={() => onEliminarHj(h.id)}
-                      style={{ background:'none', border:'none', cursor:'pointer', color:TX3, padding:2, display:'flex', flexShrink:0 }}>
-                      <Trash2 style={{ width:11, height:11 }} />
-                    </button>
-                  </div>
-                  {h.descripcion && (
-                    <p style={{ fontSize:12, color:TX, lineHeight:1.55, margin:'6px 0 0', whiteSpace:'pre-wrap' }}>{h.descripcion}</p>
-                  )}
-                </div>
-              </div>
-            )
-          })}
+// ── PESTAÑA: PERSONAS INVOLUCRADAS (v2) ───────────────────────────────
+function TabPersonas({ caso, getVal, onChange, onRefresh }: { caso: Caso; getVal: (f: keyof Caso) => string; onChange: (f: keyof Caso, v: any) => void; onRefresh: () => void }) {
+  return (
+    <div className="main-scroll" style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ padding: 14, borderBottom: `1px solid ${BR}` }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <div>
+            <b style={{ fontSize: 11, color: N2, display: 'block' }}>NNA INVOLUCRADOS</b>
+            <span style={{ fontSize: 11, color: TX3 }}>{(caso.nna?.length || 1)} registrado{(caso.nna?.length || 1) === 1 ? '' : 's'} en el expediente</span>
+          </div>
         </div>
+        <div style={{ overflowX: 'auto', border: `1px solid ${BR}`, borderRadius: 8 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, background: '#fff' }}>
+            <thead>
+              <tr style={{ textAlign: 'left', color: TX3, textTransform: 'uppercase', fontSize: 10, background: '#F8FAFC', borderBottom: `1px solid ${BR}` }}>
+                <th style={{ padding: '9px 12px', width: 54 }}>N.°</th>
+                <th style={{ padding: '9px 12px' }}>NNA</th>
+                <th style={{ padding: '9px 12px' }}>Sexo</th>
+                <th style={{ padding: '9px 12px' }}>Nacimiento</th>
+                <th style={{ padding: '9px 12px' }}>Edad</th>
+              </tr>
+            </thead>
+            <tbody>
+              {caso.nna && caso.nna.length > 0 ? (
+                caso.nna.map((n, i) => (
+                  <tr key={n.id || i} style={{ borderTop: i ? `1px solid ${BR}` : 'none' }}>
+                    <td style={{ padding: '10px 12px', color: TX3, fontWeight: 700 }}>{String(i + 1).padStart(2, '0')}</td>
+                    <td style={{ padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#EFF6FF', color: BL, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 11, fontWeight: 700 }}>{n.nombres?.[0]}</div>
+                        <div><div style={{ fontWeight: 700, color: TX, fontSize: 12 }}>{nombreNna(n)}</div></div>
+                      </div>
+                    </td>
+                    <td style={{ padding: '10px 12px', color: TX2 }}>{n.sexo || '—'}</td>
+                    <td style={{ padding: '10px 12px', color: TX2 }}>{n.fechaNacimiento || '—'}</td>
+                    <td style={{ padding: '10px 12px', color: TX2 }}>{n.edad ? `${n.edad} ${n.tipoEdad || 'Años'}` : '—'}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td style={{ padding: '10px 12px', color: TX3, fontWeight: 700 }}>01</td>
+                  <td style={{ padding: '10px 12px' }}><div style={{ fontWeight: 700, color: TX, fontSize: 12 }}>{caso.nnaNombre || (caso as any).nnanombre || '—'}</div></td>
+                  <td style={{ padding: '10px 12px', color: TX2 }}>{caso.nnaSexo || '—'}</td>
+                  <td style={{ padding: '10px 12px', color: TX2 }}>{caso.nnaFechaNac || '—'}</td>
+                  <td style={{ padding: '10px 12px', color: TX2 }}>{caso.nnaEdad ? `${caso.nnaEdad} ${caso.nnaTipoEdad || 'Años'}` : '—'}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-        {/* Lado derecho: Formulario */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <Sec title="Solicitante" />
+        <Row label="Nombre" value={getVal('solicitanteNombre')} span={2} onChange={v => onChange('solicitanteNombre', v)} />
+        <Row label="Sexo" value={getVal('solicitanteSexo')} type="select" opts={SEXOS} onChange={v => onChange('solicitanteSexo', v)} />
+        <Row label="Teléfono" value={getVal('solicitanteTelefono')} onChange={v => onChange('solicitanteTelefono', v)} />
+        <Row label="Correo electrónico" value={getVal('solicitanteCorreo')} span={2} onChange={v => onChange('solicitanteCorreo', v)} />
+        <Row label="Domicilio" value={getVal('solicitanteDomicilio')} span={2} onChange={v => onChange('solicitanteDomicilio', v)} />
+        <Sec title="Requerido / presunto sustractor" />
+        <Row label="Nombre" value={getVal('requeridoNombre')} span={2} onChange={v => onChange('requeridoNombre', v)} />
+        <Row label="Sexo" value={getVal('requeridoSexo')} type="select" opts={SEXOS} onChange={v => onChange('requeridoSexo', v)} />
+        <Row label="Teléfono" value={getVal('requeridoTelefono')} onChange={v => onChange('requeridoTelefono', v)} />
+        <Row label="Correo electrónico" value={getVal('requeridoCorreo')} span={2} onChange={v => onChange('requeridoCorreo', v)} />
+        <Row label="Domicilio en el exterior" value={getVal('requeridoDomicilio')} span={2} onChange={v => onChange('requeridoDomicilio', v)} />
+      </div>
+    </div>
+  );
+}
+
+// ── PESTAÑA: EVALUACIÓN INICIAL (v2) ──────────────────────────────────
+function TabEvaluacion({ caso, onGuardarProceso }: { caso: Caso; onGuardarProceso: (p: ProcesoOperativo) => void }) {
+  const [proc, setProc] = useState<ProcesoOperativo>(() => caso.procesoOperativo || {
+    casoId: caso.id, faseOperativa: 'Evaluación', evaluacionResultado: 'Pendiente', requisitos: REQ_BASE,
+  });
+  useEffect(() => {
+    if (caso.procesoOperativo) setProc(caso.procesoOperativo)
+  }, [caso.id, caso.procesoOperativo?.updatedAt])
+  const completos = proc.requisitos.filter(r => r.estado === 'Completo').length;
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }} className="main-scroll">
+      <div style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ padding: '12px 14px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 12, color: TX }}>
+          <div><b>Lista de verificación</b><span style={{ display: 'block', fontSize: 10, color: TX3, marginTop: 2 }}>{completos} de {proc.requisitos.length} atendidos</span></div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <select value={proc.evaluacionResultado || ''} onChange={e => setProc({ ...proc, evaluacionResultado: e.target.value })} style={{ padding: '6px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11, outline: 'none' }}>
+              <option value="">Pendiente de evaluación</option>{['Completa', 'Observada', 'No corresponde'].map(x => <option key={x}>{x}</option>)}
+            </select>
+            <button onClick={() => onGuardarProceso(proc)} style={{ padding: '6px 12px', border: 'none', borderRadius: 6, background: BL, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+              Guardar
+            </button>
+          </div>
+        </div>
         <div>
-          <div style={{fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Registrar evento</div>
-          {errorHj && <div style={{ background:'#FEF2F2', border:'0.5px solid #FECACA', borderRadius:7, padding:'7px 10px', marginBottom:10, color:'#991B1B', fontSize:11 }}>{errorHj}</div>}
-          <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:10}}>
-            <div>
-              <div style={{fontSize:10,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.05em',marginBottom:5}}>Nueva etapa *</div>
-              <select value={hjEtapa} onChange={e=>setHjEtapa(e.target.value)} style={inpS}>
-                <option value="">Seleccionar etapa…</option>
-                {ETAPAS_JUDICIALES.map(e=><option key={e} value={e}>{e}</option>)}
+          {proc.requisitos.map((r, i) => (
+            <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '36px minmax(0, 1fr) 170px', alignItems: 'center', gap: 10, padding: '10px 14px', borderTop: i ? `1px solid ${BR}` : 'none' }}>
+              <div style={{ width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: r.estado === 'Completo' ? '#DCFCE7' : '#F1F5F9', color: r.estado === 'Completo' ? '#15803D' : TX3, fontSize: 11, fontWeight: 700 }}>{r.estado === 'Completo' ? <Check size={12} /> : i + 1}</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: TX }}>{r.nombre}</div>
+              <select value={r.estado} onChange={e => setProc({ ...proc, requisitos: proc.requisitos.map(x => x.id === r.id ? { ...x, estado: e.target.value as any } : x) })} style={{ padding: '6px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11, outline: 'none' }}>
+                {['Pendiente', 'Completo', 'Observado', 'No aplica'].map(x => <option key={x}>{x}</option>)}
               </select>
             </div>
-            <div>
-              <div style={{fontSize:10,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.05em',marginBottom:5}}>Fecha *</div>
-              <input type="date" value={hjFecha} onChange={e=>setHjFecha(e.target.value)} style={inpS}/>
-            </div>
-            <div>
-              <div style={{fontSize:10,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.05em',marginBottom:5}}>Descripción</div>
-              <textarea value={hjDesc} onChange={e=>setHjDesc(e.target.value)} placeholder="Detalles del evento judicial…" style={{...inpS, resize: 'none'}} rows={4} onKeyDown={e => { if (e.key==='Enter' && (e.ctrlKey||e.metaKey)) onAgregarHj() }}/>
-            </div>
-            <button onClick={onAgregarHj} disabled={savingHj || !hjEtapa || !hjFecha} style={{padding:'9px 20px',borderRadius:8,border:'none',background:savingHj || !hjEtapa || !hjFecha? '#F1F5F9' : N2,color:savingHj || !hjEtapa || !hjFecha? '#94A3B8' : '#fff',fontSize:13,fontWeight:700, cursor: savingHj || !hjEtapa || !hjFecha? 'not-allowed':'pointer'}}>{savingHj ? 'Guardando...' : 'Registrar evento'}</button>
-          </div>
+          ))}
         </div>
       </div>
     </div>
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════
-// MODAL NUEVO CASO
-// ══════════════════════════════════════════════════════════════════════
+// ── PESTAÑA: SUBSANACIÓN (v2) ─────────────────────────────────────────
+function TabSubsanacion({ caso, onGuardarProceso }: { caso: Caso; onGuardarProceso: (p: ProcesoOperativo) => void }) {
+  const [proc, setProc] = useState<ProcesoOperativo>(() => caso.procesoOperativo || {
+    casoId: caso.id, faseOperativa: 'Subsanación', requisitos: REQ_BASE, fechaObservacion: '', fechaNotificacion: '', fechaLimiteSubsanacion: '', ampliacionSubsanacion: 'No', fechaRespuestaSubsanacion: '',
+  });
+  useEffect(() => {
+    if (caso.procesoOperativo) setProc(caso.procesoOperativo)
+  }, [caso.id, caso.procesoOperativo?.updatedAt])
+  const set = (k: keyof ProcesoOperativo) => (v: any) => setProc(current => ({ ...current, [k]: v }));
 
-function ModalOverlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
-    <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:999, padding:24 }}>
-      <div onClick={e => e.stopPropagation()}
-        style={{ width:'100%', maxWidth:680, maxHeight:'90vh', overflowY:'auto', background:'#ffffff', borderRadius:12, boxShadow:'0 20px 60px rgba(0,0,0,.25)' }}>
-        {children}
-      </div>
-    </div>
-  )
-}
-
-function SecModal({ label }: { label: string }) {
-  return (
-    <div style={{ gridColumn:'span 2', paddingTop:4, borderBottom:'0.5px solid #E2E8F0', marginBottom:2 }}>
-      <p style={{ fontSize:11, fontWeight:700, color:'#1E3A5F', textTransform:'uppercase', letterSpacing:'.5px', margin:'0 0 4px' }}>{label}</p>
-    </div>
-  )
-}
-
-
-function ModalNuevoCaso({
-  form, setForm, error, saving, onSave, onClose
-}: {
-  form: Partial<Caso>; setForm: React.Dispatch<React.SetStateAction<Partial<Caso>>>
-  error: string; saving: boolean; onSave: () => void; onClose: () => void
-}) {
-  const set= (k: keyof Caso) => (v: string) => setForm(p=>({...p,[k]:v}));
-  const inpS: React.CSSProperties = {width:'100%',padding:'9px 12px',border:`1.5px solid ${BR}`,borderRadius:8,fontSize:13,color:TX,background:BG,outline:'none'};
-  const selS: React.CSSProperties = {...inpS,cursor:'pointer'};
-
-  return(
-    <div className="anim-u" style={{background:SURF,borderRadius:16,width:'100%',maxWidth:520,maxHeight:'90vh',overflowY:'auto',boxShadow:'0 32px 80px rgba(0,0,0,.3)'}} onClick={e=>e.stopPropagation()}>
-      <div style={{padding:'20px 24px 16px',borderBottom:`1px solid ${BR}`,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-        <div>
-          <div style={{fontSize:16,fontWeight:700,color:TX}}>Nuevo caso</div>
-          <div style={{fontSize:12,color:TX3,marginTop:2}}>Sustracción Internacional · DGNNA</div>
+    <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }} className="main-scroll">
+      <div style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ padding: '12px 14px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div><b>Control de subsanación</b><span style={{ display: 'block', fontSize: 10, color: TX3, marginTop: 2 }}>Fechas y resultado de las observaciones comunicadas.</span></div>
+          <button onClick={() => onGuardarProceso(proc)} style={{ padding: '6px 12px', border: 'none', borderRadius: 6, background: BL, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+            Guardar
+          </button>
         </div>
-        <button onClick={onClose} style={{width:32,height:32,borderRadius:8,border:`1px solid ${BR}`,background:BG,display:'flex',alignItems:'center',justifyContent:'center',color:TX2,cursor:'pointer'}}><X size={14}/></button>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12, padding: 14 }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>FECHA DE OBSERVACIÓN<input type="date" value={proc.fechaObservacion || ''} onChange={e => set('fechaObservacion')(e.target.value)} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }} /></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>FECHA DE NOTIFICACIÓN<input type="date" value={proc.fechaNotificacion || ''} onChange={e => { const val = e.target.value; setProc(current => ({ ...current, fechaNotificacion: val, fechaLimiteSubsanacion: sumarDiasHabiles(val, current.ampliacionSubsanacion === 'Sí' ? 10 : 5) })); }} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }} /></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>AMPLIACIÓN (10 DÍAS)<select value={proc.ampliacionSubsanacion || 'No'} onChange={e => { const val = e.target.value; setProc(current => ({ ...current, ampliacionSubsanacion: val, fechaLimiteSubsanacion: current.fechaNotificacion ? sumarDiasHabiles(current.fechaNotificacion, val === 'Sí' ? 10 : 5) : '' })); }} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }}><option value="No">No</option><option value="Sí">Sí</option></select></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>FECHA LÍMITE LEGAL<input type="date" value={proc.fechaLimiteSubsanacion || ''} readOnly style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11, background: '#FEE2E2', fontWeight: 800, color: '#991B1B' }} /></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>FECHA DE RESPUESTA<input type="date" value={proc.fechaRespuestaSubsanacion || ''} onChange={e => set('fechaRespuestaSubsanacion')(e.target.value)} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }} /></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>RESULTADO<select value={proc.resultadoSubsanacion || 'Pendiente'} onChange={e => set('resultadoSubsanacion')(e.target.value)} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }}><option>Pendiente</option><option>Subsanó</option><option>Subsanó parcialmente</option><option>No subsanó</option></select></label>
+          <label style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>DETALLE DE LA SUBSANACIÓN<textarea value={proc.detalleSubsanacion || ''} onChange={e => set('detalleSubsanacion')(e.target.value)} rows={3} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11, resize: 'vertical' }} /></label>
+        </div>
       </div>
-      <div style={{padding:'20px 24px',display:'flex',flexDirection:'column',gap:14}}>
-        {error && <div style={{ background:'#FEF2F2', border:'0.5px solid #FECACA', borderRadius:7, padding:'9px 13px', marginBottom:14, color:'#991B1B', fontSize:12 }}>{error}</div>}
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-          {([['Código / Hoja trámite','codigo'],['Nombre del NNA','nnaNombre']] as const).map(([lbl,k])=>(
-            <div key={k}>
-              <label style={{display:'block',fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:5}}>{lbl}</label>
-              <input autoFocus={k==='codigo'} value={(form[k] as string)||''} onChange={e=>set(k)(e.target.value)} style={inpS}/>
+    </div>
+  );
+}
+
+// ── PESTAÑA: GESTIÓN INTERNACIONAL (v2) ───────────────────────────────
+function TabInternacional({ caso, onGuardarProceso }: { caso: Caso; onGuardarProceso: (p: ProcesoOperativo) => void }) {
+  const [proc, setProc] = useState<ProcesoOperativo>(() => caso.procesoOperativo || {
+    casoId: caso.id, faseOperativa: 'Gestión internacional', requisitos: REQ_BASE, destinatarioGestion: '', tipoComunicacion: '', fechaEnvio: '', referenciaSgd: '', respuestaEsperada: '', proximaAccion: '', fechaLimite: '',
+  });
+  useEffect(() => {
+    if (caso.procesoOperativo) setProc(caso.procesoOperativo)
+  }, [caso.id, caso.procesoOperativo?.updatedAt])
+  const set = (k: keyof ProcesoOperativo) => (v: any) => setProc(current => ({ ...current, [k]: v }));
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }} className="main-scroll">
+      <div style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ padding: '12px 14px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div><b>Comunicación y seguimiento internacional</b><span style={{ display: 'block', fontSize: 10, color: TX3, marginTop: 2 }}>AC Perú {caso.acPeru || 'Requerida'} · {caso.pais}</span></div>
+          <button onClick={() => onGuardarProceso(proc)} style={{ padding: '6px 12px', border: 'none', borderRadius: 6, background: BL, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+            Guardar
+          </button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12, padding: 14 }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>DESTINATARIO<input value={proc.destinatarioGestion || ''} onChange={e => set('destinatarioGestion')(e.target.value)} placeholder="Ej. Ministerio de Justicia" style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }} /></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>TIPO DE COMUNICACIÓN<select value={proc.tipoComunicacion || ''} onChange={e => set('tipoComunicacion')(e.target.value)} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }}><option value="">—</option>{['Solicitud de información', 'Remisión de solicitud', 'Respuesta a observación', 'Coordinación', 'Seguimiento'].map(x => <option key={x}>{x}</option>)}</select></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>FECHA DE ENVÍO<input type="date" value={proc.fechaEnvio || ''} onChange={e => set('fechaEnvio')(e.target.value)} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }} /></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>REFERENCIA SGD<input value={proc.referenciaSgd || ''} onChange={e => set('referenciaSgd')(e.target.value)} placeholder="Ej. OFICIO-0021-2026-MIMP" style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }} /></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>RESPUESTA ESPERADA<input type="date" value={proc.respuestaEsperada || ''} onChange={e => set('respuestaEsperada')(e.target.value)} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }} /></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>FECHA LÍMITE DE GESTIÓN<input type="date" value={proc.fechaLimite || ''} onChange={e => set('fechaLimite')(e.target.value)} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }} /></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>RESPUESTA RECIBIDA<select value={proc.respuestaRecibida || 'No'} onChange={e => set('respuestaRecibida')(e.target.value)} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }}><option>No</option><option>Sí</option></select></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>ESTADO DE COOPERACIÓN<select value={proc.estadoCooperacion || 'En seguimiento'} onChange={e => set('estadoCooperacion')(e.target.value)} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }}><option>En seguimiento</option><option>Proceso judicial exterior</option><option>Concluido</option></select></label>
+          <label style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>PRÓXIMA ACCIÓN<input value={proc.proximaAccion || ''} onChange={e => set('proximaAccion')(e.target.value)} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }} /></label>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── PESTAÑA: RETORNO VOLUNTARIO (v2) ──────────────────────────────────
+function TabRetorno({ caso, getVal, onChange, onGuardarProceso }: { caso: Caso; getVal: (f: keyof Caso) => string; onChange: (f: keyof Caso, v: any) => void; onGuardarProceso: (p: ProcesoOperativo) => void }) {
+  const [proc, setProc] = useState<ProcesoOperativo>(() => caso.procesoOperativo || {
+    casoId: caso.id, faseOperativa: 'Retorno voluntario', requisitos: REQ_BASE, estadoRetornoVoluntario: 'Pendiente', propuestaRetorno: '', fechaPrevistaRetorno: '', compromisosRetorno: '',
+  });
+  useEffect(() => {
+    if (caso.procesoOperativo) setProc(caso.procesoOperativo)
+  }, [caso.id, caso.procesoOperativo?.updatedAt])
+  const set = (k: keyof ProcesoOperativo) => (v: any) => setProc(current => ({ ...current, [k]: v }));
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }} className="main-scroll">
+      <div style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ padding: '12px 14px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div><b>Entrevista amigable y acuerdo de retorno</b><span style={{ display: 'block', fontSize: 10, color: TX3, marginTop: 2 }}>Seguimiento al procedimiento no contencioso administrativo.</span></div>
+          <button onClick={() => onGuardarProceso({ ...proc, fechaEntrevista: getVal('fechaEntrevista'), resultadoEntrevista: getVal('resultadoEntrevista') })} style={{ padding: '6px 12px', border: 'none', borderRadius: 6, background: BL, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+            Guardar
+          </button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12, padding: 14 }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>FECHA DE ENTREVISTA<input type="date" value={getVal('fechaEntrevista')} onChange={e => onChange('fechaEntrevista', e.target.value)} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }} /></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>RESULTADO DE ENTREVISTA<select value={getVal('resultadoEntrevista')} onChange={e => onChange('resultadoEntrevista', e.target.value)} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }}><option value="">—</option>{RESULTADO_ENT.map(x => <option key={x}>{x}</option>)}</select></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>ESTADO DE NEGOCIACIÓN<select value={proc.estadoRetornoVoluntario || 'Pendiente'} onChange={e => set('estadoRetornoVoluntario')(e.target.value)} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }}><option value="Pendiente">Pendiente</option><option value="En negociación">En negociación</option><option value="Acuerdo alcanzado">Acuerdo alcanzado</option><option value="Sin acuerdo">Sin acuerdo</option></select></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>FECHA PREVISTA DE RETORNO<input type="date" value={proc.fechaPrevistaRetorno || ''} onChange={e => set('fechaPrevistaRetorno')(e.target.value)} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }} /></label>
+          <label style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>PROPUESTA DE RETORNO<input value={proc.propuestaRetorno || ''} onChange={e => set('propuestaRetorno')(e.target.value)} placeholder="Términos del acuerdo o compromisos" style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }} /></label>
+          <label style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>COMPROMISOS DEL ACUERDO<textarea value={proc.compromisosRetorno || ''} onChange={e => set('compromisosRetorno')(e.target.value)} rows={2} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11, resize: 'vertical' }} /></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>FECHA DEL ACUERDO<input type="date" value={proc.fechaAcuerdo || ''} onChange={e => set('fechaAcuerdo')(e.target.value)} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }} /></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>LÍMITE PARA PASAJES<input type="date" value={proc.fechaLimitePasajes || ''} readOnly style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11, background: '#F8FAFC' }} /></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>PASAJES RECIBIDOS<select value={proc.pasajesRecibidos || 'No'} onChange={e => set('pasajesRecibidos')(e.target.value)} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }}><option>No</option><option>Sí</option></select></label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontWeight: 700, color: TX3 }}>RETORNO EFECTIVO<input type="date" value={proc.fechaRetornoEfectivo || ''} onChange={e => set('fechaRetornoEfectivo')(e.target.value)} style={{ padding: '8px 10px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11 }} /></label>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── PESTAÑA: HISTORIAL DE GESTIÓN / BITÁCORA (v2) ─────────────────────
+function TabBitacora({ caso, bitTexto, setBitTexto, savingBit, onAgregarBitacora }: { caso: Caso; bitTexto: string; setBitTexto: (v: string) => void; savingBit: boolean; onAgregarBitacora: () => void }) {
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }} className="main-scroll">
+      <div style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 16 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: N2, textTransform: 'uppercase', marginBottom: 12 }}>Historial de Diligencias y Actuaciones</div>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          <input value={bitTexto} onChange={e => setBitTexto(e.target.value)} placeholder="Escribe una actuación, oficio SGD o llamada..." style={{ flex: 1, padding: '8px 12px', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 12, outline: 'none' }} onKeyDown={e => { if (e.key === 'Enter') onAgregarBitacora(); }} />
+          <button onClick={onAgregarBitacora} disabled={savingBit} style={{ padding: '8px 16px', border: 'none', borderRadius: 6, background: BL, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+            {savingBit ? 'Guardando...' : 'Agregar Nota'}
+          </button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {(!caso.bitacora || !caso.bitacora.length) && (
+            <div style={{ padding: 24, textAlign: 'center', color: TX3, fontSize: 12 }}>No hay actuaciones registradas en el historial.</div>
+          )}
+          {caso.bitacora?.map((b, i) => (
+            <div key={b.id || i} style={{ padding: 12, border: `1px solid ${BR}`, borderRadius: 6, background: '#F8FAFC' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: TX3, fontWeight: 700, marginBottom: 4 }}>
+                <span>{fmtFecha(b.fecha)} · {b.creadoPor || 'Usuario'}</span>
+              </div>
+              <div style={{ fontSize: 12, color: TX }}>{b.texto}</div>
             </div>
           ))}
-          <div>
-            <label style={{display:'block',fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:5}}>País contraparte</label>
-            <select value={form.pais||''} onChange={e=>set('pais')(e.target.value)} style={selS}>
-              <option value="">Seleccionar…</option>
-              {PAISES.map(p=><option key={p} value={p}>{p}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{display:'block',fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:5}}>Fecha de ingreso</label>
-            <input type="date" value={form.fechaIngreso||''} onChange={e=>set('fechaIngreso')(e.target.value)} style={inpS}/>
-          </div>
-          <div>
-            <label style={{display:'block',fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:5}}>Etapa</label>
-            <select value={form.etapa||''} onChange={e=>set('etapa')(e.target.value)} style={selS}>
-              <option value="">—</option>
-              {ETAPAS.map(e=><option key={e} value={e}>{e}</option>)}
-            </select>
-          </div>
-          <div>
-            <label style={{display:'block',fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:5}}>Profesional</label>
-            <select value={form.profesional||''} onChange={e=>set('profesional')(e.target.value)} style={selS}>
-              <option value="">—</option>
-              {PROFESIONALES.map(p=><option key={p} value={p}>{p}</option>)}
-            </select>
-          </div>
         </div>
-      </div>
-      <div style={{padding:'0 24px 20px',display:'flex',gap:8}}>
-        <button onClick={onClose} style={{flex:1,padding:'10px',borderRadius:8,border:`1.5px solid ${BR}`,background:BG,color:TX2,fontSize:13,fontWeight:600,cursor:'pointer'}}>Cancelar</button>
-        <button onClick={()=>{if(!form.codigo||!form.nnaNombre||!form.pais)return;onSave()}} disabled={saving} style={{flex:2,padding:'10px',borderRadius:8,border:'none',background:saving?'#94A3B8':BL,color:'#fff',fontSize:13,fontWeight:700,boxShadow:saving?'none':'0 2px 8px rgba(37,99,235,.35)',cursor:saving?'not-allowed':'pointer'}}>{saving ? 'Guardando...':'Registrar caso'}</button>
       </div>
     </div>
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════
-// TAB DASHBOARD — helpers de UI (definidos fuera del render)
-// ══════════════════════════════════════════════════════════════════════
-
-function mesLabel(ym: string) {
-  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
-  const [y, m] = ym.split('-')
-  return `${meses[parseInt(m)-1]} ${y.slice(2)}`
-}
-
-function DashCard({ title, children, icon, span2 }: { title: string; children: React.ReactNode; icon?: React.ReactNode; span2?: boolean }) {
+// ── PESTAÑA: PROCESO JUDICIAL (v2) ────────────────────────────────────
+function TabJudicial({ caso, getVal, onChange, onRefresh }: { caso: Caso; getVal: (f: keyof Caso) => string; onChange: (f: keyof Caso, v: any) => void; onRefresh: () => void }) {
   return (
-    <div style={{ background:'#fff', border:'0.5px solid #E2E8F0', borderRadius:10, padding:16, display:'flex', flexDirection:'column', gap:12, gridColumn: span2 ? 'span 2' : undefined }}>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-        <h3 style={{ fontSize:11, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'.5px', margin:0 }}>{title}</h3>
-        {icon && <span style={{ color:'#94A3B8' }}>{icon}</span>}
-      </div>
-      <div>{children}</div>
-    </div>
-  )
-}
-
-function DashProgressBar({ label, count, tot, color }: { label: string; count: number; tot: number; color: string }) {
-  const pct = tot > 0 ? Math.round((count / tot) * 100) : 0
-  return (
-    <div style={{ marginBottom:10 }}>
-      <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, marginBottom:4 }}>
-        <span style={{ color:'#1E293B', fontWeight:500 }}>{label}</span>
-        <span style={{ color:'#64748B' }}>{count} <small style={{ opacity:0.6 }}>({pct}%)</small></span>
-      </div>
-      <div style={{ height:6, background:'#F1F5F9', borderRadius:99, overflow:'hidden' }}>
-        <div style={{ height:'100%', width:`${pct}%`, background:color, borderRadius:99 }} />
+    <div className="main-scroll" style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <Sec title="Datos del proceso judicial" />
+        <Row label="N.° Expediente Judicial" value={getVal('numExpedienteJudicial')} onChange={v => onChange('numExpedienteJudicial', v)} />
+        <Row label="Juzgado Competente" value={getVal('juzgado')} onChange={v => onChange('juzgado', v)} />
+        <Row label="Etapa Procesal" value={getVal('estadoJudicial')} type="select" opts={ETAPAS_JUD} onChange={v => onChange('estadoJudicial', v)} />
+        <Row label="Fecha de Demanda" value={getVal('fechaDemanda')} type="date" onChange={v => onChange('fechaDemanda', v)} />
+        <Row label="Sentencia 1ra Instancia" value={getVal('sentencia1ra')} onChange={v => onChange('sentencia1ra', v)} />
+        <Row label="Sentencia 2da Instancia" value={getVal('sentencia2da')} onChange={v => onChange('sentencia2da', v)} />
+        <Row label="Recurso de Casación" value={getVal('casacion')} span={2} onChange={v => onChange('casacion', v)} />
       </div>
     </div>
-  )
+  );
 }
 
-function DashBarChart({ data, max, color }: { data: [string, number][]; max: number; color: string }) {
+// ── PESTAÑA: CIERRE DEL CASO (v2) ─────────────────────────────────────
+function TabCierre({ caso, getVal, onChange }: { caso: Caso; getVal: (f: keyof Caso) => string; onChange: (f: keyof Caso, v: any) => void }) {
   return (
-    <div style={{ display:'flex', alignItems:'flex-end', gap:6, height:100, paddingBottom:20, position:'relative' }}>
-      {data.length === 0 && (
-        <p style={{ fontSize:12, color:'#94A3B8', margin:'auto' }}>Sin datos</p>
-      )}
-      {data.map(([mes, val]) => {
-        const h = max > 0 ? Math.round((val / max) * 80) : 0
-        return (
-          <div key={mes} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
-            <span style={{ fontSize:9, color:'#64748B', fontWeight:600 }}>{val}</span>
-            <div style={{ width:'100%', height:h, background:color, borderRadius:'3px 3px 0 0', minHeight: val > 0 ? 4 : 0 }} title={`${mesLabel(mes)}: ${val}`} />
-            <span style={{ fontSize:8, color:'#94A3B8', whiteSpace:'nowrap', position:'absolute', bottom:0 }}>{mesLabel(mes)}</span>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-// ══════════════════════════════════════════════════════════════════════
-// TAB DASHBOARD (Estadísticas)
-// ══════════════════════════════════════════════════════════════════════
-
-function TabDashboard({ casos }: { casos: Caso[] }) {
-  // ── Filtro por período ────────────────────────────────────────────
-  const [periodo, setPeriodo] = useState('todo')
-  const [customDesde, setCustomDesde] = useState('')
-  const [customHasta, setCustomHasta] = useState('')
-
-  // Deriva las fechas desde el período elegido; solo en modo 'personalizado' usa el estado custom
-  const { desde, hasta } = useMemo(() => {
-    if (periodo === 'personalizado') return { desde: customDesde, hasta: customHasta }
-    const hoy = new Date()
-    const pad = (n: number) => String(n).padStart(2, '0')
-    const fmt = (d: Date)   => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`
-    if (periodo === 'semana') {
-      const lunes = new Date(hoy); lunes.setDate(hoy.getDate() - hoy.getDay() + 1)
-      return { desde: fmt(lunes), hasta: fmt(hoy) }
-    } else if (periodo === 'mes') {
-      return { desde: `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-01`, hasta: fmt(hoy) }
-    } else if (periodo === 'anio') {
-      return { desde: `${hoy.getFullYear()}-01-01`, hasta: fmt(hoy) }
-    }
-    return { desde: '', hasta: '' } // 'todo'
-  }, [periodo, customDesde, customHasta])
-
-  const casosFiltrados = casos.filter(c => {
-    if (!c.fechaIngreso) return true
-    if (desde && c.fechaIngreso < desde) return false
-    if (hasta && c.fechaIngreso > hasta) return false
-    return true
-  })
-
-  // ── Exportar CSV ──────────────────────────────────────────────────
-  function exportarCSV() {
-    const cols = ['Código','NNA','Sexo','País','Etapa','Estado','Fecha Ingreso','Profesional']
-    const rows = casosFiltrados.map(c => [
-      c.codigo, c.nnaNombre, c.nnaSexo ?? '', c.pais,
-      c.etapa ?? '', c.estado, c.fechaIngreso, c.profesional ?? '',
-    ])
-    const csv = [cols, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n')
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-    const url  = URL.createObjectURL(blob)
-    const a    = document.createElement('a'); a.href = url
-    a.download = `sustraccion_estadisticas_${desde || 'inicio'}_${hasta || 'hoy'}.csv`
-    a.click(); URL.revokeObjectURL(url)
-  }
-
-  const total = casosFiltrados.length
-
-  // ── 1. NNA por sexo ───────────────────────────────────────────────
-  const nnaHombre   = casosFiltrados.filter(c => c.nnaSexo === 'Hombre').length
-  const nnaMujer    = casosFiltrados.filter(c => c.nnaSexo === 'Mujer').length
-  const nnaSinDato  = total - nnaHombre - nnaMujer
-
-  // ── 2. Por etapa: Trámite / Administrativo / Judicial ────────────
-  const enTramite        = casosFiltrados.filter(c => c.estado === 'Tramite').length
-  const enPendiente      = casosFiltrados.filter(c => c.estado === 'Pendiente').length
-  const enAdministrativo = casosFiltrados.filter(c => c.etapa === 'Administrativo').length
-  const enJudicial       = casosFiltrados.filter(c => c.etapa === 'Judicial').length
-  const enSinEtapa       = casosFiltrados.filter(c => !c.etapa).length
-  const concluidos       = casosFiltrados.filter(c => c.estado === 'Archivado' || c.estado === 'Concluido').length
-
-  // ── 3. Ingresos por mes ───────────────────────────────────────────
-  const ingresosPorMes: Record<string, number> = {}
-  casosFiltrados.forEach(c => {
-    if (!c.fechaIngreso) return
-    const mes = c.fechaIngreso.slice(0, 7)
-    ingresosPorMes[mes] = (ingresosPorMes[mes] || 0) + 1
-  })
-  const ingresosMeses = Object.entries(ingresosPorMes)
-    .sort(([a], [b]) => a.localeCompare(b))
-
-  // ── 4. Ingresos por país (top 10) ─────────────────────────────────
-  const porPaisMap: Record<string, number> = {}
-  casosFiltrados.forEach(c => { const p = c.pais || 'Sin dato'; porPaisMap[p] = (porPaisMap[p] || 0) + 1 })
-  const porPais = Object.entries(porPaisMap)
-    .map(([nombre, cantidad]) => ({ nombre, cantidad }))
-    .sort((a, b) => b.cantidad - a.cantidad)
-    .slice(0, 10)
-
-  // ── 5. Concluidos por mes ─────────────────────────────────────────
-  const concluidosPorMes: Record<string, number> = {}
-  casosFiltrados.filter(c => c.estado === 'Archivado' || c.estado === 'Concluido').forEach(c => {
-    const fecha = c.fechaSalida || c.fechaIngreso
-    if (!fecha) return
-    const mes = fecha.slice(0, 7)
-    concluidosPorMes[mes] = (concluidosPorMes[mes] || 0) + 1
-  })
-  const concluidosMeses = Object.entries(concluidosPorMes)
-    .sort(([a], [b]) => a.localeCompare(b))
-
-  // ── Helpers ───────────────────────────────────────────────────────
-  const COLORES_PAIS = ['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#EC4899','#14B8A6','#F97316','#6366F1','#84CC16']
-
-  const maxIngresos   = Math.max(...ingresosMeses.map(([,v]) => v), 1)
-  const maxConcluidos = Math.max(...concluidosMeses.map(([,v]) => v), 1)
-
-  return (
-    <div style={{ padding:20, display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:16 }}>
-
-      {/* ── Barra de filtro ───────────────────────────────────────── */}
-      <div style={{ gridColumn:'span 2', background:'#fff', border:'0.5px solid #E2E8F0', borderRadius:10, padding:'10px 16px', display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
-
-        {/* Ícono filtro */}
-        <Filter style={{ width:13, height:13, color:'#64748B', flexShrink:0 }} />
-
-        {/* Selector de período */}
-        <select value={periodo} onChange={e => setPeriodo(e.target.value)}
-          style={{ border:'1px solid #E2E8F0', borderRadius:7, padding:'6px 10px', fontSize:12, color:'#1E293B', background:'#F8FAFC', outline:'none', cursor:'pointer', fontWeight:500, minWidth:120 }}>
-          <option value="semana">Esta semana</option>
-          <option value="mes">Este mes</option>
-          <option value="anio">Este año</option>
-          <option value="todo">Todo</option>
-          <option value="personalizado">Personalizado</option>
-        </select>
-
-        {/* Separador */}
-        <div style={{ width:1, height:22, background:'#E2E8F0' }} />
-
-        {/* Fechas */}
-        <input type="date" value={desde}
-          onChange={e => { setCustomDesde(e.target.value); setPeriodo('personalizado') }}
-          style={{ border:'1px solid #E2E8F0', borderRadius:7, padding:'6px 9px', fontSize:12, color:'#1E293B', outline:'none', background:'#F8FAFC' }} />
-        <span style={{ fontSize:12, color:'#94A3B8' }}>—</span>
-        <input type="date" value={hasta}
-          onChange={e => { setCustomHasta(e.target.value); setPeriodo('personalizado') }}
-          style={{ border:'1px solid #E2E8F0', borderRadius:7, padding:'6px 9px', fontSize:12, color:'#1E293B', outline:'none', background:'#F8FAFC' }} />
-
-        {/* Contador */}
-        <span style={{ fontSize:11, color:'#3B82F6', fontWeight:600, background:'#EFF6FF', padding:'3px 10px', borderRadius:99, marginLeft:4 }}>
-          {total} caso{total !== 1 ? 's' : ''}
-        </span>
-
-        {/* Spacer */}
-        <div style={{ flex:1 }} />
-
-        {/* Botón Exportar */}
-        <button onClick={exportarCSV}
-          style={{ display:'flex', alignItems:'center', gap:6, background:'#fff', border:'1px solid #E2E8F0', borderRadius:7, padding:'6px 14px', fontSize:12, color:'#1E293B', cursor:'pointer', fontWeight:500, transition:'all 0.15s' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background='#F8FAFC'; (e.currentTarget as HTMLButtonElement).style.borderColor='#CBD5E1' }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background='#fff'; (e.currentTarget as HTMLButtonElement).style.borderColor='#E2E8F0' }}>
-          <Download style={{ width:13, height:13 }} />
-          Exportar
-        </button>
+    <div className="main-scroll" style={{ flex: 1, overflowY: 'auto' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <Sec title="Cierre y conclusión del expediente" />
+        <Row label="Estado del Expediente" value={getVal('estado')} type="select" opts={['Tramite', 'Pendiente', 'Archivado']} onChange={v => onChange('estado', v)} />
+        <Row label="¿Se Concretó el Retorno?" value={getVal('retorno')} type="select" opts={RETORNO} onChange={v => onChange('retorno', v)} />
+        <Row label="Fecha de Salida / Conclusión" value={getVal('fechaSalida')} type="date" onChange={v => onChange('fechaSalida', v)} />
+        <Row label="Motivo de Cierre Normativo" value={getVal('motivoCierre')} type="select" opts={MOTIVOS_CIERRE} span={4} onChange={v => onChange('motivoCierre', v)} />
+        <Row label="Observaciones Finales" value={getVal('observaciones')} type="textarea" span={4} onChange={v => onChange('observaciones', v)} />
       </div>
-
-      {/* ── KPIs ─────────────────────────────────────────────────── */}
-      <div style={{ gridColumn:'span 2', display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:12 }}>
-        <div style={{ background:'#1E3A5F', padding:'14px 18px', borderRadius:10, color:'#fff' }}>
-          <p style={{ fontSize:10, opacity:0.7, textTransform:'uppercase', fontWeight:600, margin:'0 0 4px' }}>Total Casos</p>
-          <p style={{ fontSize:26, fontWeight:700, margin:0 }}>{total}</p>
-          {(desde || hasta) && <p style={{ fontSize:9, opacity:0.5, margin:'2px 0 0' }}>en el rango</p>}
-        </div>
-        <div style={{ background:'#fff', border:'1px solid #BFDBFE', padding:'14px 18px', borderRadius:10 }}>
-          <p style={{ fontSize:10, color:'#1D4ED8', textTransform:'uppercase', fontWeight:600, margin:'0 0 4px' }}>En Trámite</p>
-          <p style={{ fontSize:26, fontWeight:700, color:'#1E293B', margin:0 }}>{enTramite}</p>
-        </div>
-        <div style={{ background:'#fff', border:'1px solid #FDE68A', padding:'14px 18px', borderRadius:10 }}>
-          <p style={{ fontSize:10, color:'#92400E', textTransform:'uppercase', fontWeight:600, margin:'0 0 4px' }}>Pendiente</p>
-          <p style={{ fontSize:26, fontWeight:700, color:'#1E293B', margin:0 }}>{enPendiente}</p>
-        </div>
-        <div style={{ background:'#fff', border:'1px solid #BBF7D0', padding:'14px 18px', borderRadius:10 }}>
-          <p style={{ fontSize:10, color:'#15803D', textTransform:'uppercase', fontWeight:600, margin:'0 0 4px' }}>Concluidos</p>
-          <p style={{ fontSize:26, fontWeight:700, color:'#1E293B', margin:0 }}>{concluidos}</p>
-        </div>
-        <div style={{ background:'#fff', border:'1px solid #E2E8F0', padding:'14px 18px', borderRadius:10 }}>
-          <p style={{ fontSize:10, color:'#64748B', textTransform:'uppercase', fontWeight:600, margin:'0 0 4px' }}>Retornos Ef.</p>
-          <p style={{ fontSize:26, fontWeight:700, color:'#1E293B', margin:0 }}>{casosFiltrados.filter(c => c.retorno === 'SI').length}</p>
-        </div>
-      </div>
-
-      {/* ── 1. NNA por sexo ─────────────────────────────────────── */}
-      <DashCard title="NNA por Sexo" icon={<User style={{ width:13, height:13 }} />}>
-        <div style={{ display:'flex', gap:12, marginBottom:14 }}>
-          <div style={{ flex:1, background:'#EFF6FF', borderRadius:8, padding:'10px 12px', textAlign:'center' }}>
-            <p style={{ fontSize:22, fontWeight:700, color:'#2563EB', margin:0 }}>{nnaHombre}</p>
-            <p style={{ fontSize:10, color:'#3B82F6', textTransform:'uppercase', margin:'2px 0 0' }}>Hombres</p>
-          </div>
-          <div style={{ flex:1, background:'#FDF2F8', borderRadius:8, padding:'10px 12px', textAlign:'center' }}>
-            <p style={{ fontSize:22, fontWeight:700, color:'#DB2777', margin:0 }}>{nnaMujer}</p>
-            <p style={{ fontSize:10, color:'#EC4899', textTransform:'uppercase', margin:'2px 0 0' }}>Mujeres</p>
-          </div>
-          {nnaSinDato > 0 && (
-            <div style={{ flex:1, background:'#F8FAFC', borderRadius:8, padding:'10px 12px', textAlign:'center' }}>
-              <p style={{ fontSize:22, fontWeight:700, color:'#94A3B8', margin:0 }}>{nnaSinDato}</p>
-              <p style={{ fontSize:10, color:'#94A3B8', textTransform:'uppercase', margin:'2px 0 0' }}>Sin dato</p>
-            </div>
-          )}
-        </div>
-        {/* Barra proporcional */}
-        {total > 0 && (
-          <div style={{ height:10, borderRadius:99, overflow:'hidden', display:'flex', gap:2 }}>
-            {nnaHombre > 0 && <div style={{ flex: nnaHombre, background:'#3B82F6', borderRadius:99 }} />}
-            {nnaMujer > 0  && <div style={{ flex: nnaMujer,  background:'#EC4899', borderRadius:99 }} />}
-            {nnaSinDato > 0 && <div style={{ flex: nnaSinDato, background:'#E2E8F0', borderRadius:99 }} />}
-          </div>
-        )}
-      </DashCard>
-
-      {/* ── 2. Por etapa: Trámite / Administrativo / Judicial ───── */}
-      <DashCard title="Estado del Trámite" icon={<Scale style={{ width:13, height:13 }} />}>
-        <DashProgressBar label="En Trámite (total)" count={enTramite} tot={total} color="#3B82F6" />
-        {enPendiente > 0 && <DashProgressBar label="Pendiente" count={enPendiente} tot={total} color="#F59E0B" />}
-        <DashProgressBar label="Concluidos / Archivados" count={concluidos} tot={total} color="#10B981" />
-        {total > 0 && <>
-          <div style={{ height:1, background:'#F1F5F9', margin:'8px 0 6px' }} />
-          <p style={{ fontSize:10, color:'#94A3B8', textTransform:'uppercase', fontWeight:600, margin:'0 0 6px' }}>Desglose por Etapa</p>
-          <DashProgressBar label="Etapa Administrativa" count={enAdministrativo} tot={total} color="#F59E0B" />
-          <DashProgressBar label="Etapa Judicial" count={enJudicial} tot={total} color="#8B5CF6" />
-          {enSinEtapa > 0 && <DashProgressBar label="Sin etapa asignada" count={enSinEtapa} tot={total} color="#CBD5E1" />}
-        </>}
-      </DashCard>
-
-      {/* ── 3. Ingresos por mes ──────────────────────────────────── */}
-      <DashCard title="Ingresos por Mes" icon={<TrendingUp style={{ width:13, height:13 }} />}>
-        <DashBarChart data={ingresosMeses} max={maxIngresos} color="#3B82F6" />
-        {ingresosMeses.length === 0 && <p style={{ fontSize:12, color:'#94A3B8', textAlign:'center', margin:0 }}>Sin datos</p>}
-      </DashCard>
-
-      {/* ── 5. Concluidos por mes ────────────────────────────────── */}
-      <DashCard title="Concluidos por Mes" icon={<CheckCircle style={{ width:13, height:13 }} />}>
-        <DashBarChart data={concluidosMeses} max={maxConcluidos} color="#10B981" />
-        {concluidosMeses.length === 0 && <p style={{ fontSize:12, color:'#94A3B8', textAlign:'center', margin:0 }}>Sin datos</p>}
-      </DashCard>
-
-      {/* ── 4. Ingresos por país ─────────────────────────────────── */}
-      <DashCard title="Ingresos por País" icon={<Globe style={{ width:13, height:13 }} />} span2>
-        {porPais.length === 0 ? (
-          <p style={{ fontSize:12, color:'#94A3B8', textAlign:'center', margin:0 }}>Sin datos</p>
-        ) : (
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0 24px' }}>
-            {porPais.map((p, i) => (
-              <DashProgressBar key={p.nombre} label={p.nombre} count={p.cantidad} tot={total} color={COLORES_PAIS[i % COLORES_PAIS.length]} />
-            ))}
-          </div>
-        )}
-      </DashCard>
-
     </div>
-  )
+  );
 }

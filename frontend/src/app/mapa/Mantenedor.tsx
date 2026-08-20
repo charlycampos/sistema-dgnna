@@ -85,6 +85,14 @@ export default function Mantenedor({ puedeEditar }: { puedeEditar: boolean }) {
   const [provSel, setProvSel] = useState('')
   const [distritos, setDistritos] = useState<DistritoOpcion[]>([])
 
+  /* Sesión expirada (401): avisar y llevar al login */
+  const sesionExpirada = (res: Response) => {
+    if (res.status !== 401) return false
+    toast.error('Tu sesión expiró por inactividad. Vuelve a iniciar sesión.')
+    setTimeout(() => { window.location.href = '/login' }, 1500)
+    return true
+  }
+
   const fetchFilas = useCallback(async () => {
     setCargando(true)
     try {
@@ -169,6 +177,7 @@ export default function Mantenedor({ puedeEditar }: { puedeEditar: boolean }) {
   const abrirEditar = async (id: string) => {
     try {
       const res = await fetch(`/api/mapa/instituciones/${id}`)
+      if (sesionExpirada(res)) return
       if (!res.ok) throw new Error()
       const d = await res.json()
       setForm({
@@ -203,6 +212,7 @@ export default function Mantenedor({ puedeEditar }: { puedeEditar: boolean }) {
       const res = editandoId === ''
         ? await fetch('/api/mapa/instituciones', { method: 'POST', body })
         : await fetch(`/api/mapa/instituciones/${editandoId}`, { method: 'PUT', body })
+      if (sesionExpirada(res)) return
       if (!res.ok) {
         const err = await res.json().catch(() => null)
         throw new Error(err?.detail ?? 'Error al guardar')
@@ -218,6 +228,7 @@ export default function Mantenedor({ puedeEditar }: { puedeEditar: boolean }) {
   const eliminar = async (id: string) => {
     try {
       const res = await fetch(`/api/mapa/instituciones/${id}`, { method: 'DELETE' })
+      if (sesionExpirada(res)) return
       if (!res.ok) throw new Error()
       toast.success('Institución eliminada')
       if (editandoId === id) setEditandoId(null)

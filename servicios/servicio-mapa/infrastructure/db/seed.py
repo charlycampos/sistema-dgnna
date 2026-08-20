@@ -13,6 +13,7 @@ from infrastructure.db.models import MapaUbigeo, MapaInstitucion, MapaCobertura
 
 _SEED_FILE    = os.path.join(os.path.dirname(__file__), "seed_mapa.json")
 _SEED_DEMUNAS = os.path.join(os.path.dirname(__file__), "seed_demunas.json")
+_SEED_WARMI   = os.path.join(os.path.dirname(__file__), "seed_warmi.json")
 
 
 def ejecutar_seed(db: Session) -> None:
@@ -87,3 +88,31 @@ def ejecutar_seed(db: Session) -> None:
             ])
         db.commit()
         print(f"[seed] {len(demunas)} DEMUNAs cargadas")
+
+    # ── Servicios Warmi Ñan: CEM, HRT, SAU, SAR, CAI, PIAS ────────
+    _TIPOS_WARMI = ("CEM", "HRT", "SAU", "SAR", "CAI", "PIAS")
+    if (os.path.exists(_SEED_WARMI)
+            and db.query(MapaInstitucion).filter(MapaInstitucion.tipo.in_(_TIPOS_WARMI)).count() == 0):
+        with open(_SEED_WARMI, encoding="utf-8") as f:
+            servicios = json.load(f)["instituciones"]
+        for i in servicios:
+            inst = MapaInstitucion(
+                nombre=i["nombre"],
+                tipo=i["tipo"],
+                direccion=i.get("direccion"),
+                departamento=i.get("departamento"),
+                telefono=i.get("telefono"),
+                horario=i.get("horario"),
+                lat=i.get("lat"),
+                lng=i.get("lng"),
+                estado=i.get("estado", "activo"),
+                creadoPor="seed-warmi",
+            )
+            db.add(inst)
+            db.flush()
+            db.bulk_save_objects([
+                MapaCobertura(institucionId=inst.id, ubigeo=u)
+                for u in i["cobertura"]
+            ])
+        db.commit()
+        print(f"[seed] {len(servicios)} servicios Warmi Ñan cargados (CEM/HRT/SAU/SAR/CAI/PIAS)")

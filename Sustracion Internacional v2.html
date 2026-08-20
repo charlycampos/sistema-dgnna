@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sustracción Internacional — DGNNA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'DM Sans',system-ui,sans-serif;background:#F9FAFB;color:#0F172A;-webkit-font-smoothing:antialiased}
+.main-scroll::-webkit-scrollbar{width:6px;height:6px}
+.main-scroll::-webkit-scrollbar-track{background:transparent}
+.main-scroll::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:99px}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideU{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideR{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+.anim-u{animation:slideU .2s ease-out both}
+.anim-r{animation:slideR .18s ease-out both}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useMemo,useRef}=React;
+
+/* ── TOKENS (paleta Apelaciones) ──────────────────── */
+const NK='#111827', N2='#1E3A5F', BL='#2563EB';
+const SURF='#FFFFFF', BG='#F9FAFB', BR='#E2E8F0';
+const TX='#0F172A', TX2='#475569', TX3='#94A3B8';
+
+const PAISES=['Alemania','Argentina','Australia','Bolivia','Brasil','Canadá','Chile','Colombia','Ecuador','España','Estados Unidos','Francia','Italia','México','Países Bajos','Paraguay','Perú','Portugal','Reino Unido','Uruguay','Venezuela','Otro'];
+const PROFESIONALES=['EMMA','JANNY','CECILIA'];
+const SEXOS=['Hombre','Mujer'];
+const ETAPAS=['Administrativo','Judicial'];
+const TIPO_SOL=['Restitución','Régimen de Visitas'];
+const AC_PERU=['Requirente','Requerida'];
+const RESULTADO_ENT=['Favorable','Desfavorable','Pendiente','No aplica'];
+const RETORNO=['SI','NO','Pendiente','No aplica'];
+const MOTIVOS_CIERRE=['Retorno voluntario','Retorno por sentencia judicial','Acuerdo entre las partes','Sentencia infundada','No cumple requisitos del Convenio','Desistimiento del solicitante','Otro'];
+const ETAPAS_JUD=['Sin demanda','Demanda presentada','En audiencia','Sentencia 1ra instancia','Sentencia 2da instancia','Casación','Ejecución de sentencia','Archivado'];
+const FASES=['Recepción','Evaluación','Subsanación','Gestión internacional','Retorno voluntario','Judicial','Ejecución','Cierre'];
+const REQ_BASE=[{id:'r1',nombre:'Solicitud identificada',estado:'Completo'},{id:'r2',nombre:'NNA registrados',estado:'Completo'},{id:'r3',nombre:'Residencia habitual acreditada',estado:'Pendiente'},{id:'r4',nombre:'Derecho de custodia o visitas',estado:'Completo'},{id:'r5',nombre:'Traslado o retención identificados',estado:'Observado'},{id:'r6',nombre:'Documentación sustentatoria',estado:'Pendiente'},{id:'r7',nombre:'Traducciones, cuando correspondan',estado:'No aplica'},{id:'r8',nombre:'Información para ubicación',estado:'Completo'}];
+
+const Ic=({d,size=14,c='currentColor',sw=2})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{__html:d}}/>;
+const IcoSearch=p=><Ic {...p} d='<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>'/>;
+const IcoDownload=p=><Ic {...p} d='<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>'/>;
+const IcoX=p=><Ic {...p} d='<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' sw={2.5}/>;
+const IcoChevR=p=><Ic {...p} d='<polyline points="9 18 15 12 9 6"/>'/>;
+const IcoEdit=p=><Ic {...p} d='<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>'/>;
+const IcoTrash=p=><Ic {...p} d='<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>'/>;
+const IcoScale=p=><Ic {...p} d='<line x1="12" y1="3" x2="12" y2="21"/><path d="M3 6l9-3 9 3"/><path d="M3 6l4 8c0 1.1-.9 2-2 2s-2-.9-2-2l4-8"/><path d="M21 6l-4 8c0 1.1.9 2 2 2s2-.9 2-2l-4-8"/><line x1="6" y1="21" x2="18" y2="21"/>'/>;
+const IcoGlobe=p=><Ic {...p} d='<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>'/>;
+const IcoChart=p=><Ic {...p} d='<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>'/>;
+const IcoFile=p=><Ic {...p} d='<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>'/>;
+const IcoPlus=p=><Ic {...p} d='<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>' sw={2.5}/>;
+const IcoArrowL=p=><Ic {...p} d='<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>'/>;
+const IcoCheck=p=><Ic {...p} d='<polyline points="20 6 9 17 4 12"/>' sw={3}/>;
+const IcoClock=p=><Ic {...p} d='<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'/>;
+const IcoAlert=p=><Ic {...p} d='<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'/>;
+
+function estadoBadge(e){
+  if(e==='Tramite')return{bg:'#EFF6FF',color:'#1D4ED8',border:'#BFDBFE',label:'En trámite',accent:BL};
+  if(e==='Pendiente')return{bg:'#FFFBEB',color:'#92400E',border:'#FDE68A',label:'Pendiente',accent:'#D97706'};
+  return{bg:'#F1F5F9',color:'#475569',border:'#CBD5E1',label:'Archivado',accent:'#64748B'};
+}
+const todayStr=()=>new Date().toISOString().split('T')[0];
+const fmtFecha=f=>{if(!f)return'—';const[y,m,d]=f.split('-');const mes=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];return`${parseInt(d)} ${mes[parseInt(m)-1]} ${y}`};
+const nombreNna=n=>[n.nombres,n.primerApellido,n.segundoApellido].filter(Boolean).join(' ');
+const nombreCaso=c=>(c.nna||[]).map(nombreNna).join(' / ')||'Sin NNA';
+const vencido=f=>Boolean(f&&f<todayStr());
+const diasDesde=f=>{if(!f)return 0;return Math.max(0,Math.floor((Date.now()-new Date(`${f}T00:00:00`).getTime())/86400000))};
+
+/* ── SAMPLE DATA ─────────────────────────────────── */
+let _nid=300;
+const SAMPLE=[
+  {id:'c1',codigo:'SI-2024-0312',pais:'Argentina',etapa:'Judicial',tipoSolicitud:'Restitución',acPeru:'Requirente',fechaIngreso:'2024-02-10',fechaSalida:null,
+    nna:[{id:'n1',nombres:'Valentina',primerApellido:'Ramos',segundoApellido:'Torres',sexo:'Mujer',fechaNacimiento:'2017-03-15',edad:'7',tipoEdad:'Años'}],
+    solicitanteNombre:'Carmen Torres Vega',solicitanteSexo:'Mujer',solicitanteTelefono:'987654321',solicitanteCorreo:'ctorres@gmail.com',solicitanteDomicilio:'Jr. Los Álamos 230, San Borja',
+    requeridoNombre:'Luis Ramos Pérez',requeridoSexo:'Hombre',requeridoTelefono:null,requeridoCorreo:null,requeridoDomicilio:'Av. Rivadavia 1450, Buenos Aires',
+    profesional:'EMMA',estado:'Tramite',fechaEntrevista:'2024-03-05',resultadoEntrevista:'Favorable',
+    estadoJudicial:'En audiencia',fechaDemanda:'2024-04-20',numExpedienteJudicial:'00342-2024-0-1801-JR-FC-01',juzgado:'1er Juzgado de Familia - Lima',
+    sentencia1ra:null,sentencia2da:null,casacion:null,motivoCierre:null,retorno:'Pendiente',observaciones:'Caso prioritario.',
+    bitacora:[{id:'b1',fecha:'2024-02-10',texto:'Ingreso del expediente. Se verifican documentos del solicitante.',creadoPor:'EMMA'},{id:'b2',fecha:'2024-06-12',texto:'AC Argentina confirma domicilio del requerido. Se procede a notificación.',creadoPor:'EMMA'}],
+    historialJudicial:[{id:'h1',etapa:'Demanda presentada',fecha:'2024-04-20',descripcion:'Se presenta demanda de restitución.',creadoPor:'EMMA'},{id:'h2',etapa:'En audiencia',fecha:'2024-07-02',descripcion:'Programada audiencia única.',creadoPor:'EMMA'}],
+    procesoOperativo:{faseOperativa:'Judicial',requisitos:REQ_BASE,fechaLimite:'2026-09-01',proximaAccion:'Asistir a audiencia programada y preparar informe social actualizado.',destinatarioGestion:'AC Argentina',tipoComunicacion:'Coordinación',fechaEnvio:'2024-06-01',referenciaSgd:'SGD-2024-8871',respuestaEsperada:'2026-08-25'}},
+  {id:'c2',codigo:'SI-2023-0187',pais:'España',etapa:'Judicial',tipoSolicitud:'Restitución',acPeru:'Requerida',fechaIngreso:'2023-11-15',fechaSalida:null,
+    nna:[{id:'n2',nombres:'Diego',primerApellido:'Morales',segundoApellido:'Fuentes',sexo:'Hombre',fechaNacimiento:'2019-08-22',edad:'5',tipoEdad:'Años'}],
+    solicitanteNombre:'Miguel Morales Castro',solicitanteSexo:'Hombre',solicitanteTelefono:'+34 912 345 678',solicitanteCorreo:'mmorales@outlook.es',solicitanteDomicilio:'Calle Mayor 45, Madrid',
+    requeridoNombre:'Patricia Fuentes Huanca',requeridoSexo:'Mujer',requeridoTelefono:'998877665',requeridoCorreo:null,requeridoDomicilio:'Av. Brasil 890, Jesús María',
+    profesional:'JANNY',estado:'Tramite',fechaEntrevista:'2023-12-10',resultadoEntrevista:'Desfavorable',
+    estadoJudicial:'Sentencia 1ra instancia',fechaDemanda:'2024-01-15',numExpedienteJudicial:'00019-2024-0-1801-JR-FC-03',juzgado:'3er Juzgado de Familia - Lima',
+    sentencia1ra:'Infundada - Art. 13 B',sentencia2da:null,casacion:null,motivoCierre:null,retorno:'NO',observaciones:'Madre alega violencia familiar.',
+    bitacora:[{id:'b3',fecha:'2023-12-10',texto:'Entrevista con la requerida. Alega violencia doméstica. Se solicita pericia.',creadoPor:'JANNY'}],
+    historialJudicial:[{id:'h3',etapa:'Demanda presentada',fecha:'2024-01-15',descripcion:null,creadoPor:'JANNY'},{id:'h4',etapa:'Sentencia 1ra instancia',fecha:'2024-03-28',descripcion:'Declara INFUNDADA la restitución por Art. 13 B (grave riesgo).',creadoPor:'JANNY'}],
+    procesoOperativo:{faseOperativa:'Judicial',requisitos:REQ_BASE.map(r=>({...r,estado:'Completo'})),fechaLimite:'2026-08-10',proximaAccion:'Evaluar presentación de apelación.'}},
+  {id:'c3',codigo:'SI-2024-0421',pais:'Estados Unidos',etapa:'Administrativo',tipoSolicitud:'Régimen de Visitas',acPeru:'Requirente',fechaIngreso:'2024-06-01',fechaSalida:null,
+    nna:[{id:'n3',nombres:'Isabella',primerApellido:'Chávez',segundoApellido:'Moreno',sexo:'Mujer',fechaNacimiento:'2015-12-03',edad:'9',tipoEdad:'Años'},{id:'n4',nombres:'Mateo',primerApellido:'Chávez',segundoApellido:'Moreno',sexo:'Hombre',fechaNacimiento:'2018-02-19',edad:'6',tipoEdad:'Años'}],
+    solicitanteNombre:'Roberto Chávez Silva',solicitanteSexo:'Hombre',solicitanteTelefono:'+1 305 555 0123',solicitanteCorreo:'rchavez@email.com',solicitanteDomicilio:'1250 SW 27th Ave, Miami FL',
+    requeridoNombre:'Ana Moreno Quispe',requeridoSexo:'Mujer',requeridoTelefono:'956342178',requeridoCorreo:'amoreno@yahoo.com',requeridoDomicilio:'Calle Las Flores 340, Surco',
+    profesional:'CECILIA',estado:'Pendiente',fechaEntrevista:'2024-07-10',resultadoEntrevista:'Pendiente',
+    estadoJudicial:'Sin demanda',fechaDemanda:null,numExpedienteJudicial:null,juzgado:null,sentencia1ra:null,sentencia2da:null,casacion:null,motivoCierre:null,retorno:'No aplica',observaciones:null,
+    bitacora:[{id:'b4',fecha:'2024-06-01',texto:'Expediente recibido de la AC de EE.UU. (USCA).',creadoPor:'CECILIA'},{id:'b5',fecha:'2024-06-28',texto:'Se localiza a los NNA y a la progenitora requerida.',creadoPor:'CECILIA'}],
+    historialJudicial:[],
+    procesoOperativo:{faseOperativa:'Subsanación',requisitos:REQ_BASE.map((r,i)=>({...r,estado:i<2?'Completo':i===2?'Observado':'Pendiente'})),fechaObservacion:'2024-07-15',fechaLimiteSubsanacion:'2026-08-05',fechaNotificacion:'2024-07-16',proximaAccion:'Esperar respuesta de subsanación del solicitante.'}},
+  {id:'c4',codigo:'SI-2022-0098',pais:'Chile',etapa:'Judicial',tipoSolicitud:'Restitución',acPeru:'Requerida',fechaIngreso:'2022-09-03',fechaSalida:'2023-08-15',
+    nna:[{id:'n5',nombres:'Sebastián',primerApellido:'Núñez',segundoApellido:'Lazo',sexo:'Hombre',fechaNacimiento:'2012-05-18',edad:'12',tipoEdad:'Años'}],
+    solicitanteNombre:'Claudia Lazo Mendoza',solicitanteSexo:'Mujer',solicitanteTelefono:'+56 2 2345 6789',solicitanteCorreo:'clazo@gmail.cl',solicitanteDomicilio:'Av. Providencia 1240, Santiago',
+    requeridoNombre:'Héctor Núñez Paredes',requeridoSexo:'Hombre',requeridoTelefono:'945321876',requeridoCorreo:null,requeridoDomicilio:'Av. Arequipa 2100, Lince',
+    profesional:'EMMA',estado:'Archivado',fechaEntrevista:'2022-10-12',resultadoEntrevista:'Favorable',
+    estadoJudicial:'Ejecución de sentencia',fechaDemanda:'2022-11-08',numExpedienteJudicial:'00876-2022-0-1801-JR-FC-02',juzgado:'2do Juzgado de Familia - Lima',
+    sentencia1ra:'Fundada - Restitución ordenada',sentencia2da:'Confirma 1ra instancia',casacion:null,motivoCierre:'Retorno por sentencia judicial',retorno:'SI',observaciones:'Caso resuelto favorablemente. Niño retornó a Chile en agosto 2023.',
+    bitacora:[{id:'b6',fecha:'2022-09-03',texto:'Ingreso del caso. Expediente completo.',creadoPor:'EMMA'},{id:'b7',fecha:'2023-08-15',texto:'Ejecutada la sentencia. Sebastián retornó a Chile con su madre.',creadoPor:'EMMA'}],
+    historialJudicial:[{id:'h5',etapa:'Sentencia 1ra instancia',fecha:'2023-02-10',descripcion:'Fundada.',creadoPor:'EMMA'},{id:'h6',etapa:'Ejecución de sentencia',fecha:'2023-08-15',descripcion:'Retorno ejecutado.',creadoPor:'EMMA'}],
+    procesoOperativo:{faseOperativa:'Cierre',requisitos:REQ_BASE.map(r=>({...r,estado:'Completo'}))}},
+  {id:'c5',codigo:'SI-2024-0555',pais:'Bolivia',etapa:'Administrativo',tipoSolicitud:'Restitución',acPeru:'Requirente',fechaIngreso:'2024-07-20',fechaSalida:null,
+    nna:[{id:'n6',nombres:'Camila',primerApellido:'Rojas',segundoApellido:'Ibáñez',sexo:'Mujer',fechaNacimiento:'2016-01-10',edad:'8',tipoEdad:'Años'}],
+    solicitanteNombre:'Jorge Rojas Salinas',solicitanteSexo:'Hombre',solicitanteTelefono:'987112233',solicitanteCorreo:'jrojas@gmail.com',solicitanteDomicilio:'Calle Junín 500, Miraflores',
+    requeridoNombre:'Marina Ibáñez Cruz',requeridoSexo:'Mujer',requeridoTelefono:null,requeridoCorreo:null,requeridoDomicilio:'Av. 6 de Agosto 200, La Paz',
+    profesional:'JANNY',estado:'Tramite',fechaEntrevista:null,resultadoEntrevista:'Pendiente',
+    estadoJudicial:'Sin demanda',fechaDemanda:null,numExpedienteJudicial:null,juzgado:null,sentencia1ra:null,sentencia2da:null,casacion:null,motivoCierre:null,retorno:'Pendiente',observaciones:null,
+    bitacora:[{id:'b8',fecha:'2024-07-20',texto:'Ingreso de la solicitud. En espera de evaluación inicial.',creadoPor:'JANNY'}],
+    historialJudicial:[],
+    procesoOperativo:{faseOperativa:'Retorno voluntario',requisitos:REQ_BASE.map(r=>({...r,estado:'Completo'})),estadoRetornoVoluntario:'En negociación',propuestaRetorno:'Se propone retorno acompañado en periodo vacacional.',fechaPrevistaRetorno:'2026-09-15'}},
+];
+
+/* ── FASE OPERATIVA PIPELINE ─────────────────────── */
+function FaseStepper({fase}){
+  const idx=Math.max(0,FASES.indexOf(fase));
+  return(
+    <div style={{display:'flex',alignItems:'center',gap:4,flex:1,minWidth:0}}>
+      {FASES.map((f,i)=>{
+        const done=i<idx,active=i===idx;
+        return(
+          <React.Fragment key={f}>
+            <div title={f} style={{display:'flex',alignItems:'center',gap:5,flexShrink:0}}>
+              <div style={{width:16,height:16,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',background:done?BL:active?'#EFF6FF':'#F1F5F9',border:active?`1.5px solid ${BL}`:'none'}}>
+                {done?<IcoCheck size={8} c="#fff"/>:<span style={{fontSize:8,fontWeight:800,color:active?BL:TX3}}>{i+1}</span>}
+              </div>
+              <span style={{fontSize:9,fontWeight:active?800:600,color:active?BL:done?TX2:TX3,whiteSpace:'nowrap'}}>{f}</span>
+            </div>
+            {i<FASES.length-1&&<div style={{flex:1,height:2,minWidth:8,background:i<idx?BL:BR,borderRadius:99}}></div>}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── SUMMARY VALUE ────────────────────────────────── */
+function SummaryValue({label,value,wide}){
+  return(
+    <div style={{gridColumn:wide?'span 2':'span 1',padding:'13px 14px',borderBottom:`1px solid ${BR}`}}>
+      <div style={{fontSize:9,fontWeight:800,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:4}}>{label}</div>
+      <div style={{fontSize:12,fontWeight:600,color:value?TX:TX3,lineHeight:1.45}}>{value||'Sin registrar'}</div>
+    </div>
+  );
+}
+
+/* ── BANDEJA ───────────────────────────────────────── */
+const bandejaSelS={width:'100%',padding:'8px 9px',border:`1px solid ${BR}`,borderRadius:6,fontSize:10,color:TX2,background:SURF,outline:'none',boxSizing:'border-box'};
+const bandejaIcoBtn={width:32,height:32,border:`1px solid ${BR}`,borderRadius:6,background:SURF,color:TX2,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0};
+const bandejaCellS={padding:'11px 12px',fontSize:11,color:TX2,verticalAlign:'middle'};
+
+function Bandeja({casos,onOpen,onNuevo}){
+  const [tab,setTab]=useState('todos');
+  const [q,setQ]=useState('');const [fe,setFe]=useState('');const [fp,setFp]=useState('');const [fpais,setFpais]=useState('');
+  const visibles=casos.filter(c=>{
+    const p=c.procesoOperativo;
+    if(tab==='revision')return !p||p.faseOperativa==='Recepción'||p.faseOperativa==='Evaluación';
+    if(tab==='subsanacion')return p?.faseOperativa==='Subsanación';
+    if(tab==='retorno')return p?.faseOperativa==='Retorno voluntario';
+    if(tab==='judicial')return p?.faseOperativa==='Judicial'||c.etapa==='Judicial';
+    if(tab==='vencidos')return vencido(p?.fechaLimite)||vencido(p?.fechaLimiteSubsanacion);
+    if(tab==='cerrados')return c.estado==='Archivado';
+    return true;
+  }).filter(c=>{
+    if(q&&!nombreCaso(c).toLowerCase().includes(q.toLowerCase())&&!c.codigo.toLowerCase().includes(q.toLowerCase()))return false;
+    if(fe&&c.estado!==fe)return false;
+    if(fp&&c.profesional!==fp)return false;
+    if(fpais&&c.pais!==fpais)return false;
+    return true;
+  });
+  const counters=[
+    {label:'Casos registrados',value:casos.length,color:N2},
+    {label:'En trámite',value:casos.filter(c=>c.estado==='Tramite').length,color:BL},
+    {label:'Pendientes',value:casos.filter(c=>c.estado==='Pendiente').length,color:'#B45309'},
+    {label:'Archivados',value:casos.filter(c=>c.estado==='Archivado').length,color:TX2},
+  ];
+  const tabs=[['todos','Todos'],['revision','Por revisar'],['subsanacion','Subsanación'],['retorno','Retorno voluntario'],['judicial','Judiciales'],['vencidos','Plazos vencidos'],['cerrados','Cerrados']];
+  return(
+    <main className="main-scroll" style={{flex:1,overflowY:'auto',background:BG,padding:'22px 24px'}}>
+      <div style={{maxWidth:1280,margin:'0 auto'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:16,marginBottom:18}}>
+          <div>
+            <div style={{fontSize:20,fontWeight:800,color:TX}}>Bandeja de casos</div>
+            <div style={{fontSize:11,color:TX3,marginTop:4}}>Consulta y seguimiento de expedientes de sustracción internacional.</div>
+          </div>
+          <button onClick={onNuevo} style={{display:'flex',alignItems:'center',gap:6,background:N2,color:'#fff',border:0,borderRadius:7,padding:'9px 14px',fontSize:12,fontWeight:700}}><IcoPlus size={13}/> Nuevo caso</button>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:10,marginBottom:14}}>
+          {counters.map(it=>(
+            <div key={it.label} style={{background:SURF,border:`1px solid ${BR}`,borderRadius:7,padding:'12px 14px',borderLeft:`3px solid ${it.color}`}}>
+              <div style={{fontSize:9,fontWeight:800,color:TX3,textTransform:'uppercase',letterSpacing:'.05em'}}>{it.label}</div>
+              <div style={{fontSize:22,fontWeight:800,color:it.color,marginTop:4}}>{it.value}</div>
+            </div>
+          ))}
+        </div>
+        <div className="main-scroll" style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:10}}>
+          {tabs.map(([id,label])=>(
+            <button key={id} onClick={()=>setTab(id)} style={{padding:'7px 11px',borderRadius:6,border:`1px solid ${tab===id?BL:BR}`,background:tab===id?'#EFF6FF':SURF,color:tab===id?BL:TX2,fontSize:10,fontWeight:tab===id?800:600,whiteSpace:'nowrap'}}>{label}</button>
+          ))}
+        </div>
+        <div style={{background:SURF,border:`1px solid ${BR}`,borderRadius:8,overflow:'hidden'}}>
+          <div style={{padding:12,borderBottom:`1px solid ${BR}`,display:'grid',gridTemplateColumns:'minmax(210px,1.6fr) repeat(3,minmax(130px,.8fr)) auto',gap:8,alignItems:'center'}}>
+            <div style={{position:'relative'}}>
+              <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',color:TX3}}><IcoSearch size={13}/></span>
+              <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Buscar por NNA o Hoja de Trámite" style={{width:'100%',padding:'8px 10px 8px 28px',border:`1px solid ${BR}`,borderRadius:6,fontSize:11,color:TX,outline:'none',boxSizing:'border-box'}}/>
+            </div>
+            <select value={fe} onChange={e=>setFe(e.target.value)} style={bandejaSelS}><option value="">Todos los estados</option><option value="Tramite">En trámite</option><option value="Pendiente">Pendiente</option><option value="Archivado">Archivado</option></select>
+            <select value={fp} onChange={e=>setFp(e.target.value)} style={bandejaSelS}><option value="">Todos los profesionales</option>{PROFESIONALES.map(p=><option key={p}>{p}</option>)}</select>
+            <select value={fpais} onChange={e=>setFpais(e.target.value)} style={bandejaSelS}><option value="">Todos los países</option>{PAISES.map(p=><option key={p}>{p}</option>)}</select>
+            <div style={{display:'flex',gap:5}}>
+              <button title="Exportar" style={bandejaIcoBtn}><IcoDownload size={14}/></button>
+              <button title="Limpiar" onClick={()=>{setQ('');setFe('');setFp('');setFpais('')}} style={bandejaIcoBtn}><IcoX size={13}/></button>
+            </div>
+          </div>
+          <div style={{padding:'9px 14px',fontSize:10,color:TX3,borderBottom:`1px solid ${BR}`}}>Mostrando <b style={{color:TX2}}>{visibles.length}</b> de {casos.length} casos</div>
+          <div style={{overflowX:'auto'}}>
+            <table style={{width:'100%',borderCollapse:'collapse',minWidth:880}}>
+              <thead><tr style={{background:'#F8FAFC',borderBottom:`1px solid ${BR}`,textAlign:'left'}}>
+                {['NNA involucrados','Hoja de Trámite','País / AC Perú','Fase operativa','Profesional','Ingreso','Estado',''].map(l=><th key={l} style={{padding:'10px 12px',fontSize:9,fontWeight:800,color:TX3,textTransform:'uppercase',letterSpacing:'.04em'}}>{l}</th>)}
+              </tr></thead>
+              <tbody>
+                {visibles.length===0&&<tr><td colSpan={8} style={{padding:40,textAlign:'center',fontSize:12,color:TX3}}>No se encontraron casos en esta bandeja.</td></tr>}
+                {visibles.map(c=>{
+                  const b=estadoBadge(c.estado);const dias=diasDesde(c.fechaIngreso);const p=c.procesoOperativo;
+                  return(
+                    <tr key={c.id} onClick={()=>onOpen(c)} style={{borderBottom:`1px solid ${BR}`,cursor:'pointer',background:SURF}}
+                      onMouseEnter={e=>e.currentTarget.style.background='#F8FAFC'} onMouseLeave={e=>e.currentTarget.style.background=SURF}>
+                      <td style={{padding:'11px 12px',minWidth:240}}>
+                        <div style={{fontSize:12,fontWeight:700,color:TX}}>{nombreCaso(c)}</div>
+                        <div style={{fontSize:10,color:TX3,marginTop:3}}>{c.nna?.length||0} NNA en el expediente</div>
+                      </td>
+                      <td style={bandejaCellS}><span style={{fontFamily:'monospace',fontWeight:700,color:N2}}>{c.codigo}</span></td>
+                      <td style={bandejaCellS}><div>{c.pais}</div><div style={{fontSize:9,color:TX3,marginTop:2}}>{c.acPeru?`AC Perú ${c.acPeru}`:'AC Perú sin definir'}</div></td>
+                      <td style={bandejaCellS}><div>{p?.faseOperativa||'Recepción'}</div>{p?.fechaLimite&&<div style={{fontSize:9,color:vencido(p.fechaLimite)?'#B91C1C':TX3,marginTop:2}}>Límite {fmtFecha(p.fechaLimite)}</div>}</td>
+                      <td style={bandejaCellS}>{c.profesional||'Sin asignar'}</td>
+                      <td style={bandejaCellS}><div>{fmtFecha(c.fechaIngreso)}</div>{dias>0&&c.estado!=='Archivado'&&<div style={{fontSize:9,color:TX3,marginTop:2}}>{dias} días</div>}</td>
+                      <td style={bandejaCellS}><span style={{display:'inline-flex',padding:'3px 8px',borderRadius:99,background:b.bg,color:b.color,border:`1px solid ${b.border}`,fontSize:10,fontWeight:700}}>{b.label}</span></td>
+                      <td style={{padding:'11px 12px',textAlign:'right'}}><button style={bandejaIcoBtn}><IcoChevR size={13}/></button></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+/* ── EXPEDIENTE NAV ───────────────────────────────── */
+const SECCIONES=[
+  {label:'Vista general',items:[['resumen','Resumen del caso']]},
+  {label:'Registro',items:[['datos','Datos del caso'],['personas','Personas involucradas']]},
+  {label:'Evaluación',items:[['evaluacion','Evaluación inicial'],['subsanacion','Requisitos y subsanación']]},
+  {label:'Gestión',items:[['internacional','Gestión internacional'],['retorno','Retorno voluntario'],['bitacora','Historial de gestión']]},
+  {label:'Resultado',items:[['judicial','Proceso judicial'],['cierre','Cierre del caso']]},
+];
+const TITULOS={
+  resumen:['Resumen del caso','Información vigente y situación general del expediente.'],
+  datos:['Datos del caso','Identificación, clasificación y datos del trámite.'],
+  personas:['Personas involucradas','NNA, solicitante y persona requerida vinculados al caso.'],
+  evaluacion:['Evaluación inicial','Verificación de requisitos y resultado de la revisión inicial.'],
+  subsanacion:['Requisitos y subsanación','Control de observaciones, respuesta y fechas aplicables.'],
+  internacional:['Gestión internacional','Comunicaciones, referencia SGD y próxima actuación.'],
+  retorno:['Retorno voluntario','Entrevista, propuesta, compromisos y resultado del retorno.'],
+  bitacora:['Historial de gestión','Registro cronológico de las actuaciones realizadas.'],
+  judicial:['Proceso judicial','Datos e historial de la intervención judicial.'],
+  cierre:['Cierre del caso','Resultado final, retorno y motivo de cierre.'],
+};
+
+function ExpedienteNav({active,onChange}){
+  return(
+    <aside className="main-scroll" style={{width:244,flexShrink:0,background:SURF,borderRight:`1px solid ${BR}`,padding:'16px 12px',overflowY:'auto'}}>
+      {SECCIONES.map((sec,i)=>(
+        <div key={sec.label} style={{marginTop:i?18:0}}>
+          <div style={{padding:'0 10px 6px',fontSize:9,fontWeight:800,color:TX3,textTransform:'uppercase',letterSpacing:'.09em'}}>{sec.label}</div>
+          <div style={{display:'flex',flexDirection:'column',gap:3}}>
+            {sec.items.map(([id,label])=>{
+              const sel=active===id;
+              return(
+                <button key={id} onClick={()=>onChange(id)} style={{width:'100%',display:'flex',alignItems:'center',gap:10,padding:'9px 10px',borderRadius:7,border:sel?'1px solid #BFDBFE':'1px solid transparent',background:sel?'#EFF6FF':'transparent',color:sel?BL:TX2,fontSize:12,fontWeight:sel?700:600,textAlign:'left'}}>
+                  <span style={{width:6,height:6,borderRadius:'50%',background:sel?BL:BR,flexShrink:0}}></span>{label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </aside>
+  );
+}
+
+/* ── FICHA CELDA ───────────────────────────────────── */
+function Row({label,value,type='text',opts,span=1,onChange}){
+  const inpS={width:'100%',padding:'7px 10px',border:`1.5px solid ${BR}`,borderRadius:7,fontSize:12,color:TX,background:'#FAFBFD',outline:'none'};
+  return(
+    <div style={{gridColumn:`span ${span}`,padding:'12px 14px',borderRight:`1px solid ${BR}`,borderBottom:`1px solid ${BR}`}}>
+      <div style={{fontSize:10,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.05em',marginBottom:5}}>{label}</div>
+      {type==='select'?(
+        <select value={value||''} onChange={e=>onChange(e.target.value)} style={{...inpS,cursor:'pointer'}}>
+          <option value="">—</option>{opts.map(o=><option key={o} value={o}>{o}</option>)}
+        </select>
+      ):type==='textarea'?(
+        <textarea rows={2} value={value||''} onChange={e=>onChange(e.target.value)} style={{...inpS,resize:'none'}}/>
+      ):(
+        <input type={type} value={value||''} onChange={e=>onChange(e.target.value)} style={inpS}/>
+      )}
+    </div>
+  );
+}
+function Sec({title}){
+  return <div style={{gridColumn:'span 4',background:'#F1F5F9',padding:'8px 14px',borderBottom:`1px solid ${BR}`,fontSize:10,fontWeight:800,color:N2,textTransform:'uppercase',letterSpacing:'.06em'}}>{title}</div>;
+}
+
+/* ── TAB: DATOS DEL CASO ───────────────────────────── */
+function TabDatos({caso,onChange}){
+  return(
+    <div className="main-scroll" style={{flex:1,overflowY:'auto'}}>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)'}}>
+        <Sec title="Identificación del trámite"/>
+        <Row label="Hoja de trámite / Código" value={caso.codigo} onChange={v=>onChange('codigo',v)}/>
+        <Row label="País contraparte" value={caso.pais} type="select" opts={PAISES} onChange={v=>onChange('pais',v)}/>
+        <Row label="Etapa" value={caso.etapa} type="select" opts={ETAPAS} onChange={v=>onChange('etapa',v)}/>
+        <Row label="Tipo de solicitud" value={caso.tipoSolicitud} type="select" opts={TIPO_SOL} onChange={v=>onChange('tipoSolicitud',v)}/>
+        <Row label="AC Perú" value={caso.acPeru} type="select" opts={AC_PERU} onChange={v=>onChange('acPeru',v)}/>
+        <Row label="Profesional" value={caso.profesional} type="select" opts={PROFESIONALES} onChange={v=>onChange('profesional',v)}/>
+        <Row label="Fecha de ingreso" value={caso.fechaIngreso} type="date" onChange={v=>onChange('fechaIngreso',v)}/>
+        <Row label="Fecha de salida / cierre" value={caso.fechaSalida} type="date" onChange={v=>onChange('fechaSalida',v)}/>
+        <Sec title="Observaciones"/>
+        <Row label="Observaciones generales" value={caso.observaciones} type="textarea" span={4} onChange={v=>onChange('observaciones',v)}/>
+      </div>
+    </div>
+  );
+}
+
+/* ── TAB: PERSONAS (NNA múltiples + solicitante + requerido) ── */
+function TabPersonas({caso,onChange}){
+  return(
+    <div className="main-scroll" style={{flex:1,overflowY:'auto'}}>
+      <div style={{padding:14,borderBottom:`1px solid ${BR}`}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+          <div>
+            <b style={{fontSize:11,color:N2,display:'block'}}>NNA INVOLUCRADOS</b>
+            <span style={{fontSize:11,color:TX3}}>{(caso.nna||[]).length} registrado{(caso.nna||[]).length===1?'':'s'} en el expediente</span>
+          </div>
+          <button style={{display:'flex',alignItems:'center',gap:6,padding:'7px 11px',border:0,borderRadius:7,background:N2,color:'#fff',fontSize:11,fontWeight:700}}><IcoPlus size={12}/> Agregar NNA</button>
+        </div>
+        <div style={{overflowX:'auto',border:`1px solid ${BR}`,borderRadius:8}}>
+          <table style={{width:'100%',borderCollapse:'collapse',fontSize:11,background:'#fff'}}>
+            <thead><tr style={{textAlign:'left',color:TX3,textTransform:'uppercase',fontSize:10,background:'#F8FAFC',borderBottom:`1px solid ${BR}`}}>
+              <th style={{padding:'9px 12px',width:54}}>N.°</th><th style={{padding:'9px 12px'}}>NNA</th><th style={{padding:'9px 12px'}}>Sexo</th><th style={{padding:'9px 12px'}}>Nacimiento</th><th style={{padding:'9px 12px'}}>Edad</th><th style={{padding:'9px 12px',width:88,textAlign:'right'}}>Acciones</th>
+            </tr></thead>
+            <tbody>
+              {(caso.nna||[]).map((n,i)=>(
+                <tr key={n.id} style={{borderTop:i?`1px solid ${BR}`:'none',background:i%2===0?'#fff':'#FCFDFE'}}>
+                  <td style={{padding:'10px 12px',color:TX3,fontWeight:700}}>{String(i+1).padStart(2,'0')}</td>
+                  <td style={{padding:'10px 12px'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:9}}>
+                      <div style={{width:28,height:28,borderRadius:'50%',background:'#EFF6FF',color:BL,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:11,fontWeight:700}}>{n.nombres[0]}</div>
+                      <div><div style={{fontWeight:700,color:TX,fontSize:12}}>{nombreNna(n)}</div><div style={{color:TX3,fontSize:10,marginTop:1}}>Niña, niño o adolescente</div></div>
+                    </div>
+                  </td>
+                  <td style={{padding:'10px 12px',color:TX2}}>{n.sexo||'—'}</td>
+                  <td style={{padding:'10px 12px',color:TX2}}>{n.fechaNacimiento||'—'}</td>
+                  <td style={{padding:'10px 12px',color:TX2}}>{n.edad?`${n.edad} ${n.tipoEdad}`:'—'}</td>
+                  <td style={{padding:'10px 12px',textAlign:'right'}}>
+                    <div style={{display:'flex',justifyContent:'flex-end',gap:5}}>
+                      <button style={{width:28,height:28,border:`1px solid ${BR}`,borderRadius:6,background:'#fff',color:BL,display:'flex',alignItems:'center',justifyContent:'center'}}><IcoEdit size={12}/></button>
+                      <button style={{width:28,height:28,border:'1px solid #FECACA',borderRadius:6,background:'#FEF2F2',color:'#DC2626',display:'flex',alignItems:'center',justifyContent:'center'}}><IcoTrash size={12}/></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)'}}>
+        <Sec title="Solicitante"/>
+        <Row label="Nombre" value={caso.solicitanteNombre} span={2} onChange={v=>onChange('solicitanteNombre',v)}/>
+        <Row label="Sexo" value={caso.solicitanteSexo} type="select" opts={SEXOS} onChange={v=>onChange('solicitanteSexo',v)}/>
+        <Row label="Teléfono" value={caso.solicitanteTelefono} onChange={v=>onChange('solicitanteTelefono',v)}/>
+        <Row label="Correo electrónico" value={caso.solicitanteCorreo} span={2} onChange={v=>onChange('solicitanteCorreo',v)}/>
+        <Row label="Domicilio" value={caso.solicitanteDomicilio} span={2} onChange={v=>onChange('solicitanteDomicilio',v)}/>
+        <Sec title="Requerido / presunto sustractor"/>
+        <Row label="Nombre" value={caso.requeridoNombre} span={2} onChange={v=>onChange('requeridoNombre',v)}/>
+        <Row label="Sexo" value={caso.requeridoSexo} type="select" opts={SEXOS} onChange={v=>onChange('requeridoSexo',v)}/>
+        <Row label="Teléfono" value={caso.requeridoTelefono} onChange={v=>onChange('requeridoTelefono',v)}/>
+        <Row label="Correo electrónico" value={caso.requeridoCorreo} span={2} onChange={v=>onChange('requeridoCorreo',v)}/>
+        <Row label="Domicilio en el exterior" value={caso.requeridoDomicilio} span={2} onChange={v=>onChange('requeridoDomicilio',v)}/>
+      </div>
+    </div>
+  );
+}
+
+/* ── PROCESO OPERATIVO (evaluacion/subsanacion/internacional/retorno) ── */
+const procInpS={width:'100%',padding:'8px 10px',border:`1px solid ${BR}`,borderRadius:6,fontSize:11,color:TX,background:SURF,outline:'none',boxSizing:'border-box'};
+const procLblS={display:'flex',flexDirection:'column',gap:5,fontSize:9,fontWeight:800,color:TX3,textTransform:'uppercase',letterSpacing:'.04em'};
+const procPanelS={background:SURF,border:`1px solid ${BR}`,borderRadius:8,overflow:'hidden'};
+const procHeadS={padding:'12px 14px',background:'#F8FAFC',borderBottom:`1px solid ${BR}`,display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,fontSize:12,color:TX};
+const procGridS={display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:12,padding:14};
+
+function Field({label,value,onChange,type='text',opts}){
+  return(
+    <label style={procLblS}>{label}
+      {type==='select'?(
+        <select value={value||''} onChange={e=>onChange(e.target.value)} style={procInpS}>
+          <option value="">—</option>{opts.map(o=><option key={o} value={o}>{o||'—'}</option>)}
+        </select>
+      ):type==='textarea'?(
+        <textarea rows={3} value={value||''} onChange={e=>onChange(e.target.value)} style={{...procInpS,resize:'none'}}/>
+      ):(
+        <input type={type} value={value||''} onChange={e=>onChange(e.target.value)} style={procInpS}/>
+      )}
+    </label>
+  );
+}
+
+function TabEvaluacion({proceso,setProceso}){
+  const completos=proceso.requisitos.filter(r=>r.estado==='Completo').length;
+  return(
+    <div style={{flex:1,overflowY:'auto',padding:'20px 24px'}} className="main-scroll">
+      <div style={procPanelS}>
+        <div style={procHeadS}>
+          <div><b>Lista de verificación</b><span style={{display:'block',fontSize:10,color:TX3,marginTop:2}}>{completos} de {proceso.requisitos.length} atendidos</span></div>
+          <select value={proceso.evaluacionResultado||''} onChange={e=>setProceso({...proceso,evaluacionResultado:e.target.value})} style={{...procInpS,width:190}}>
+            <option value="">Pendiente de evaluación</option>{['Completa','Observada','No corresponde'].map(x=><option key={x}>{x}</option>)}
+          </select>
+        </div>
+        <div>
+          {proceso.requisitos.map((r,i)=>(
+            <div key={r.id} style={{display:'grid',gridTemplateColumns:'36px minmax(0,1fr) 170px',alignItems:'center',gap:10,padding:'10px 14px',borderTop:i?`1px solid ${BR}`:'none'}}>
+              <div style={{width:24,height:24,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',background:r.estado==='Completo'?'#DCFCE7':'#F1F5F9',color:r.estado==='Completo'?'#15803D':TX3,fontSize:11,fontWeight:700}}>{r.estado==='Completo'?<IcoCheck size={11}/>:i+1}</div>
+              <div style={{fontSize:12,fontWeight:600,color:TX}}>{r.nombre}</div>
+              <select value={r.estado} onChange={e=>setProceso({...proceso,requisitos:proceso.requisitos.map(x=>x.id===r.id?{...x,estado:e.target.value}:x)})} style={procInpS}>
+                {['Pendiente','Completo','Observado','No aplica'].map(x=><option key={x}>{x}</option>)}
+              </select>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TabSubsanacion({proceso,setProceso}){
+  const set=k=>v=>setProceso({...proceso,[k]:v});
+  return(
+    <div style={{flex:1,overflowY:'auto',padding:'20px 24px'}} className="main-scroll">
+      <div style={procPanelS}>
+        <div style={procHeadS}>
+          <div><b>Control de subsanación</b><span style={{display:'block',fontSize:10,color:TX3,marginTop:2}}>Fechas y resultado de las observaciones comunicadas.</span></div>
+          {vencido(proceso.fechaLimiteSubsanacion)&&!proceso.fechaRespuestaSubsanacion&&<span style={{fontSize:10,fontWeight:800,color:'#B91C1C',background:'#FEF2F2',padding:'5px 8px',borderRadius:6}}>PLAZO VENCIDO</span>}
+        </div>
+        <div style={procGridS}>
+          <Field label="Fecha de observación" type="date" value={proceso.fechaObservacion} onChange={set('fechaObservacion')}/>
+          <Field label="Fecha de notificación" type="date" value={proceso.fechaNotificacion} onChange={set('fechaNotificacion')}/>
+          <Field label="Fecha límite" type="date" value={proceso.fechaLimiteSubsanacion} onChange={set('fechaLimiteSubsanacion')}/>
+          <Field label="Ampliación" type="select" opts={['No','Sí']} value={proceso.ampliacionSubsanacion} onChange={set('ampliacionSubsanacion')}/>
+          <Field label="Fecha de respuesta" type="date" value={proceso.fechaRespuestaSubsanacion} onChange={set('fechaRespuestaSubsanacion')}/>
+          <div style={{gridColumn:'1 / -1',fontSize:11,color:TX3}}>Los requisitos observados se administran en Evaluación inicial. El vencimiento genera alerta, no cambia automáticamente la decisión.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TabInternacional({caso,proceso,setProceso}){
+  const set=k=>v=>setProceso({...proceso,[k]:v});
+  return(
+    <div style={{flex:1,overflowY:'auto',padding:'20px 24px'}} className="main-scroll">
+      <div style={procPanelS}>
+        <div style={procHeadS}>
+          <div><b>Comunicación y seguimiento</b><span style={{display:'block',fontSize:10,color:TX3,marginTop:2}}>AC Perú {caso.acPeru||'sin definir'} · {caso.pais}</span></div>
+          {vencido(proceso.fechaLimite)&&<span style={{fontSize:10,fontWeight:800,color:'#B91C1C'}}>ACCIÓN VENCIDA</span>}
+        </div>
+        <div style={procGridS}>
+          <Field label="Destinatario" value={proceso.destinatarioGestion} onChange={set('destinatarioGestion')}/>
+          <Field label="Tipo de comunicación" type="select" opts={['','Solicitud de información','Remisión de solicitud','Respuesta a observación','Coordinación','Seguimiento']} value={proceso.tipoComunicacion} onChange={set('tipoComunicacion')}/>
+          <Field label="Fecha de envío" type="date" value={proceso.fechaEnvio} onChange={set('fechaEnvio')}/>
+          <Field label="Referencia SGD" value={proceso.referenciaSgd} onChange={set('referenciaSgd')}/>
+          <Field label="Respuesta esperada" type="date" value={proceso.respuestaEsperada} onChange={set('respuestaEsperada')}/>
+          <Field label="Fecha límite / próxima revisión" type="date" value={proceso.fechaLimite} onChange={set('fechaLimite')}/>
+          <div style={{gridColumn:'1 / -1'}}><Field label="Próxima acción" type="textarea" value={proceso.proximaAccion} onChange={set('proximaAccion')}/></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TabRetorno({caso,proceso,setProceso,onCasoChange}){
+  const set=k=>v=>setProceso({...proceso,[k]:v});
+  return(
+    <div style={{flex:1,overflowY:'auto',padding:'20px 24px'}} className="main-scroll">
+      <div style={procPanelS}>
+        <div style={procHeadS}>
+          <div><b>Gestión de retorno voluntario</b><span style={{display:'block',fontSize:10,color:TX3,marginTop:2}}>Registra entrevista, propuesta, compromisos y resultado.</span></div>
+          <select value={proceso.estadoRetornoVoluntario||'No iniciado'} onChange={e=>set('estadoRetornoVoluntario')(e.target.value)} style={{...procInpS,width:190}}>
+            {['No iniciado','Contacto pendiente','Entrevista programada','En negociación','Acuerdo alcanzado','Sin acuerdo','Retorno programado','Retorno confirmado'].map(x=><option key={x}>{x}</option>)}
+          </select>
+        </div>
+        <div style={procGridS}>
+          <Field label="Fecha de entrevista" type="date" value={caso.fechaEntrevista} onChange={v=>onCasoChange('fechaEntrevista',v)}/>
+          <Field label="Resultado de entrevista" type="select" opts={RESULTADO_ENT} value={caso.resultadoEntrevista} onChange={v=>onCasoChange('resultadoEntrevista',v)}/>
+          <Field label="Fecha prevista de retorno" type="date" value={proceso.fechaPrevistaRetorno} onChange={set('fechaPrevistaRetorno')}/>
+          <div style={{gridColumn:'1 / -1'}}><Field label="Propuesta de retorno" type="textarea" value={proceso.propuestaRetorno} onChange={set('propuestaRetorno')}/></div>
+          <div style={{gridColumn:'1 / -1'}}><Field label="Compromisos" type="textarea" value={proceso.compromisosRetorno} onChange={set('compromisosRetorno')}/></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── BITÁCORA ─────────────────────────────────────── */
+function TabBitacora({caso,addEntry}){
+  const [texto,setTexto]=useState('');
+  const entries=[...caso.bitacora].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  return(
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <div className="main-scroll" style={{flex:1,overflowY:'auto',padding:'20px 24px'}}>
+        {entries.length===0&&<div style={{textAlign:'center',padding:'48px 0',color:TX3,fontSize:13}}>Sin entradas registradas.</div>}
+        <div style={{position:'relative',paddingLeft:32}}>
+          <div style={{position:'absolute',left:10,top:4,bottom:4,width:2,background:BR,borderRadius:99}}></div>
+          {entries.map(b=>(
+            <div key={b.id} className="anim-u" style={{position:'relative',marginBottom:20}}>
+              <div style={{position:'absolute',left:-28,top:4,width:14,height:14,borderRadius:'50%',background:'#EEF2FF',border:'2px solid #A5B4FC'}}></div>
+              <div style={{background:SURF,borderRadius:10,border:`1px solid ${BR}`,padding:'12px 14px',boxShadow:'0 1px 4px rgba(0,0,0,.04)'}}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:6}}>
+                  <div style={{fontSize:11,fontWeight:700,color:TX2}}>{fmtFecha(b.fecha)}</div>
+                  {b.creadoPor&&<div style={{fontSize:10,color:TX3}}>{b.creadoPor}</div>}
+                </div>
+                <div style={{fontSize:12,color:TX,lineHeight:1.6}}>{b.texto}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{padding:'14px 24px',borderTop:`1px solid ${BR}`,background:SURF,flexShrink:0}}>
+        <div style={{display:'flex',gap:8,alignItems:'flex-end'}}>
+          <textarea rows={2} value={texto} onChange={e=>setTexto(e.target.value)} placeholder="Escribe una nueva gestión o seguimiento…" style={{flex:1,padding:'10px 12px',border:`1.5px solid ${BR}`,borderRadius:8,fontSize:13,color:TX,background:BG,outline:'none',resize:'none'}}/>
+          <button onClick={()=>{if(texto.trim()){addEntry(texto.trim());setTexto('')}}} style={{padding:'10px 18px',borderRadius:8,border:'none',background:BL,color:'#fff',fontSize:13,fontWeight:700,height:60}}>Agregar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── JUDICIAL ─────────────────────────────────────── */
+function JudicialStepper({stage}){
+  const idx=ETAPAS_JUD.indexOf(stage);
+  return(
+    <div style={{padding:'20px 24px 16px',borderBottom:`1px solid ${BR}`,background:'#FAFBFD'}}>
+      <div style={{fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Proceso judicial</div>
+      <div style={{position:'relative'}}>
+        <div style={{position:'absolute',top:14,left:14,right:14,height:2,background:BR}}></div>
+        <div style={{position:'absolute',top:14,left:14,height:2,background:BL,transition:'width .4s',width:idx<=0?0:`${Math.min(idx/(ETAPAS_JUD.length-1),1)*100}%`}}></div>
+        <div style={{display:'flex',justifyContent:'space-between',position:'relative'}}>
+          {ETAPAS_JUD.map((e,i)=>{
+            const done=i<idx,active=i===idx;
+            return(
+              <div key={e} style={{display:'flex',flexDirection:'column',alignItems:'center',flex:1,gap:6}}>
+                <div style={{width:28,height:28,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',border:`2px solid ${done||active?BL:BR}`,background:done?BL:active?'#EFF6FF':SURF,boxShadow:active?'0 0 0 4px #EFF6FF':'none'}}>
+                  {done?<span style={{color:'#fff',fontSize:11,fontWeight:700}}><IcoCheck size={11} c="#fff"/></span>:<span style={{width:8,height:8,borderRadius:'50%',background:active?BL:BR}}></span>}
+                </div>
+                <div style={{fontSize:9,fontWeight:active?700:500,color:active?BL:done?TX2:TX3,textAlign:'center',lineHeight:1.3,maxWidth:68}}>{e}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TabJudicial({caso,onChange,historial,onAdd}){
+  const [etapa,setEtapa]=useState('');const [fecha,setFecha]=useState(todayStr());const [desc,setDesc]=useState('');
+  const sorted=[...historial].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  return(
+    <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+      <JudicialStepper stage={caso.estadoJudicial||'Sin demanda'}/>
+      <div style={{padding:'14px 24px 16px',borderBottom:`1px solid ${BR}`,background:SURF}}>
+        <div style={{fontSize:11,fontWeight:800,color:N2,textTransform:'uppercase',marginBottom:10}}>Datos del proceso judicial</div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',borderTop:`1px solid ${BR}`,borderLeft:`1px solid ${BR}`,borderRadius:8,overflow:'hidden'}}>
+          <Row label="Fecha de demanda" value={caso.fechaDemanda} type="date" onChange={v=>onChange('fechaDemanda',v)}/>
+          <Row label="N.° expediente judicial" value={caso.numExpedienteJudicial} onChange={v=>onChange('numExpedienteJudicial',v)}/>
+          <Row label="Juzgado competente" value={caso.juzgado} span={2} onChange={v=>onChange('juzgado',v)}/>
+          <Row label="Sentencia 1ra instancia" value={caso.sentencia1ra} type="textarea" span={2} onChange={v=>onChange('sentencia1ra',v)}/>
+          <Row label="Sentencia 2da instancia" value={caso.sentencia2da} type="textarea" span={2} onChange={v=>onChange('sentencia2da',v)}/>
+        </div>
+      </div>
+      <div className="main-scroll" style={{flex:1,overflowY:'auto',padding:'20px 24px',display:'grid',gridTemplateColumns:'1fr 276px',gap:20}}>
+        <div style={{borderRight:`1px solid ${BR}`,paddingRight:20}}>
+          <p style={{fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Historial · {sorted.length} evento{sorted.length!==1?'s':''}</p>
+          {sorted.length===0&&<div style={{textAlign:'center',padding:'32px 0',color:TX3,fontSize:12}}>Sin eventos registrados.</div>}
+          {sorted.map((h,i)=>(
+            <div key={h.id} style={{display:'flex',gap:10,marginBottom:i===sorted.length-1?0:18,position:'relative'}}>
+              {i<sorted.length-1&&<div style={{position:'absolute',left:11,top:22,bottom:-18,width:2,background:BR}}></div>}
+              <div style={{width:24,height:24,borderRadius:'50%',background:BL,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,color:'#fff'}}><IcoScale size={11} c="#fff"/></div>
+              <div style={{flex:1,background:SURF,border:`1px solid ${BR}`,borderRadius:8,padding:'8px 12px'}}>
+                <span style={{fontSize:11,fontWeight:700,color:BL,display:'block',textTransform:'uppercase'}}>{h.etapa}</span>
+                <span style={{fontSize:11,color:TX2}}>{fmtFecha(h.fecha)}{h.creadoPor?` · ${h.creadoPor}`:''}</span>
+                {h.descripcion&&<p style={{fontSize:12,color:TX,lineHeight:1.55,margin:'6px 0 0'}}>{h.descripcion}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div>
+          <div style={{fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:14}}>Registrar evento</div>
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            <div>
+              <div style={{fontSize:10,fontWeight:700,color:TX3,textTransform:'uppercase',marginBottom:5}}>Nueva etapa *</div>
+              <select value={etapa} onChange={e=>setEtapa(e.target.value)} style={procInpS}>
+                <option value="">Seleccionar etapa…</option>
+                {ETAPAS_JUD.filter(e=>e!=='Sin demanda').map(e=><option key={e} value={e}>{e}</option>)}
+              </select>
+            </div>
+            <div>
+              <div style={{fontSize:10,fontWeight:700,color:TX3,textTransform:'uppercase',marginBottom:5}}>Fecha *</div>
+              <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} style={procInpS}/>
+            </div>
+            <div>
+              <div style={{fontSize:10,fontWeight:700,color:TX3,textTransform:'uppercase',marginBottom:5}}>Descripción</div>
+              <textarea rows={4} value={desc} onChange={e=>setDesc(e.target.value)} style={{...procInpS,resize:'none'}}/>
+            </div>
+            <button onClick={()=>{if(!etapa||!fecha)return;onAdd({id:`h${++_nid}`,etapa,fecha,descripcion:desc||null,creadoPor:'Usuario actual'});setEtapa('');setDesc('')}}
+              disabled={!etapa||!fecha} style={{padding:'9px 20px',borderRadius:8,border:'none',background:!etapa||!fecha?'#F1F5F9':N2,color:!etapa||!fecha?'#94A3B8':'#fff',fontSize:13,fontWeight:700,cursor:!etapa||!fecha?'not-allowed':'pointer'}}>Registrar evento</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── CIERRE ───────────────────────────────────────── */
+function TabCierre({caso,onChange}){
+  return(
+    <div className="main-scroll" style={{flex:1,overflowY:'auto'}}>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)'}}>
+        <Sec title="Resultado y cierre del caso"/>
+        <Row label="Fecha salida/cierre" value={caso.fechaSalida} type="date" onChange={v=>onChange('fechaSalida',v)}/>
+        <Row label="Retorno" value={caso.retorno} type="select" opts={RETORNO} onChange={v=>onChange('retorno',v)}/>
+        <Row label="Motivo de cierre" value={caso.motivoCierre} type="select" opts={MOTIVOS_CIERRE} span={2} onChange={v=>onChange('motivoCierre',v)}/>
+      </div>
+    </div>
+  );
+}
+
+/* ── RESUMEN ──────────────────────────────────────── */
+function TabResumen({caso}){
+  const b=estadoBadge(caso.estado);
+  const proceso=caso.procesoOperativo||{};
+  const reqPend=(proceso.requisitos||[]).filter(r=>r.estado==='Pendiente'||r.estado==='Observado').length;
+  const plazoVencido=vencido(proceso.fechaLimite);
+  const ultima=[...caso.bitacora].sort((a,b)=>b.fecha.localeCompare(a.fecha))[0];
+  return(
+    <div className="main-scroll" style={{flex:1,overflowY:'auto',padding:'20px 24px'}}>
+      <div style={{maxWidth:1080,margin:'0 auto',display:'grid',gridTemplateColumns:'minmax(0,1.35fr) minmax(280px,.65fr)',gap:16}}>
+        <div style={{gridColumn:'1 / -1',background:SURF,border:`1px solid ${BR}`,borderRadius:8,padding:'12px 16px'}}>
+          <div style={{fontSize:9,fontWeight:800,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:10}}>Avance del expediente</div>
+          <FaseStepper fase={proceso.faseOperativa||'Recepción'}/>
+        </div>
+        <div style={{gridColumn:'1 / -1',display:'grid',gridTemplateColumns:'1fr auto',gap:16,alignItems:'center',background:plazoVencido?'#FEF2F2':'#EFF6FF',border:`1px solid ${plazoVencido?'#FECACA':'#BFDBFE'}`,borderRadius:8,padding:'14px 16px'}}>
+          <div>
+            <div style={{fontSize:9,fontWeight:800,color:plazoVencido?'#B91C1C':BL,textTransform:'uppercase'}}>Próxima acción · {proceso.faseOperativa||'Recepción'}</div>
+            <div style={{fontSize:13,fontWeight:700,color:TX,marginTop:5}}>{proceso.proximaAccion||'Revisar y completar la evaluación inicial del expediente.'}</div>
+            <div style={{fontSize:10,color:TX3,marginTop:5}}>{reqPend} requisito{reqPend===1?'':'s'} pendiente{reqPend===1?'':'s'}</div>
+          </div>
+          <div style={{textAlign:'right'}}>
+            <div style={{fontSize:9,fontWeight:800,color:TX3,textTransform:'uppercase'}}>Fecha límite</div>
+            <div style={{fontSize:12,fontWeight:800,color:plazoVencido?'#B91C1C':N2,marginTop:5}}>{proceso.fechaLimite?fmtFecha(proceso.fechaLimite):'Sin fecha'}</div>
+          </div>
+        </div>
+        <div style={{background:SURF,border:`1px solid ${BR}`,borderRadius:8,overflow:'hidden'}}>
+          <div style={{padding:'13px 14px',background:'#F1F5F9',borderBottom:`1px solid ${BR}`,fontSize:10,fontWeight:800,color:N2,textTransform:'uppercase'}}>Datos vigentes del expediente</div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))'}}>
+            <SummaryValue label="Hoja de Trámite" value={caso.codigo}/>
+            <SummaryValue label="Estado" value={b.label}/>
+            <SummaryValue label="Tipo de solicitud" value={caso.tipoSolicitud}/>
+            <SummaryValue label="AC Perú" value={caso.acPeru}/>
+            <SummaryValue label="País" value={caso.pais}/>
+            <SummaryValue label="Etapa" value={caso.etapa}/>
+            <SummaryValue label="Profesional" value={caso.profesional}/>
+            <SummaryValue label="Fecha de ingreso" value={fmtFecha(caso.fechaIngreso)}/>
+          </div>
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <div style={{background:SURF,border:`1px solid ${BR}`,borderRadius:8,padding:16}}>
+            <div style={{fontSize:10,fontWeight:800,color:TX3,textTransform:'uppercase',marginBottom:10}}>NNA involucrados</div>
+            <div style={{fontSize:28,fontWeight:800,color:N2,lineHeight:1}}>{caso.nna?.length||0}</div>
+            <div style={{fontSize:11,color:TX3,marginTop:6}}>{nombreCaso(caso)}</div>
+          </div>
+          <div style={{background:SURF,border:`1px solid ${BR}`,borderRadius:8,padding:16}}>
+            <div style={{fontSize:10,fontWeight:800,color:TX3,textTransform:'uppercase',marginBottom:10}}>Última gestión</div>
+            <div style={{fontSize:12,color:ultima?TX:TX3,lineHeight:1.55}}>{ultima?.texto||'Sin gestiones registradas'}</div>
+            {ultima&&<div style={{fontSize:10,color:TX3,marginTop:8}}>{fmtFecha(ultima.fecha)}{ultima.creadoPor?` · ${ultima.creadoPor}`:''}</div>}
+          </div>
+        </div>
+        <div style={{gridColumn:'1 / -1',background:SURF,border:`1px solid ${BR}`,borderRadius:8,overflow:'hidden'}}>
+          <div style={{padding:'13px 14px',background:'#F1F5F9',borderBottom:`1px solid ${BR}`,fontSize:10,fontWeight:800,color:N2,textTransform:'uppercase'}}>Situación del caso</div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))'}}>
+            <SummaryValue label="Resultado de entrevista" value={caso.resultadoEntrevista}/>
+            <SummaryValue label="Retorno" value={caso.retorno}/>
+            <SummaryValue label="Proceso judicial" value={caso.estadoJudicial||'Sin demanda'}/>
+          </div>
+        </div>
+        <div style={{gridColumn:'1 / -1',background:SURF,border:`1px solid ${BR}`,borderRadius:8,overflow:'hidden'}}>
+          <div style={{padding:'13px 14px',background:'#F1F5F9',borderBottom:`1px solid ${BR}`,fontSize:10,fontWeight:800,color:N2,textTransform:'uppercase'}}>Línea de tiempo del expediente</div>
+          <div style={{padding:'16px 18px'}}>
+            {(()=>{
+              const eventos=[
+                ...caso.bitacora.map(b=>({fecha:b.fecha,tipo:'gestión',texto:b.texto,autor:b.creadoPor})),
+                ...(caso.historialJudicial||[]).map(h=>({fecha:h.fecha,tipo:'judicial',texto:`${h.etapa}${h.descripcion?': '+h.descripcion:''}`,autor:h.creadoPor})),
+              ].sort((a,b2)=>b2.fecha.localeCompare(a.fecha)).slice(0,5);
+              if(!eventos.length)return <div style={{fontSize:12,color:TX3,textAlign:'center',padding:'12px 0'}}>Sin eventos registrados.</div>;
+              return eventos.map((e,i)=>(
+                <div key={i} style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:i===eventos.length-1?0:12}}>
+                  <div style={{width:20,height:20,borderRadius:'50%',background:e.tipo==='judicial'?BL:'#EEF2FF',color:e.tipo==='judicial'?'#fff':'#6366F1',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:1}}>{e.tipo==='judicial'?<IcoScale size={10} c="#fff"/>:<IcoClock size={10}/>}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:11,color:TX,lineHeight:1.5}}>{e.texto}</div>
+                    <div style={{fontSize:9,color:TX3,marginTop:2}}>{fmtFecha(e.fecha)}{e.autor?` · ${e.autor}`:''} · <span style={{textTransform:'uppercase',fontWeight:700}}>{e.tipo}</span></div>
+                  </div>
+                </div>
+              ));
+            })()}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+function DashCard({title,children}){
+  return(
+    <div style={{background:'#fff',border:`1px solid ${BR}`,borderRadius:10,padding:16,display:'flex',flexDirection:'column',gap:12}}>
+      <h3 style={{fontSize:11,fontWeight:700,color:TX3,textTransform:'uppercase',letterSpacing:'.05em'}}>{title}</h3>
+      <div>{children}</div>
+    </div>
+  );
+}
+function ProgressBar({label,count,tot,color}){
+  const pct=tot>0?Math.round(count/tot*100):0;
+  return(
+    <div style={{marginBottom:10}}>
+      <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:4}}>
+        <span style={{color:TX,fontWeight:500}}>{label}</span><span style={{color:TX3}}>{count} ({pct}%)</span>
+      </div>
+      <div style={{height:6,background:'#F1F5F9',borderRadius:99,overflow:'hidden'}}><div style={{height:'100%',width:`${pct}%`,background:color,borderRadius:99}}></div></div>
+    </div>
+  );
+}
+function Dashboard({casos}){
+  const total=casos.length;
+  const enTramite=casos.filter(c=>c.estado==='Tramite').length;
+  const enPendiente=casos.filter(c=>c.estado==='Pendiente').length;
+  const archivados=casos.filter(c=>c.estado==='Archivado').length;
+  const retornos=casos.filter(c=>c.retorno==='SI').length;
+  const nnas=casos.flatMap(c=>c.nna||[]);
+  const hombres=nnas.filter(n=>n.sexo==='Hombre').length, mujeres=nnas.filter(n=>n.sexo==='Mujer').length;
+  const porPais=[...new Map(casos.map(c=>[c.pais,0])).keys()].map(p=>({p,n:casos.filter(c=>c.pais===p).length})).sort((a,b)=>b.n-a.n);
+  const maxPais=Math.max(...porPais.map(p=>p.n),1);
+  return(
+    <main className="main-scroll" style={{flex:1,overflowY:'auto',background:BG,padding:'22px 24px'}}>
+      <div style={{maxWidth:1200,margin:'0 auto',display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:16}}>
+        <div style={{gridColumn:'span 2',display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:12}}>
+          <div style={{background:N2,padding:'14px 18px',borderRadius:10,color:'#fff'}}><p style={{fontSize:10,opacity:.7,textTransform:'uppercase',fontWeight:600,marginBottom:4}}>Total Casos</p><p style={{fontSize:26,fontWeight:700}}>{total}</p></div>
+          <div style={{background:'#fff',border:'1px solid #BFDBFE',padding:'14px 18px',borderRadius:10}}><p style={{fontSize:10,color:'#1D4ED8',textTransform:'uppercase',fontWeight:600,marginBottom:4}}>En Trámite</p><p style={{fontSize:26,fontWeight:700,color:TX}}>{enTramite}</p></div>
+          <div style={{background:'#fff',border:'1px solid #FDE68A',padding:'14px 18px',borderRadius:10}}><p style={{fontSize:10,color:'#92400E',textTransform:'uppercase',fontWeight:600,marginBottom:4}}>Pendiente</p><p style={{fontSize:26,fontWeight:700,color:TX}}>{enPendiente}</p></div>
+          <div style={{background:'#fff',border:'1px solid #BBF7D0',padding:'14px 18px',borderRadius:10}}><p style={{fontSize:10,color:'#15803D',textTransform:'uppercase',fontWeight:600,marginBottom:4}}>Archivados</p><p style={{fontSize:26,fontWeight:700,color:TX}}>{archivados}</p></div>
+          <div style={{background:'#fff',border:`1px solid ${BR}`,padding:'14px 18px',borderRadius:10}}><p style={{fontSize:10,color:TX3,textTransform:'uppercase',fontWeight:600,marginBottom:4}}>Retornos Efectivos</p><p style={{fontSize:26,fontWeight:700,color:TX}}>{retornos}</p></div>
+        </div>
+        <DashCard title="NNA por sexo">
+          <div style={{display:'flex',gap:12,marginBottom:14}}>
+            <div style={{flex:1,background:'#EFF6FF',borderRadius:8,padding:'10px 12px',textAlign:'center'}}><p style={{fontSize:22,fontWeight:700,color:BL}}>{hombres}</p><p style={{fontSize:10,color:'#3B82F6',textTransform:'uppercase'}}>Hombres</p></div>
+            <div style={{flex:1,background:'#FDF2F8',borderRadius:8,padding:'10px 12px',textAlign:'center'}}><p style={{fontSize:22,fontWeight:700,color:'#DB2777'}}>{mujeres}</p><p style={{fontSize:10,color:'#EC4899',textTransform:'uppercase'}}>Mujeres</p></div>
+          </div>
+          <div style={{height:10,borderRadius:99,overflow:'hidden',display:'flex',gap:2}}>
+            {hombres>0&&<div style={{flex:hombres,background:'#3B82F6',borderRadius:99}}></div>}
+            {mujeres>0&&<div style={{flex:mujeres,background:'#EC4899',borderRadius:99}}></div>}
+          </div>
+        </DashCard>
+        <DashCard title="Estado del trámite">
+          <ProgressBar label="En trámite" count={enTramite} tot={total} color={BL}/>
+          <ProgressBar label="Pendiente" count={enPendiente} tot={total} color="#F59E0B"/>
+          <ProgressBar label="Archivados" count={archivados} tot={total} color="#10B981"/>
+        </DashCard>
+        <DashCard title="Casos por país">
+          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+            {porPais.map(({p,n})=>(
+              <div key={p} style={{display:'flex',alignItems:'center',gap:10}}>
+                <span style={{fontSize:11,color:TX2,fontWeight:600,width:110,flexShrink:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p}</span>
+                <div style={{flex:1,background:BG,borderRadius:99,height:16,overflow:'hidden'}}>
+                  <div style={{height:'100%',borderRadius:99,background:`linear-gradient(90deg,${BL},#7C3AED)`,width:`${Math.round(n/maxPais*100)}%`,display:'flex',alignItems:'center',justifyContent:'flex-end',paddingRight:6}}>
+                    <span style={{fontSize:9,color:'#fff',fontWeight:700}}>{n}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DashCard>
+        <DashCard title="Profesionales">
+          {PROFESIONALES.map(p=>{
+            const n=casos.filter(c=>c.profesional===p).length;
+            return(
+              <div key={p} style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+                <div style={{width:26,height:26,borderRadius:'50%',background:`linear-gradient(135deg,${BL},#7C3AED)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,color:'#fff'}}>{p[0]}</div>
+                <div style={{flex:1}}>
+                  <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}><span style={{fontSize:12,fontWeight:600,color:TX2}}>{p}</span><span style={{fontSize:11,color:TX3,fontWeight:700}}>{n}</span></div>
+                  <div style={{height:5,background:BG,borderRadius:99,overflow:'hidden'}}><div style={{height:'100%',borderRadius:99,background:`linear-gradient(90deg,${BL},#7C3AED)`,width:`${total>0?Math.round(n/total*100):0}%`}}></div></div>
+                </div>
+              </div>
+            );
+          })}
+        </DashCard>
+      </div>
+    </main>
+  );
+}
+
+/* ── APP ──────────────────────────────────────────── */
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{"navWidth":244}/*EDITMODE-END*/;
+
+function App(){
+  const [tweaks,setTweak]=useTweaks(TWEAK_DEFAULTS);
+  const [casos,setCasos]=useState(SAMPLE);
+  const [selected,setSelected]=useState(null);
+  const [view,setView]=useState('casos');
+  const [tab,setTab]=useState('resumen');
+  const [proceso,setProceso]=useState(null);
+
+  const openCase=c=>{setSelected(c);setTab('resumen');setProceso(c.procesoOperativo||{faseOperativa:'Recepción',requisitos:REQ_BASE});};
+  const closeCase=()=>{
+    if(selected&&proceso)setCasos(cs=>cs.map(c=>c.id===selected.id?{...c,procesoOperativo:proceso}:c));
+    setSelected(null);
+  };
+  const onChange=(field,val)=>setSelected(prev=>({...prev,[field]:val}));
+  const saveProceso=p=>{setProceso(p);setCasos(cs=>cs.map(c=>c.id===selected.id?{...c,procesoOperativo:p}:c));};
+  const addBit=texto=>{
+    const b={id:`b${++_nid}`,fecha:todayStr(),texto,creadoPor:'Usuario actual'};
+    setSelected(prev=>{const up={...prev,bitacora:[...prev.bitacora,b]};setCasos(cs=>cs.map(c=>c.id===up.id?up:c));return up;});
+  };
+  const addHj=entry=>{
+    setSelected(prev=>{
+      const up={...prev,estadoJudicial:entry.etapa,historialJudicial:[...(prev.historialJudicial||[]),entry]};
+      setCasos(cs=>cs.map(c=>c.id===up.id?up:c));return up;
+    });
+  };
+
+  const b=selected?estadoBadge(selected.estado):null;
+
+  return(
+    <div style={{display:'flex',flexDirection:'column',height:'100vh',background:BG}}>
+      <header style={{background:SURF,flexShrink:0,borderBottom:`1px solid ${BR}`,boxShadow:'0 1px 3px rgba(0,0,0,.05)'}}>
+        <div style={{padding:'0 20px',display:'flex',alignItems:'center',gap:12,height:56}}>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <div style={{width:32,height:32,borderRadius:9,background:BL,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,color:'#fff'}}><IcoGlobe size={15} c="#fff"/></div>
+            <div>
+              <div style={{fontSize:10,color:TX3,textTransform:'uppercase',letterSpacing:'.5px'}}>DGNNA — MIMP</div>
+              <div style={{fontSize:14,fontWeight:800,color:TX,letterSpacing:'-.01em'}}>Sustracción Internacional</div>
+            </div>
+          </div>
+          <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:8}}>
+            <button onClick={()=>{setSelected(null);setView(view==='casos'?'dashboard':'casos')}}
+              style={{display:'flex',alignItems:'center',gap:6,background:view==='dashboard'?BL:BG,color:view==='dashboard'?'#fff':TX2,border:`1px solid ${view==='dashboard'?BL:BR}`,borderRadius:8,padding:'7px 13px',fontSize:12,fontWeight:600}}>
+              {view==='casos'?<><IcoChart size={13}/> Estadísticas</>:<><IcoFile size={13}/> Registro</>}
+            </button>
+            {(selected||view==='dashboard')&&<button style={{display:'flex',alignItems:'center',gap:5,background:BL,color:'#fff',border:'none',borderRadius:8,padding:'7px 13px',fontSize:12,fontWeight:700}}><IcoPlus size={13}/> Nuevo caso</button>}
+          </div>
+        </div>
+      </header>
+
+      {view==='dashboard'?<Dashboard casos={casos}/>:
+       !selected?<Bandeja casos={casos} onOpen={openCase} onNuevo={()=>{}}/>:
+      (
+        <div className="anim-r" style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+          <div style={{background:SURF,padding:'12px 20px',borderBottom:`1px solid ${BR}`,display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0,gap:16}}>
+            <button onClick={closeCase} style={{width:34,height:34,borderRadius:8,border:`1px solid ${BR}`,background:SURF,color:TX2,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><IcoArrowL size={15}/></button>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:10,color:TX3,textTransform:'uppercase',letterSpacing:'.04em',fontWeight:700,marginBottom:2}}>Expediente · HT {selected.codigo}</div>
+              <div style={{fontSize:18,fontWeight:800,color:TX,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{nombreCaso(selected)}</div>
+              <div style={{display:'flex',gap:7,marginTop:4,fontSize:10,color:TX3,flexWrap:'wrap'}}>
+                <span>{selected.pais}</span><span>·</span><span>AC Perú {selected.acPeru||'sin definir'}</span><span>·</span><span>{selected.nna?.length||0} NNA</span><span>·</span><span>{selected.profesional}</span><span>·</span><b style={{color:BL}}>Fase: {proceso?.faseOperativa||'Recepción'}</b>
+              </div>
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
+              <select value={selected.estado} onChange={e=>onChange('estado',e.target.value)} style={{fontSize:12,padding:'5px 10px',borderRadius:99,background:b.bg,color:b.color,border:`1px solid ${b.border}`,fontWeight:700,outline:'none'}}>
+                <option value="Tramite">En trámite</option><option value="Pendiente">Pendiente</option><option value="Archivado">Archivado</option>
+              </select>
+              <button style={{width:32,height:32,borderRadius:8,border:'1px solid #FECACA',background:'#FEF2F2',display:'flex',alignItems:'center',justifyContent:'center',color:'#DC2626'}}><IcoTrash size={13} c="#DC2626"/></button>
+            </div>
+          </div>
+          <div style={{flex:1,display:'flex',overflow:'hidden',minHeight:0}}>
+            <ExpedienteNav active={tab} onChange={setTab}/>
+            <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minWidth:0,background:BG}}>
+              <div style={{padding:'12px 24px',background:SURF,borderBottom:`1px solid ${BR}`,flexShrink:0}}>
+                <div style={{fontSize:15,fontWeight:800,color:TX}}>{TITULOS[tab][0]}</div>
+                <div style={{fontSize:10,color:TX3,marginTop:3}}>{TITULOS[tab][1]}</div>
+              </div>
+              {tab==='resumen'&&<TabResumen caso={{...selected,procesoOperativo:proceso}}/>}
+              {tab==='datos'&&<TabDatos caso={selected} onChange={onChange}/>}
+              {tab==='personas'&&<TabPersonas caso={selected} onChange={onChange}/>}
+              {tab==='evaluacion'&&<TabEvaluacion proceso={proceso} setProceso={saveProceso}/>}
+              {tab==='subsanacion'&&<TabSubsanacion proceso={proceso} setProceso={saveProceso}/>}
+              {tab==='internacional'&&<TabInternacional caso={selected} proceso={proceso} setProceso={saveProceso}/>}
+              {tab==='retorno'&&<TabRetorno caso={selected} proceso={proceso} setProceso={saveProceso} onCasoChange={onChange}/>}
+              {tab==='bitacora'&&<TabBitacora caso={selected} addEntry={addBit}/>}
+              {tab==='judicial'&&<TabJudicial caso={selected} onChange={onChange} historial={selected.historialJudicial||[]} onAdd={addHj}/>}
+              {tab==='cierre'&&<TabCierre caso={selected} onChange={onChange}/>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <TweaksPanel>
+        <TweakSection title="Diseño">
+          <TweakSlider id="navWidth" label="Ancho nav expediente" min={200} max={320} step={10} value={tweaks.navWidth} onChange={v=>setTweak('navWidth',v)}/>
+        </TweakSection>
+      </TweaksPanel>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

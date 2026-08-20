@@ -248,12 +248,10 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                 cargos: apelacionData.cargos || '',
                 observaciones: apelacionData.observaciones || '',
                 revisorId: apelacionData.revisorId || null,
-                // Si ya tiene revisor asignado pero nunca se registró la fecha (datos
-                // antiguos/importados), se completa con la fecha actual para que el
-                // formulario sea válido sin obligar al usuario a tocar el campo
-                // deshabilitado "Fecha Asignación Revisor".
-                fechaAsignacionRevisor: apelacionData.revisorId
-                    ? (apelacionData.fechaRevisor ? new Date(apelacionData.fechaRevisor) : new Date())
+                // Se muestra la fecha tal como está en la BD; si está vacía
+                // (datos antiguos/importados), el campo queda vacío.
+                fechaAsignacionRevisor: apelacionData.fechaRevisor
+                    ? new Date(apelacionData.fechaRevisor)
                     : null,
             })
         } catch (error) {
@@ -287,6 +285,9 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                     ...pendingData,
                     fechaIngreso: pendingData.fechaIngreso.toISOString(),
                     fechaAsignacion: pendingData.fechaAsignacion.toISOString(),
+                    fechaRevisor: pendingData.fechaAsignacionRevisor
+                        ? new Date(pendingData.fechaAsignacionRevisor).toISOString()
+                        : null,
                     nnas: cleanedNnas,
                 }),
             })
@@ -1309,11 +1310,11 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                                                         if (!finalVal) {
                                                                             form.setValue('fechaAsignacionRevisor', null, { shouldValidate: true });
                                                                         } else if (finalVal === apelacion?.revisorId) {
-                                                                            // Mismo revisor: restaurar fecha original de la BD
+                                                                            // Mismo revisor: restaurar fecha original de la BD (o vacío si no hay)
                                                                             form.setValue('fechaAsignacionRevisor',
                                                                                 apelacion?.fechaRevisor
                                                                                     ? new Date(apelacion.fechaRevisor)
-                                                                                    : new Date(),
+                                                                                    : null,
                                                                                 { shouldValidate: true }
                                                                             );
                                                                         } else {

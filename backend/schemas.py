@@ -408,50 +408,50 @@ class CasoSustracionOut(BaseModel):
     id: str
     codigo: str
     # NNA
-    nnaNombre: str
-    nnaSexo: Optional[str]
-    nnaEdad: Optional[str]
-    nnaTipoEdad: Optional[str]
-    nnaFechaNac: Optional[str]
+    nnaNombre: Optional[str] = None
+    nnaSexo: Optional[str] = None
+    nnaEdad: Optional[str] = None
+    nnaTipoEdad: Optional[str] = None
+    nnaFechaNac: Optional[str] = None
     # Trámite
-    pais: str
-    etapa: Optional[str]
-    tipoSolicitud: Optional[str]
-    acPeru: Optional[str]
-    fechaIngreso: str
-    fechaSalida: Optional[str]
+    pais: Optional[str] = None
+    etapa: Optional[str] = None
+    tipoSolicitud: Optional[str] = None
+    acPeru: Optional[str] = None
+    fechaIngreso: Optional[str] = None
+    fechaSalida: Optional[str] = None
     # Solicitante
-    solicitanteNombre: Optional[str]
-    solicitanteSexo: Optional[str]
-    solicitanteTelefono: Optional[str]
-    solicitanteCorreo: Optional[str]
-    solicitanteDomicilio: Optional[str]
+    solicitanteNombre: Optional[str] = None
+    solicitanteSexo: Optional[str] = None
+    solicitanteTelefono: Optional[str] = None
+    solicitanteCorreo: Optional[str] = None
+    solicitanteDomicilio: Optional[str] = None
     # Requerido
-    requeridoNombre: Optional[str]
-    requeridoSexo: Optional[str]
-    requeridoTelefono: Optional[str]
-    requeridoCorreo: Optional[str]
-    requeridoDomicilio: Optional[str]
+    requeridoNombre: Optional[str] = None
+    requeridoSexo: Optional[str] = None
+    requeridoTelefono: Optional[str] = None
+    requeridoCorreo: Optional[str] = None
+    requeridoDomicilio: Optional[str] = None
     # Gestión
-    profesional: Optional[str]
-    estado: str
-    fechaEntrevista: Optional[str]
-    resultadoEntrevista: Optional[str]
+    profesional: Optional[str] = None
+    estado: Optional[str] = "Tramite"
+    fechaEntrevista: Optional[str] = None
+    resultadoEntrevista: Optional[str] = None
     # Proceso judicial
-    estadoJudicial: Optional[str]
-    fechaDemanda: Optional[str]
-    numExpedienteJudicial: Optional[str]
-    juzgado: Optional[str]
-    sentencia1ra: Optional[str]
-    sentencia2da: Optional[str]
-    casacion: Optional[str]
+    estadoJudicial: Optional[str] = None
+    fechaDemanda: Optional[str] = None
+    numExpedienteJudicial: Optional[str] = None
+    juzgado: Optional[str] = None
+    sentencia1ra: Optional[str] = None
+    sentencia2da: Optional[str] = None
+    casacion: Optional[str] = None
     # Cierre
-    motivoCierre: Optional[str]
-    retorno: Optional[str]
-    observaciones: Optional[str]
-    creadoPor: Optional[str]
-    createdAt: datetime
-    updatedAt: datetime
+    motivoCierre: Optional[str] = None
+    retorno: Optional[str] = None
+    observaciones: Optional[str] = None
+    creadoPor: Optional[str] = None
+    createdAt: Optional[datetime] = None
+    updatedAt: Optional[datetime] = None
     bitacora: List[BitacoraEntradaOut] = []
     historialJudicial: List[HistorialJudicialOut] = []
 

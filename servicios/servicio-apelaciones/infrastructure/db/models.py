@@ -125,6 +125,7 @@ class ApelacionModel(Base):
     cargos            = Column("cargos",            String(200), nullable=True)
     observaciones     = Column("observaciones",     String(1000), nullable=True)
     revisorId         = Column("revisorid",         String(36), ForeignKey("revisores.id"), nullable=True)
+    fechaRevisor      = Column("fecharevisor",      DateTime, nullable=True)
     createdAt         = Column("createdat",         DateTime, default=datetime.utcnow)
     updatedAt         = Column("updatedat",         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

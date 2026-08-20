@@ -539,6 +539,9 @@ export default function NuevaApelacionPage() {
                     ...pendingData,
                     fechaIngreso: pendingData.fechaIngreso.toISOString(),
                     fechaAsignacion: pendingData.fechaAsignacion.toISOString(),
+                    fechaRevisor: pendingData.fechaAsignacionRevisor
+                        ? new Date(pendingData.fechaAsignacionRevisor).toISOString()
+                        : null,
                     nnas: cleanedNnas,
                 }),
             })
@@ -577,6 +580,9 @@ export default function NuevaApelacionPage() {
                     abogadoId: abogadoIdVinculado, // Sobrescribir abogado!
                     fechaIngreso: pendingData.fechaIngreso.toISOString(),
                     fechaAsignacion: pendingData.fechaAsignacion.toISOString(),
+                    fechaRevisor: pendingData.fechaAsignacionRevisor
+                        ? new Date(pendingData.fechaAsignacionRevisor).toISOString()
+                        : null,
                     nnas: cleanedNnas,
                 }),
             })

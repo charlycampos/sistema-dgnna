@@ -1,8 +1,10 @@
+import json
 from typing import List, Optional
+from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
-from domain.entities.caso_sustracion import CasoSustracion, BitacoraSustracion, HistorialJudicial
+from domain.entities.caso_sustracion import CasoSustracion, BitacoraSustracion, HistorialJudicial, NnaSustracion, ProcesoOperativoSustracion
 from domain.ports.caso_repository import CasoRepository
-from infrastructure.db.models import CasoSustracionModel, BitacoraSustracionModel, HistorialJudicialModel
+from infrastructure.db.models import CasoSustracionModel, BitacoraSustracionModel, HistorialJudicialModel, NnaSustracionModel, ProcesoOperativoSustracionModel
 
 
 class CasoRepositoryImpl(CasoRepository):
@@ -14,6 +16,8 @@ class CasoRepositoryImpl(CasoRepository):
         return self._db.query(CasoSustracionModel).options(
             selectinload(CasoSustracionModel.bitacora),
             selectinload(CasoSustracionModel.historialJudicial),
+            selectinload(CasoSustracionModel.nna),
+            selectinload(CasoSustracionModel.procesoOperativo),
         )
 
     def listar(self, estado=None, profesional=None, pais=None, q=None) -> List[CasoSustracion]:
@@ -25,6 +29,11 @@ class CasoRepositoryImpl(CasoRepository):
             like = f"%{q}%"
             query = query.filter(
                 CasoSustracionModel.nnaNombre.ilike(like) |
+                CasoSustracionModel.nna.any(
+                    NnaSustracionModel.nombres.ilike(like) |
+                    NnaSustracionModel.primerApellido.ilike(like) |
+                    NnaSustracionModel.segundoApellido.ilike(like)
+                ) |
                 CasoSustracionModel.codigo.ilike(like)
             )
         return [self._to_entity(m) for m in query.order_by(CasoSustracionModel.createdAt.desc()).all()]
@@ -34,7 +43,7 @@ class CasoRepositoryImpl(CasoRepository):
         return self._to_entity(m) if m else None
 
     def obtener_por_codigo(self, codigo: str) -> Optional[CasoSustracion]:
-        m = self._db.query(CasoSustracionModel).filter(CasoSustracionModel.codigo == codigo).first()
+        m = self._db.query(CasoSustracionModel).filter(func.upper(CasoSustracionModel.codigo) == codigo.strip().upper()).first()
         return self._to_entity(m) if m else None
 
     def guardar(self, caso: CasoSustracion) -> CasoSustracion:
@@ -50,7 +59,8 @@ class CasoRepositoryImpl(CasoRepository):
 
     def actualizar(self, caso: CasoSustracion) -> CasoSustracion:
         model = self._db.query(CasoSustracionModel).filter(CasoSustracionModel.id == caso.id).first()
-        campos = [c for c in vars(caso) if not c.startswith('_') and c not in ('bitacora', 'historialJudicial', 'id')]
+        relaciones = ('bitacora', 'historialJudicial', 'nna', 'procesoOperativo', 'id')
+        campos = [c for c in vars(caso) if not c.startswith('_') and c not in relaciones]
         for campo in campos:
             if hasattr(model, campo):
                 setattr(model, campo, getattr(caso, campo))
@@ -68,6 +78,46 @@ class CasoRepositoryImpl(CasoRepository):
         self._db.delete(m)
         self._db.commit()
         return True
+
+    def agregar_nna(self, nna: NnaSustracion) -> NnaSustracion:
+        m = NnaSustracionModel(id=nna.id, casoId=nna.casoId, nombres=nna.nombres, primerApellido=nna.primerApellido,
+            segundoApellido=nna.segundoApellido, sexo=nna.sexo, fechaNacimiento=nna.fechaNacimiento,
+            edad=nna.edad, tipoEdad=nna.tipoEdad)
+        self._db.add(m); self._db.commit(); self._db.refresh(m)
+        return self._to_nna(m)
+
+    def actualizar_nna(self, nna: NnaSustracion) -> Optional[NnaSustracion]:
+        m = self._db.query(NnaSustracionModel).filter(NnaSustracionModel.id == nna.id, NnaSustracionModel.casoId == nna.casoId).first()
+        if not m: return None
+        for campo in ('nombres', 'primerApellido', 'segundoApellido', 'sexo', 'fechaNacimiento', 'edad', 'tipoEdad'):
+            setattr(m, campo, getattr(nna, campo))
+        self._db.commit(); self._db.refresh(m)
+        return self._to_nna(m)
+
+    def eliminar_nna(self, caso_id: str, nna_id: str) -> bool:
+        m = self._db.query(NnaSustracionModel).filter(NnaSustracionModel.id == nna_id, NnaSustracionModel.casoId == caso_id).first()
+        if not m: return False
+        self._db.delete(m); self._db.commit(); return True
+
+    def obtener_proceso(self, caso_id: str) -> Optional[ProcesoOperativoSustracion]:
+        model = self._db.query(ProcesoOperativoSustracionModel).filter(ProcesoOperativoSustracionModel.casoId == caso_id).first()
+        return self._to_proceso(model) if model else None
+
+    def guardar_proceso(self, proceso: ProcesoOperativoSustracion) -> ProcesoOperativoSustracion:
+        model = self._db.query(ProcesoOperativoSustracionModel).filter(ProcesoOperativoSustracionModel.casoId == proceso.casoId).first()
+        if not model:
+            model = ProcesoOperativoSustracionModel(casoId=proceso.casoId, requisitosJson="[]")
+            self._db.add(model)
+        for campo, valor in vars(proceso).items():
+            if campo in ("casoId", "requisitos", "updatedAt"):
+                continue
+            if hasattr(model, campo):
+                setattr(model, campo, valor)
+        model.requisitosJson = json.dumps(proceso.requisitos, ensure_ascii=False)
+        model.updatedAt = proceso.updatedAt
+        self._db.commit()
+        self._db.refresh(model)
+        return self._to_proceso(model)
 
     def agregar_bitacora(self, entrada: BitacoraSustracion) -> BitacoraSustracion:
         m = BitacoraSustracionModel(id=entrada.id, casoId=entrada.casoId, fecha=entrada.fecha, texto=entrada.texto, creadoPor=entrada.creadoPor)
@@ -105,7 +155,11 @@ class CasoRepositoryImpl(CasoRepository):
     @staticmethod
     def _to_entity(m: CasoSustracionModel) -> CasoSustracion:
         caso = CasoSustracion(
-            id=m.id, codigo=m.codigo, nnaNombre=m.nnaNombre, nnaSexo=m.nnaSexo,
+            id=m.id, codigo=m.codigo,
+            nnaNombres=m.nnaNombre or '',
+            nnaPrimerApellido=None,
+            nnaSegundoApellido=None,
+            nnaSexo=m.nnaSexo,
             nnaEdad=m.nnaEdad, nnaTipoEdad=m.nnaTipoEdad, nnaFechaNac=m.nnaFechaNac,
             pais=m.pais, etapa=m.etapa, tipoSolicitud=m.tipoSolicitud, acPeru=m.acPeru,
             fechaIngreso=m.fechaIngreso, fechaSalida=m.fechaSalida,
@@ -124,12 +178,43 @@ class CasoRepositoryImpl(CasoRepository):
         )
         caso.bitacora = [BitacoraSustracion(id=b.id, casoId=b.casoId, fecha=b.fecha, texto=b.texto, creadoPor=b.creadoPor, createdAt=b.createdAt) for b in m.bitacora]
         caso.historialJudicial = [HistorialJudicial(id=h.id, casoId=h.casoId, etapa=h.etapa, fecha=h.fecha, descripcion=h.descripcion, creadoPor=h.creadoPor, createdAt=h.createdAt) for h in m.historialJudicial]
+        caso.nna = [CasoRepositoryImpl._to_nna(n) for n in m.nna]
+        caso.procesoOperativo = CasoRepositoryImpl._to_proceso(m.procesoOperativo) if m.procesoOperativo else None
         return caso
+
+    @staticmethod
+    def _to_nna(m: NnaSustracionModel) -> NnaSustracion:
+        return NnaSustracion(id=m.id, casoId=m.casoId, nombres=m.nombres, primerApellido=m.primerApellido,
+            segundoApellido=m.segundoApellido, sexo=m.sexo, fechaNacimiento=m.fechaNacimiento,
+            edad=m.edad, tipoEdad=m.tipoEdad, createdAt=m.createdAt)
+
+    @staticmethod
+    def _to_proceso(m: ProcesoOperativoSustracionModel) -> ProcesoOperativoSustracion:
+        campos = [
+            "faseOperativa", "evaluacionResultado", "fechaObservacion", "fechaNotificacion",
+            "fechaLimiteSubsanacion", "ampliacionSubsanacion", "fechaRespuestaSubsanacion",
+            "resultadoSubsanacion", "detalleSubsanacion", "destinatarioGestion", "tipoComunicacion",
+            "fechaEnvio", "referenciaSgd", "respuestaEsperada", "proximaAccion", "fechaLimite",
+            "respuestaRecibida", "estadoCooperacion", "estadoRetornoVoluntario", "propuestaRetorno",
+            "fechaPrevistaRetorno", "compromisosRetorno", "fechaAcuerdo", "fechaLimitePasajes",
+            "pasajesRecibidos", "fechaRetornoEfectivo", "updatedAt",
+        ]
+        try:
+            requisitos = json.loads(m.requisitosJson or "[]")
+        except (TypeError, ValueError):
+            requisitos = []
+        return ProcesoOperativoSustracion(
+            casoId=m.casoId,
+            requisitos=requisitos,
+            **{campo: getattr(m, campo) for campo in campos},
+        )
 
     @staticmethod
     def _to_model(e: CasoSustracion) -> CasoSustracionModel:
         return CasoSustracionModel(
-            id=e.id, codigo=e.codigo, nnaNombre=e.nnaNombre, nnaSexo=e.nnaSexo,
+            id=e.id, codigo=e.codigo,
+            nnaNombre=" ".join(filter(None, (e.nnaNombres, e.nnaPrimerApellido, e.nnaSegundoApellido))),
+            nnaSexo=e.nnaSexo,
             nnaEdad=e.nnaEdad, nnaTipoEdad=e.nnaTipoEdad, nnaFechaNac=e.nnaFechaNac,
             pais=e.pais, etapa=e.etapa, tipoSolicitud=e.tipoSolicitud, acPeru=e.acPeru,
             fechaIngreso=e.fechaIngreso, fechaSalida=e.fechaSalida,

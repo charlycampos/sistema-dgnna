@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:8000'
 const COOKIE_NAME = 'dgnna_session'
-const MAX_AGE = 60 * 15 // 15 minutos (se renueva en cada request — ver middleware.ts)
+const MAX_AGE = 60 * 60 * 8 // 8 horas de sesión activa (jornada laboral)
 
 export async function POST(request: Request) {
   try {

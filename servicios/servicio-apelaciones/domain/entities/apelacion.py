@@ -37,6 +37,7 @@ class Apelacion:
     cargos:            Optional[str] = None
     observaciones:     Optional[str] = None
     revisorId:         Optional[str] = None
+    fechaRevisor:      Optional[datetime] = None
     apelantes:         list = field(default_factory=list)
     nnas:              list = field(default_factory=list)
     createdAt:         datetime = field(default_factory=datetime.utcnow)

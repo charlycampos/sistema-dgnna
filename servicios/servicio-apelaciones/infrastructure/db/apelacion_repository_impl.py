@@ -68,6 +68,7 @@ class ApelacionRepositoryImpl(ApelacionRepository):
         model.cargos            = apelacion.cargos
         model.observaciones     = apelacion.observaciones
         model.revisorId         = apelacion.revisorId
+        model.fechaRevisor      = apelacion.fechaRevisor
         model.updatedAt         = datetime.utcnow()
 
         # Update child tables by clearing and adding new ones
@@ -164,6 +165,7 @@ class ApelacionRepositoryImpl(ApelacionRepository):
             cargos            = m.cargos,
             observaciones     = m.observaciones,
             revisorId         = m.revisorId,
+            fechaRevisor      = m.fechaRevisor,
             apelantes         = apelantes_list,
             nnas              = nnas_list,
             createdAt         = m.createdAt,
@@ -195,6 +197,8 @@ class ApelacionRepositoryImpl(ApelacionRepository):
             documentoAtencion = e.documentoAtencion,
             cargos            = e.cargos,
             observaciones     = e.observaciones,
+            revisorId         = e.revisorId,
+            fechaRevisor      = e.fechaRevisor,
         )
         # Map child lists
         model.apelantes = [

@@ -6,7 +6,7 @@ const SECRET = new TextEncoder().encode(
   process.env.SESSION_SECRET ?? 'dgnna-sistema-dgnna-secret-2026'
 )
 const COOKIE_NAME = 'dgnna_session'
-const SESSION_MINUTES = 15 // inactividad máxima antes de cerrar sesión
+const SESSION_MINUTES = 480 // 8 horas de sesión activa (jornada laboral)
 
 // Rutas que NO requieren autenticación
 const RUTAS_PUBLICAS = ['/login']

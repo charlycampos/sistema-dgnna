@@ -37,7 +37,7 @@ export function descargarExcelApelaciones(apelaciones: ApelacionConRelaciones[])
         'Estado': a.estado,
         'Puntos Total': a.puntosTotal,
         'Revisado por': a.revisor?.nombre || '',
-        'Fecha Revisor': a.fechaRevisor ? format(new Date(a.fechaRevisor), 'dd/MM/yyyy') : '',
+        'Fecha Asignación Revisor': a.fechaRevisor ? format(new Date(a.fechaRevisor), 'dd/MM/yyyy') : '',
         'N° Resolución': a.numeroResolucion || '',
         'Documento de Atención': a.documentoAtencion || '',
         'Cargos': a.cargos || '',
@@ -70,7 +70,7 @@ export function descargarExcelApelaciones(apelaciones: ApelacionConRelaciones[])
         { wch: 12 },  // Estado
         { wch: 12 },  // Puntos Total
         { wch: 22 },  // Revisado por
-        { wch: 15 },  // Fecha Revisor
+        { wch: 20 },  // Fecha Asignación Revisor
         { wch: 28 },  // N° Resolución
         { wch: 30 },  // Documento de Atención
         { wch: 12 },  // Cargos
@@ -87,7 +87,21 @@ export function descargarExcelApelaciones(apelaciones: ApelacionConRelaciones[])
 
 interface SustracionExportRow {
     codigo: string
-    nnaNombre: string
+    nnaNombres?: string
+    nnaPrimerApellido?: string
+    nnaSegundoApellido?: string | null
+    nnaNombre?: string
+    nnaSexo?: string | null
+    nnaFechaNac?: string | null
+    nna?: Array<{
+        nombres: string
+        primerApellido: string
+        segundoApellido?: string | null
+        sexo?: string | null
+        fechaNacimiento?: string | null
+        edad?: string | null
+        tipoEdad?: string | null
+    }>
     nnaEdad?: string | null
     nnaTipoEdad?: string | null
     pais: string
@@ -95,48 +109,105 @@ interface SustracionExportRow {
     fechaIngreso?: string | null
     estado: string
     etapa?: string | null
+    tipoSolicitud?: string | null
+    acPeru?: string | null
     solicitanteNombre?: string | null
+    solicitanteSexo?: string | null
     requeridoNombre?: string | null
+    requeridoSexo?: string | null
+    fechaEntrevista?: string | null
     estadoJudicial?: string | null
     fechaDemanda?: string | null
     numExpedienteJudicial?: string | null
     juzgado?: string | null
     resultadoEntrevista?: string | null
+    sentencia1ra?: string | null
+    sentencia2da?: string | null
+    casacion?: string | null
+    fechaSalida?: string | null
+    motivoCierre?: string | null
     retorno?: string | null
     observaciones?: string | null
+    bitacora?: Array<{ fecha: string; texto: string }>
 }
 
 export function descargarExcelSustracion(casos: SustracionExportRow[]) {
-    const datos = casos.map((c, index) => ({
-        'N°': index + 1,
-        'Código/HT': c.codigo,
-        'NNA Nombre': c.nnaNombre,
-        'NNA Edad': `${c.nnaEdad || ''} ${c.nnaTipoEdad || ''}`,
-        'País': c.pais,
-        'Profesional': c.profesional || '—',
-        'Fecha Ingreso': c.fechaIngreso ? format(new Date(c.fechaIngreso), 'dd/MM/yyyy') : '',
-        'Estado': c.estado,
-        'Etapa': c.etapa || '—',
-        'Solicitante': c.solicitanteNombre || '',
-        'Requerido': c.requeridoNombre || '',
-        'Etapa Judicial': c.estadoJudicial || '—',
-        'F. Demanda': c.fechaDemanda || '',
-        'Exp. Judicial': c.numExpedienteJudicial || '',
-        'Juzgado': c.juzgado || '',
-        'Resultado Entrevista': c.resultadoEntrevista || '—',
-        'Retorno': c.retorno || '—',
-        'Observaciones': c.observaciones || ''
-    }));
+    const fechaEs = (value?: string | null) => {
+        if (!value) return ''
+        const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+        if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`
+        const parsed = new Date(value)
+        return Number.isNaN(parsed.getTime()) ? value : format(parsed, 'dd/MM/yyyy')
+    }
+
+    const filas = casos.flatMap(c => {
+        const nnas = c.nna?.length ? c.nna : [{
+            nombres: c.nnaNombres || c.nnaNombre || '',
+            primerApellido: c.nnaPrimerApellido || '',
+            segundoApellido: c.nnaSegundoApellido,
+            sexo: c.nnaSexo,
+            fechaNacimiento: c.nnaFechaNac,
+            edad: c.nnaEdad,
+            tipoEdad: c.nnaTipoEdad,
+        }]
+        const ultimaGestion = [...(c.bitacora || [])]
+            .filter(b => !b.texto.startsWith('__JUD__:'))
+            .sort((a, b) => a.fecha.localeCompare(b.fecha))
+            .at(-1)
+
+        return nnas.map((nna, nnaIndex) => ({
+            'Hoja de Trámite': c.codigo,
+            'NNA N.°': nnaIndex + 1,
+            'N.° de NNA': nnas.length,
+            'Nombres': nna.nombres || '',
+            'Primer Apellido': nna.primerApellido || '',
+            'Segundo Apellido': nna.segundoApellido || '',
+            'NNA Nombre Completo': [nna.nombres, nna.primerApellido, nna.segundoApellido].filter(Boolean).join(' '),
+            'Sexo NNA': nna.sexo || '',
+            'Fecha Nacimiento': fechaEs(nna.fechaNacimiento),
+            'Edad': nna.edad || '',
+            'Tipo Edad': nna.tipoEdad || '',
+            'Estado Solicitud': c.estado,
+            'Profesional': c.profesional || '',
+            'Fecha Ingreso Solicitud': fechaEs(c.fechaIngreso),
+            'Etapa': c.etapa || '',
+            'Tipo de Solicitud': c.tipoSolicitud || '',
+            'AC Perú': c.acPeru || '',
+            'País': c.pais,
+            'Nombre del Solicitante': c.solicitanteNombre || '',
+            'Sexo Solicitante': c.solicitanteSexo || '',
+            'Nombre de la Persona Requerida': c.requeridoNombre || '',
+            'Sexo Persona Requerida': c.requeridoSexo || '',
+            'Fecha Entrevista': fechaEs(c.fechaEntrevista),
+            'Resultado Entrevista': c.resultadoEntrevista || '',
+            'Última Gestión': ultimaGestion ? `${fechaEs(ultimaGestion.fecha)} - ${ultimaGestion.texto}` : '',
+            'Estado Judicial': c.estadoJudicial || '',
+            'Fecha Demanda': fechaEs(c.fechaDemanda),
+            'N.° Expediente Judicial': c.numExpedienteJudicial || '',
+            'Juzgado': c.juzgado || '',
+            'Sentencia 1ra Instancia': c.sentencia1ra || '',
+            'Sentencia 2da Instancia': c.sentencia2da || '',
+            'Casación': c.casacion || '',
+            'Fecha Cierre': fechaEs(c.fechaSalida),
+            'Retorno': c.retorno || '',
+            'Motivo de Cierre': c.motivoCierre || '',
+            'Observaciones': c.observaciones || '',
+        }))
+    })
+
+    const datos = filas.map((fila, index) => ({ 'N.°': index + 1, ...fila }))
 
     const ws = XLSX.utils.json_to_sheet(datos);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Sustracion_Internacional');
 
     ws['!cols'] = [
-        { wch: 5 }, { wch: 15 }, { wch: 35 }, { wch: 12 }, { wch: 15 },
-        { wch: 15 }, { wch: 14 }, { wch: 12 }, { wch: 15 }, { wch: 30 },
-        { wch: 30 }, { wch: 25 }, { wch: 14 }, { wch: 20 }, { wch: 25 },
-        { wch: 20 }, { wch: 10 }, { wch: 40 }
+        { wch:5 }, { wch:20 }, { wch:8 }, { wch:10 }, { wch:22 }, { wch:18 }, { wch:18 },
+        { wch:38 }, { wch:12 }, { wch:16 }, { wch:8 }, { wch:12 }, { wch:16 }, { wch:18 },
+        { wch:20 }, { wch:16 }, { wch:20 }, { wch:14 }, { wch:18 }, { wch:32 }, { wch:16 },
+        { wch:34 }, { wch:18 }, { wch:16 }, { wch:22 }, { wch:60 }, { wch:22 }, { wch:16 },
+        { wch:24 }, { wch:32 }, { wch:32 }, { wch:32 }, { wch:28 }, { wch:16 }, { wch:14 },
+        { wch:32 }, { wch:50 },
     ];
 
     const hoy = new Date();

@@ -26,6 +26,7 @@ SERVICES = {
     "transparencia":   os.getenv("TRANSPARENCIA_SERVICE_URL",   "http://localhost:8006"),
     "poi-pp117":       os.getenv("POI_PP117_SERVICE_URL",       "http://localhost:8007"),
     "mapa":            os.getenv("MAPA_SERVICE_URL",            "http://localhost:8008"),
+    "prevenir-proteger": os.getenv("PREVENIR_PROTEGER_SERVICE_URL", "http://localhost:8010"),
 }
 
 SECRET_KEY = os.getenv("SESSION_SECRET", "dgnna-sistema-dgnna-secret-2026")
@@ -54,6 +55,7 @@ ROUTE_MAP = [
     ("/api/transparencia",  "transparencia"),
     ("/api/poi-pp117",      "poi-pp117"),
     ("/api/mapa",           "mapa"),
+    ("/api/prevenir-proteger", "prevenir-proteger"),
 ]
 
 app = FastAPI(

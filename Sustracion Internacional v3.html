@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sustracción Internacional — DGNNA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'DM Sans',system-ui,sans-serif;background:#F9FAFB;color:#0F172A;-webkit-font-smoothing:antialiased}
+.mono{font-family:'DM Mono',monospace}
+.sc::-webkit-scrollbar{width:7px;height:7px}
+.sc::-webkit-scrollbar-track{background:transparent}
+.sc::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:99px}
+@keyframes fadeU{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideR{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
+.au{animation:fadeU .2s ease-out both}.ar{animation:slideR .18s ease-out both}
+button{cursor:pointer;font-family:inherit}input,select,textarea{font-family:inherit}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useMemo,useEffect}=React;
+
+/* ══ TOKENS ══ */
+const N2='#1E3A5F', BL='#2563EB', SURF='#FFF', BG='#F9FAFB', BR='#E2E8F0';
+const TX='#0F172A', TX2='#475569', TX3='#94A3B8';
+const GN='#16A34A', GBG='#F0FDF4', GBR='#BBF7D0';
+const AM='#D97706', ABG='#FFFBEB', ABR='#FDE68A';
+const RD='#DC2626', RBG='#FEF2F2', RBR='#FECACA';
+
+/* ══ CATÁLOGOS ══ */
+const PAISES=['Alemania','Argentina','Australia','Bolivia','Brasil','Canadá','Chile','Colombia','Ecuador','España','Estados Unidos','Francia','Italia','México','Países Bajos','Paraguay','Perú','Portugal','Reino Unido','Uruguay','Venezuela','Otro'];
+const PROFS=['EMMA','JANNY','CECILIA'];
+const SEXOS=['Hombre','Mujer'];
+const TIPO_SOL=['Restitución','Régimen de Visitas'];
+const AC_ROL=['Requerida','Requirente'];
+const REQS=[
+  'Solicitud formal de restitución o régimen de visitas identificada',
+  'Identidad y datos del NNA acreditados',
+  'Residencia habitual acreditada en el Estado requirente',
+  'Derecho de custodia o visitas legalmente ejercido',
+  'Traslado o retención ilícita identificado',
+  'Documentación sustentatoria y partidas de nacimiento',
+  'Traducciones oficiales al español (si corresponde)',
+  'Información para ubicación del NNA y del presunto sustractor',
+];
+const FERIADOS=['2026-01-01','2026-04-02','2026-04-03','2026-05-01','2026-06-07','2026-06-29','2026-07-28','2026-07-29','2026-08-06','2026-08-30','2026-10-08','2026-11-01','2026-12-08','2026-12-25'];
+const MOTIVOS={
+  retornoVoluntario:'Retorno voluntario concretado',
+  retornoSentencia:'Retorno por ejecución de sentencia judicial',
+  acuerdo:'Acuerdo extrajudicial entre las partes',
+  infundada:'Sentencia judicial infundada',
+  rechazoAC:'AC rechaza solicitud (Violencia familiar / Art. 12 / 13 / 27)',
+  sinUbicar:'Transcurso de plazo sin ubicar al NNA',
+  desistimiento:'Desistimiento expreso de la parte solicitante',
+};
+
+/* ══ HELPERS ══ */
+const hoy=()=>new Date().toISOString().split('T')[0];
+const fmt=f=>{if(!f)return'—';const[y,m,d]=f.split('-');const M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];return`${+d} ${M[+m-1]} ${y}`};
+const nomNna=n=>[n.nombres,n.primerApellido,n.segundoApellido].filter(Boolean).join(' ');
+const nomCaso=c=>(c.nna||[]).map(nomNna).join(' / ')||'Sin NNA';
+const dias=f=>f?Math.floor((Date.now()-new Date(f+'T00:00:00'))/864e5):0;
+const edadA=(nac,ref)=>{if(!nac)return null;const a=new Date(ref||hoy()),b=new Date(nac);let e=a.getFullYear()-b.getFullYear();const m=a.getMonth()-b.getMonth();if(m<0||(m===0&&a.getDate()<b.getDate()))e--;return e};
+function habiles(desde,n){
+  if(!desde)return null;
+  let d=new Date(desde+'T00:00:00'),c=0;
+  while(c<n){d.setDate(d.getDate()+1);const dw=d.getDay(),k=d.toISOString().split('T')[0];if(dw!==0&&dw!==6&&!FERIADOS.includes(k))c++}
+  return d.toISOString().split('T')[0];
+}
+const masMes=f=>{if(!f)return null;const d=new Date(f+'T00:00:00');d.setMonth(d.getMonth()+1);return d.toISOString().split('T')[0]};
+const vence=f=>Boolean(f&&f<hoy());
+const restan=f=>f?Math.ceil((new Date(f+'T00:00:00')-new Date(hoy()+'T00:00:00'))/864e5):null;
+
+/* ══ MOTOR DE REGLAS ══ */
+function evaluar(c){
+  const e1=c.etapa1||{},e2=c.etapa2||{},e3=c.etapa3||{},e4=c.etapa4||{},e5=c.etapa5||{};
+  const reqs=e1.requisitos||REQS.map(()=>'Pendiente');
+  const conformes=reqs.filter(r=>r==='Conforme'||r==='No aplica').length;
+  const edades=(c.nna||[]).map(n=>edadA(n.fechaNacimiento,c.fechaIngreso)).filter(x=>x!==null);
+  const edadOk=edades.length>0&&edades.every(x=>x<16);
+  const edadFalla=edades.some(x=>x>=16);
+  const reqsOk=conformes===8;
+  const dictamen=e1.dictamen||(reqsOk&&edadOk?null:null); // manual o derivado
+  const admisible=reqsOk&&edadOk;
+
+  const rolDef=Boolean(c.acPeru);
+  const necesitaSubs=e1.dictamen==='Observado';
+  const subsPlazo=e2.prorroga?10:5;
+  const subsVence=e2.fechaNotificacion?habiles(e2.fechaNotificacion,subsPlazo):null;
+  const subsVencido=vence(subsVence)&&!e2.fechaRespuesta;
+  const subsOk=e2.resultado==='Subsanó';
+  const subsFallo=e2.resultado==='No subsanó'||subsVencido;
+
+  // Etapa 1 cerrada si hay dictamen
+  const e1Lista=Boolean(e1.dictamen);
+  // Etapa 2 aplica sólo si observado
+  const e2Aplica=necesitaSubs;
+  const e2Lista=!e2Aplica||subsOk||subsFallo;
+  // Etapa 3 desbloqueada si admisible (dictamen Completo) o subsanó
+  const e3Abierta=e1.dictamen==='Completo'||(e2Aplica&&subsOk);
+
+  const esRequerida=c.acPeru==='Requerida', esRequirente=c.acPeru==='Requirente';
+  const entrevistaHecha=Boolean(e3.resultadoEntrevista);
+  const acepta=e3.resultadoEntrevista==='Acepta retorno voluntario';
+  const rechaza=e3.resultadoEntrevista==='Rechaza retorno'||e3.resultadoEntrevista==='No asiste';
+  const plazoPasajes=acepta&&e3.fechaAcuerdo?masMes(e3.fechaAcuerdo):null;
+  const pasajesVencidos=vence(plazoPasajes)&&!e3.pasajesRecibidos;
+  const retornoConcretado=Boolean(e3.fechaRetornoEfectivo);
+  const e3Lista=esRequerida?(retornoConcretado||rechaza):esRequirente?Boolean(e3.respuestaRecibida):false;
+
+  // Etapa 4: bloqueada si retorno voluntario aceptado y no vencido; abierta si rechaza/no asiste o requirente con cooperación agotada
+  const judBloqueadaPorAcuerdo=acepta&&!pasajesVencidos&&!rechaza;
+  const e4Abierta=e3Abierta&&!judBloqueadaPorAcuerdo&&(rechaza||pasajesVencidos||(esRequirente&&Boolean(e3.respuestaRecibida)));
+  const sentencia=e4.sentidoSentencia;
+  const fundada=sentencia==='Fundada', infundada=sentencia==='Infundada';
+  const ejecutada=Boolean(e4.fechaEjecucion);
+  const e4Lista=infundada||ejecutada;
+
+  // Etapa 5: motivos permitidos según camino
+  const motivos=[];
+  if(retornoConcretado)motivos.push('retornoVoluntario');
+  if(ejecutada)motivos.push('retornoSentencia');
+  if(acepta||e3.acuerdoExtrajudicial)motivos.push('acuerdo');
+  if(infundada)motivos.push('infundada');
+  if(subsFallo||e1.dictamen==='Inadmisible'||edadFalla)motivos.push('rechazoAC');
+  motivos.push('sinUbicar','desistimiento');
+  const e5Abierta=e1Lista&&(retornoConcretado||ejecutada||infundada||subsFallo||e1.dictamen==='Inadmisible'||acepta||e3.acuerdoExtrajudicial||e5.motivo);
+  const cerrado=Boolean(e5.fechaCierre&&e5.motivo);
+
+  const etapas=[
+    {id:'e1',n:1,label:'Evaluación inicial',estado:cerrado?'ok':e1Lista?'ok':'activa',nota:e1.dictamen||`${conformes}/8 conformes`},
+    {id:'e2',n:2,label:'Subsanación',estado:!e2Aplica?'na':subsOk?'ok':subsFallo?'falla':'activa',nota:!e2Aplica?'No aplica — dictamen no observado':subsVence?`Vence ${fmt(subsVence)}`:'Sin notificar'},
+    {id:'e3',n:3,label:esRequerida?'Retorno voluntario':esRequirente?'Cooperación internacional':'Retorno / Cooperación',estado:!e3Abierta?'lock':e3Lista?'ok':'activa',
+      nota:!e3Abierta?(rolDef?'Requiere dictamen o subsanación':'Requiere definir rol AC'):esRequerida?(e3.resultadoEntrevista||'Sin entrevista'):(e3.respuestaRecibida?'Con respuesta':'En seguimiento')},
+    {id:'e4',n:4,label:'Proceso judicial',estado:judBloqueadaPorAcuerdo?'lock':!e4Abierta?'lock':e4Lista?'ok':'activa',
+      nota:judBloqueadaPorAcuerdo?'Suspendida por acuerdo vigente':!e4Abierta?'Requiere vía administrativa agotada':sentencia||(e4.fechaDemanda?'En proceso':'Sin demanda')},
+    {id:'e5',n:5,label:'Cierre',estado:cerrado?'ok':!e5Abierta?'lock':'activa',nota:cerrado?MOTIVOS[e5.motivo]:!e5Abierta?'Requiere un resultado del expediente':'Pendiente de registrar'},
+  ];
+
+  const alertas=[];
+  if(edadFalla)alertas.push({t:'error',m:`Un NNA tiene 16 años o más a la fecha de ingreso — el Convenio de La Haya no resulta aplicable.`});
+  if(!rolDef)alertas.push({t:'warn',m:'Falta definir el rol de la AC Perú (Requerida / Requirente) para habilitar la Etapa 3.'});
+  if(subsVencido)alertas.push({t:'error',m:`Plazo de subsanación vencido el ${fmt(subsVence)} sin respuesta del solicitante.`});
+  else if(subsVence&&!e2.fechaRespuesta&&restan(subsVence)<=2)alertas.push({t:'warn',m:`Plazo de subsanación vence en ${restan(subsVence)} día(s) hábiles.`});
+  if(pasajesVencidos)alertas.push({t:'error',m:`Venció el plazo de 1 mes para remitir pasajes (${fmt(plazoPasajes)}). Se habilita la vía judicial.`});
+  else if(plazoPasajes&&!e3.pasajesRecibidos)alertas.push({t:'info',m:`Plazo para pasajes y autorizaciones: ${fmt(plazoPasajes)} (${restan(plazoPasajes)} días).`});
+  if(judBloqueadaPorAcuerdo)alertas.push({t:'info',m:'Vía judicial suspendida: existe acuerdo de retorno voluntario vigente.'});
+  if(esRequirente&&e3.fechaRespuestaEsperada&&vence(e3.fechaRespuestaEsperada)&&!e3.respuestaRecibida)alertas.push({t:'warn',m:`Sin respuesta de la AC extranjera desde ${fmt(e3.fechaRespuestaEsperada)}.`});
+
+  let proxima='Completar la matriz de requisitos y emitir dictamen de admisibilidad.';
+  if(cerrado)proxima='Expediente cerrado. No requiere acción.';
+  else if(!e1.dictamen)proxima=reqsOk&&edadOk?'Emitir dictamen: la solicitud cumple los 8 requisitos.':'Registrar observaciones y emitir dictamen de la evaluación inicial.';
+  else if(e2Aplica&&!subsOk&&!subsFallo)proxima=e2.fechaNotificacion?`Esperar subsanación del solicitante (vence ${fmt(subsVence)}).`:'Notificar observaciones al solicitante e iniciar cómputo de plazo.';
+  else if(subsFallo)proxima='Registrar cierre por rechazo de la AC: no se subsanaron las observaciones.';
+  else if(e3Abierta&&esRequerida&&!entrevistaHecha)proxima=e3.fechaCitacion?'Realizar la entrevista amigable y registrar su resultado.':'Citar al progenitor requerido a entrevista amigable.';
+  else if(acepta&&!e3.pasajesRecibidos&&!pasajesVencidos)proxima='Recibir pasajes y autorizaciones de viaje del solicitante.';
+  else if(acepta&&e3.pasajesRecibidos&&!retornoConcretado)proxima='Coordinar y registrar el retorno efectivo del NNA.';
+  else if(esRequirente&&!e3.oficioSgd)proxima='Emitir oficio SGD dirigido a la AC extranjera.';
+  else if(esRequirente&&!e3.respuestaRecibida)proxima='Controlar plazo de respuesta de la AC extranjera.';
+  else if(e4Abierta&&!e4.fechaDemanda)proxima='Presentar demanda judicial de restitución ante el Juzgado de Familia.';
+  else if(e4.fechaDemanda&&!sentencia)proxima='Registrar audiencia única y el sentido de la sentencia.';
+  else if(fundada&&!ejecutada)proxima='Ejecutar la sentencia y registrar la entrega del NNA.';
+  else if(e5Abierta&&!cerrado)proxima='Registrar motivo y fecha de cierre del expediente.';
+
+  const avance=Math.round(etapas.filter(x=>x.estado==='ok').length/etapas.filter(x=>x.estado!=='na').length*100);
+
+  return {reqs,conformes,edades,edadOk,edadFalla,reqsOk,admisible,e1Lista,e2Aplica,subsPlazo,subsVence,subsVencido,subsOk,subsFallo,
+    e3Abierta,esRequerida,esRequirente,entrevistaHecha,acepta,rechaza,plazoPasajes,pasajesVencidos,retornoConcretado,
+    e4Abierta,judBloqueadaPorAcuerdo,fundada,infundada,ejecutada,motivos,e5Abierta,cerrado,etapas,alertas,proxima,avance};
+}
+
+/* ══ SAMPLE ══ */
+let _id=400;
+const mk=(o)=>({etapa1:{requisitos:REQS.map(()=>'Conforme'),dictamen:'Completo'},etapa2:{},etapa3:{},etapa4:{},etapa5:{},bitacora:[],...o});
+const SAMPLE=[
+  mk({id:'c1',codigo:'SI-2024-0312',pais:'Argentina',tipoSolicitud:'Restitución',acPeru:'Requirente',fechaIngreso:'2024-02-10',profesional:'EMMA',
+    nna:[{id:'n1',nombres:'Valentina',primerApellido:'Ramos',segundoApellido:'Torres',sexo:'Mujer',fechaNacimiento:'2017-03-15'}],
+    solicitanteNombre:'Carmen Torres Vega',solicitanteTelefono:'987654321',solicitanteCorreo:'ctorres@gmail.com',solicitanteDomicilio:'Jr. Los Álamos 230, San Borja',
+    requeridoNombre:'Luis Ramos Pérez',requeridoDomicilio:'Av. Rivadavia 1450, Buenos Aires',
+    etapa3:{oficioSgd:'OF-2024-0871-DGNNA',fechaEnvio:'2024-03-01',acExtranjera:'Ministerio de Justicia de Argentina',fechaRespuestaEsperada:'2026-08-25',respuestaRecibida:false,estadoCooperacion:'En seguimiento'},
+    bitacora:[{id:'b1',fecha:'2024-02-10',texto:'Ingreso del expediente. Verificación de documentos del solicitante.',autor:'EMMA'},{id:'b2',fecha:'2024-03-01',texto:'Se remite oficio SGD a la AC argentina solicitando localización.',autor:'EMMA'}]}),
+  mk({id:'c2',codigo:'SI-2023-0187',pais:'España',tipoSolicitud:'Restitución',acPeru:'Requerida',fechaIngreso:'2023-11-15',profesional:'JANNY',
+    nna:[{id:'n2',nombres:'Diego',primerApellido:'Morales',segundoApellido:'Fuentes',sexo:'Hombre',fechaNacimiento:'2019-08-22'}],
+    solicitanteNombre:'Miguel Morales Castro',solicitanteTelefono:'+34 912 345 678',solicitanteCorreo:'mmorales@outlook.es',solicitanteDomicilio:'Calle Mayor 45, Madrid',
+    requeridoNombre:'Patricia Fuentes Huanca',requeridoTelefono:'998877665',requeridoDomicilio:'Av. Brasil 890, Jesús María',
+    etapa3:{fechaCitacion:'2023-12-01',fechaEntrevista:'2023-12-10',resultadoEntrevista:'Rechaza retorno',observacionEntrevista:'La requerida alega violencia familiar y se niega al retorno.'},
+    etapa4:{fechaDemanda:'2024-01-15',numExpediente:'00019-2024-0-1801-JR-FC-03',juzgado:'3er Juzgado de Familia - Lima',fechaAudiencia:'2024-02-28',sentidoSentencia:'Infundada',fechaSentencia1ra:'2024-03-28',fundamentoSentencia:'Art. 13 B — grave riesgo'},
+    bitacora:[{id:'b3',fecha:'2023-12-10',texto:'Entrevista con la requerida. Alega violencia doméstica. Se solicita pericia.',autor:'JANNY'},{id:'b4',fecha:'2024-03-28',texto:'Sentencia de 1ra instancia declara infundada la restitución.',autor:'JANNY'}]}),
+  mk({id:'c3',codigo:'SI-2024-0421',pais:'Estados Unidos',tipoSolicitud:'Régimen de Visitas',acPeru:'Requerida',fechaIngreso:'2026-06-01',profesional:'CECILIA',
+    nna:[{id:'n3',nombres:'Isabella',primerApellido:'Chávez',segundoApellido:'Moreno',sexo:'Mujer',fechaNacimiento:'2015-12-03'},{id:'n4',nombres:'Mateo',primerApellido:'Chávez',segundoApellido:'Moreno',sexo:'Hombre',fechaNacimiento:'2018-02-19'}],
+    solicitanteNombre:'Roberto Chávez Silva',solicitanteTelefono:'+1 305 555 0123',solicitanteCorreo:'rchavez@email.com',solicitanteDomicilio:'1250 SW 27th Ave, Miami FL',
+    requeridoNombre:'Ana Moreno Quispe',requeridoTelefono:'956342178',requeridoDomicilio:'Calle Las Flores 340, Surco',
+    etapa1:{requisitos:['Conforme','Conforme','Observado','Conforme','Pendiente','Pendiente','No aplica','Conforme'],dictamen:'Observado',observaciones:'Falta acreditar residencia habitual y documentación sustentatoria.'},
+    etapa2:{fechaObservacion:'2026-08-10',fechaNotificacion:'2026-08-12',prorroga:false},
+    bitacora:[{id:'b5',fecha:'2026-06-01',texto:'Expediente recibido de la AC de EE.UU. (USCA).',autor:'CECILIA'},{id:'b6',fecha:'2026-08-12',texto:'Se notifican observaciones al solicitante. Inicia cómputo de 5 días hábiles.',autor:'CECILIA'}]}),
+  mk({id:'c4',codigo:'SI-2022-0098',pais:'Chile',tipoSolicitud:'Restitución',acPeru:'Requerida',fechaIngreso:'2022-09-03',profesional:'EMMA',
+    nna:[{id:'n5',nombres:'Sebastián',primerApellido:'Núñez',segundoApellido:'Lazo',sexo:'Hombre',fechaNacimiento:'2012-05-18'}],
+    solicitanteNombre:'Claudia Lazo Mendoza',solicitanteTelefono:'+56 2 2345 6789',solicitanteCorreo:'clazo@gmail.cl',solicitanteDomicilio:'Av. Providencia 1240, Santiago',
+    requeridoNombre:'Héctor Núñez Paredes',requeridoTelefono:'945321876',requeridoDomicilio:'Av. Arequipa 2100, Lince',
+    etapa3:{fechaCitacion:'2022-10-05',fechaEntrevista:'2022-10-12',resultadoEntrevista:'Rechaza retorno'},
+    etapa4:{fechaDemanda:'2022-11-08',numExpediente:'00876-2022-0-1801-JR-FC-02',juzgado:'2do Juzgado de Familia - Lima',fechaAudiencia:'2023-01-20',sentidoSentencia:'Fundada',fechaSentencia1ra:'2023-02-10',fechaEjecucion:'2023-08-15'},
+    etapa5:{motivo:'retornoSentencia',fechaCierre:'2023-08-20',retornoEfectivo:true,observacionCierre:'Retorno ejecutado conforme a sentencia firme.'},
+    bitacora:[{id:'b7',fecha:'2023-08-15',texto:'Ejecutada la sentencia. El NNA retornó a Chile con su madre.',autor:'EMMA'}]}),
+  mk({id:'c5',codigo:'SI-2026-0555',pais:'Bolivia',tipoSolicitud:'Restitución',acPeru:'Requerida',fechaIngreso:'2026-07-20',profesional:'JANNY',
+    nna:[{id:'n6',nombres:'Camila',primerApellido:'Rojas',segundoApellido:'Ibáñez',sexo:'Mujer',fechaNacimiento:'2016-01-10'}],
+    solicitanteNombre:'Jorge Rojas Salinas',solicitanteTelefono:'987112233',solicitanteCorreo:'jrojas@gmail.com',solicitanteDomicilio:'Calle Junín 500, Miraflores',
+    requeridoNombre:'Marina Ibáñez Cruz',requeridoDomicilio:'Av. 6 de Agosto 200, La Paz',
+    etapa3:{fechaCitacion:'2026-08-05',fechaEntrevista:'2026-08-12',resultadoEntrevista:'Acepta retorno voluntario',fechaAcuerdo:'2026-08-12',pasajesRecibidos:false},
+    bitacora:[{id:'b8',fecha:'2026-08-12',texto:'Entrevista amigable: la requerida acepta el retorno voluntario.',autor:'JANNY'}]}),
+];
+
+/* ══ ICONS ══ */
+const Ic=({d,size=15,c='currentColor',sw=2})=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{__html:d}}/>;
+const ICheck=p=><Ic {...p} d='<polyline points="20 6 9 17 4 12"/>' sw={3}/>;
+const IX=p=><Ic {...p} d='<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' sw={2.5}/>;
+const ILock=p=><Ic {...p} d='<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'/>;
+const IClock=p=><Ic {...p} d='<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'/>;
+const IAlert=p=><Ic {...p} d='<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'/>;
+const IInfo=p=><Ic {...p} d='<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'/>;
+const IGlobe=p=><Ic {...p} d='<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>'/>;
+const IChart=p=><Ic {...p} d='<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/>'/>;
+const IFile=p=><Ic {...p} d='<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'/>;
+const IPlus=p=><Ic {...p} d='<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>' sw={2.5}/>;
+const IArrowL=p=><Ic {...p} d='<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>'/>;
+const IChevR=p=><Ic {...p} d='<polyline points="9 18 15 12 9 6"/>'/>;
+const ISearch=p=><Ic {...p} d='<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>'/>;
+const ITrash=p=><Ic {...p} d='<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'/>;
+const IUsers=p=><Ic {...p} d='<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/>'/>;
+const IGavel=p=><Ic {...p} d='<path d="m14 13-8.5 8.5a2.12 2.12 0 0 1-3-3L11 10"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/>'/>;
+const IArchive=p=><Ic {...p} d='<polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>'/>;
+const IDown=p=><Ic {...p} d='<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>'/>;
+const IPlane=p=><Ic {...p} d='<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-1 .1-1.3.5l-.5.6c-.4.5-.2 1.3.4 1.6L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.4 5.6c.3.6 1.1.8 1.6.4l.6-.5c.4-.3.6-.8.5-1.3z"/>'/>;
+
+/* ══ PRIMITIVAS ══ */
+const inp={width:'100%',padding:'8px 10px',border:`1px solid ${BR}`,borderRadius:7,fontSize:12,color:TX,background:SURF,outline:'none',boxSizing:'border-box'};
+const lbl={display:'block',fontSize:9.5,fontWeight:800,color:TX3,textTransform:'uppercase',letterSpacing:'.05em',marginBottom:5};
+function F({label,value,onChange,type='text',opts,hint,disabled,span}){
+  return(
+    <div style={{gridColumn:span?`span ${span}`:undefined}}>
+      <label style={lbl}>{label}</label>
+      {type==='select'?(
+        <select value={value||''} onChange={e=>onChange(e.target.value)} disabled={disabled} style={{...inp,cursor:disabled?'not-allowed':'pointer',opacity:disabled?.55:1}}>
+          <option value="">—</option>{opts.map(o=><option key={o} value={o}>{o}</option>)}
+        </select>
+      ):type==='textarea'?(
+        <textarea rows={2} value={value||''} onChange={e=>onChange(e.target.value)} disabled={disabled} style={{...inp,resize:'none',opacity:disabled?.55:1}}/>
+      ):type==='check'?(
+        <button onClick={()=>!disabled&&onChange(!value)} style={{...inp,display:'flex',alignItems:'center',gap:8,textAlign:'left',opacity:disabled?.55:1,cursor:disabled?'not-allowed':'pointer'}}>
+          <span style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${value?GN:BR}`,background:value?GN:'#fff',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{value&&<ICheck size={10} c="#fff"/>}</span>
+          <span style={{fontSize:12,color:value?TX:TX3}}>{value?'Sí':'No'}</span>
+        </button>
+      ):(
+        <input type={type} value={value||''} onChange={e=>onChange(e.target.value)} disabled={disabled} style={{...inp,opacity:disabled?.55:1}}/>
+      )}
+      {hint&&<div style={{fontSize:10,color:TX3,marginTop:4,lineHeight:1.4}}>{hint}</div>}
+    </div>
+  );
+}
+function Panel({title,sub,right,children,tone}){
+  const bd=tone==='lock'?BR:tone==='error'?RBR:tone==='ok'?GBR:BR;
+  return(
+    <div style={{background:SURF,border:`1px solid ${bd}`,borderRadius:10,overflow:'hidden',marginBottom:14}}>
+      <div style={{padding:'12px 15px',background:'#F8FAFC',borderBottom:`1px solid ${BR}`,display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
+        <div><div style={{fontSize:11.5,fontWeight:800,color:N2,textTransform:'uppercase',letterSpacing:'.05em'}}>{title}</div>{sub&&<div style={{fontSize:10.5,color:TX3,marginTop:3}}>{sub}</div>}</div>
+        {right}
+      </div>
+      <div style={{padding:15}}>{children}</div>
+    </div>
+  );
+}
+function Chip({tone='n',children}){
+  const m={ok:[GN,GBG,GBR],warn:[AM,ABG,ABR],err:[RD,RBG,RBR],info:[BL,'#EFF6FF','#BFDBFE'],n:[TX2,'#F1F5F9',BR]}[tone];
+  return <span style={{display:'inline-flex',alignItems:'center',gap:5,fontSize:10,fontWeight:700,padding:'3px 9px',borderRadius:99,color:m[0],background:m[1],border:`1px solid ${m[2]}`,whiteSpace:'nowrap'}}>{children}</span>;
+}
+function Regla({ok,fail,children}){
+  const tone=ok?'ok':fail?'err':'n';
+  const m={ok:[GN,GBG],err:[RD,RBG],n:[TX3,'#F8FAFC']}[tone];
+  return(
+    <div style={{display:'flex',alignItems:'flex-start',gap:9,padding:'8px 11px',background:m[1],borderRadius:7,marginBottom:6}}>
+      <span style={{width:16,height:16,borderRadius:'50%',background:m[0],display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:1}}>
+        {ok?<ICheck size={9} c="#fff"/>:fail?<IX size={9} c="#fff"/>:<span style={{width:5,height:5,borderRadius:'50%',background:'#fff'}}/>}
+      </span>
+      <span style={{fontSize:11.5,color:TX,lineHeight:1.5}}>{children}</span>
+    </div>
+  );
+}
+function Bloqueo({children}){
+  return(
+    <div style={{display:'flex',alignItems:'flex-start',gap:11,background:'#F8FAFC',border:`1px dashed ${BR}`,borderRadius:10,padding:'18px 20px'}}>
+      <div style={{width:32,height:32,borderRadius:9,background:'#F1F5F9',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><ILock size={15} c={TX3}/></div>
+      <div><div style={{fontSize:12.5,fontWeight:700,color:TX2}}>Etapa no habilitada</div><div style={{fontSize:11.5,color:TX3,marginTop:4,lineHeight:1.55,maxWidth:520}}>{children}</div></div>
+    </div>
+  );
+}
+
+/* ══ RAIL DE ETAPAS ══ */
+function Rail({etapas,active,onGo,avance}){
+  const st={ok:[GN,GBG,GBR],activa:[BL,'#EFF6FF','#BFDBFE'],falla:[RD,RBG,RBR],lock:[TX3,'#F8FAFC',BR],na:[TX3,'#F8FAFC',BR]};
+  return(
+    <aside className="sc" style={{width:250,flexShrink:0,background:SURF,borderRight:`1px solid ${BR}`,padding:'16px 14px',overflowY:'auto'}}>
+      <div style={{marginBottom:16}}>
+        <div style={{display:'flex',justifyContent:'space-between',fontSize:9.5,fontWeight:800,color:TX3,textTransform:'uppercase',letterSpacing:'.06em',marginBottom:6}}><span>Avance</span><span style={{color:BL}}>{avance}%</span></div>
+        <div style={{height:5,background:'#F1F5F9',borderRadius:99,overflow:'hidden'}}><div style={{height:'100%',width:`${avance}%`,background:`linear-gradient(90deg,${BL},#7C3AED)`,borderRadius:99,transition:'width .4s'}}/></div>
+      </div>
+      {etapas.map((e,i)=>{
+        const c=st[e.estado],sel=active===e.id,blocked=e.estado==='lock'||e.estado==='na';
+        return(
+          <div key={e.id}>
+            <button onClick={()=>onGo(e.id)} style={{width:'100%',display:'flex',alignItems:'flex-start',gap:10,padding:'10px 11px',borderRadius:9,border:`1px solid ${sel?c[2]:'transparent'}`,background:sel?c[1]:'transparent',textAlign:'left'}}>
+              <span style={{width:22,height:22,borderRadius:'50%',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',background:e.estado==='ok'?GN:e.estado==='activa'?BL:e.estado==='falla'?RD:'#F1F5F9',color:blocked?TX3:'#fff',fontSize:10,fontWeight:800}}>
+                {e.estado==='ok'?<ICheck size={11} c="#fff"/>:e.estado==='falla'?<IX size={10} c="#fff"/>:blocked?<ILock size={10} c={TX3}/>:e.n}
+              </span>
+              <span style={{flex:1,minWidth:0}}>
+                <span style={{display:'block',fontSize:12,fontWeight:sel?800:700,color:blocked?TX3:sel?c[0]:TX}}>{e.label}</span>
+                <span style={{display:'block',fontSize:10,color:TX3,marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{e.nota}</span>
+              </span>
+            </button>
+            {i<etapas.length-1&&<div style={{width:2,height:8,background:BR,marginLeft:22}}/>}
+          </div>
+        );
+      })}
+    </aside>
+  );
+}
+
+/* ══ ETAPA 1 ══ */
+function E1({caso,ev,upd}){
+  const e1=caso.etapa1||{};
+  const setReq=(i,v)=>upd('etapa1',{...e1,requisitos:ev.reqs.map((r,j)=>j===i?v:r)});
+  const opts=['Pendiente','Conforme','Observado','No aplica'];
+  const col={Conforme:GN,Observado:RD,Pendiente:TX3,'No aplica':TX3};
+  return(
+    <>
+      <Panel title="Reglas de admisibilidad aplicadas" sub="Directiva N.° 006-2021-MIMP · Convenio de La Haya de 1980">
+        <Regla ok={ev.reqsOk} fail={!ev.reqsOk&&ev.conformes>0}>Los <b>8 requisitos normativos</b> deben estar conformes o marcados como no aplicables — actualmente <b>{ev.conformes}/8</b>.</Regla>
+        <Regla ok={ev.edadOk} fail={ev.edadFalla}>Todo NNA debe tener <b>menos de 16 años</b> a la fecha de ingreso {ev.edades.length>0&&<>— edades: {ev.edades.map(x=>`${x}a`).join(', ')}</>}.</Regla>
+        <Regla ok={Boolean(caso.acPeru)} fail={false}>Debe definirse el <b>rol de la AC Perú</b> para determinar la ruta de la Etapa 3.</Regla>
+        <div style={{marginTop:12,padding:'11px 13px',borderRadius:8,background:ev.admisible?GBG:ABG,border:`1px solid ${ev.admisible?GBR:ABR}`,fontSize:11.5,color:ev.admisible?'#166534':'#92400E',lineHeight:1.5}}>
+          {ev.admisible?'Dictamen sugerido: COMPLETO → habilita directamente la Etapa 3 (retorno voluntario o cooperación internacional).':'Dictamen sugerido: OBSERVADO → activa la Etapa 2 de subsanación con cómputo de plazo.'}
+        </div>
+      </Panel>
+      <Panel title="Matriz de 8 requisitos normativos" right={<Chip tone={ev.reqsOk?'ok':'warn'}>{ev.conformes}/8 conformes</Chip>}>
+        {REQS.map((r,i)=>(
+          <div key={i} style={{display:'grid',gridTemplateColumns:'26px 1fr 148px',gap:10,alignItems:'center',padding:'8px 0',borderTop:i?`1px solid ${BR}`:'none'}}>
+            <span style={{width:22,height:22,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,background:ev.reqs[i]==='Conforme'?GBG:ev.reqs[i]==='Observado'?RBG:'#F1F5F9',color:col[ev.reqs[i]]}}>{ev.reqs[i]==='Conforme'?<ICheck size={11} c={GN}/>:i+1}</span>
+            <span style={{fontSize:12,color:TX,lineHeight:1.45}}>{r}</span>
+            <select value={ev.reqs[i]} onChange={e=>setReq(i,e.target.value)} style={{...inp,fontSize:11,color:col[ev.reqs[i]],fontWeight:600}}>{opts.map(o=><option key={o}>{o}</option>)}</select>
+          </div>
+        ))}
+      </Panel>
+      <Panel title="Dictamen de la evaluación inicial">
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
+          <F label="Dictamen" type="select" opts={['Completo','Observado','Inadmisible']} value={e1.dictamen} onChange={v=>upd('etapa1',{...e1,dictamen:v})} hint={ev.admisible?'Sugerido: Completo':'Sugerido: Observado'}/>
+          <F label="Fecha de dictamen" type="date" value={e1.fechaDictamen} onChange={v=>upd('etapa1',{...e1,fechaDictamen:v})}/>
+          <F label="Evaluado por" type="select" opts={PROFS} value={e1.evaluadoPor||caso.profesional} onChange={v=>upd('etapa1',{...e1,evaluadoPor:v})}/>
+          <F label="Observaciones de la evaluación" type="textarea" span={3} value={e1.observaciones} onChange={v=>upd('etapa1',{...e1,observaciones:v})}/>
+        </div>
+      </Panel>
+    </>
+  );
+}
+
+/* ══ ETAPA 2 ══ */
+function E2({caso,ev,upd}){
+  const e2=caso.etapa2||{};
+  const set=(k,v)=>upd('etapa2',{...e2,[k]:v});
+  if(!ev.e2Aplica)return <Bloqueo>La subsanación solo se activa cuando el dictamen de la Etapa 1 es <b>Observado</b>. El dictamen actual es <b>{caso.etapa1?.dictamen||'pendiente'}</b>.</Bloqueo>;
+  const r=restan(ev.subsVence);
+  return(
+    <>
+      <Panel title="Cómputo legal del plazo" sub="Se descuentan sábados, domingos y feriados oficiales"
+        right={ev.subsVencido?<Chip tone="err"><IAlert size={10} c={RD}/> Vencido</Chip>:ev.subsOk?<Chip tone="ok">Subsanado</Chip>:r!==null?<Chip tone={r<=2?'warn':'info'}>{r} día(s) restantes</Chip>:null}>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:14}}>
+          {[[5,'Plazo ordinario',!e2.prorroga],[10,'Con prórroga justificada',Boolean(e2.prorroga)]].map(([d,t,on])=>(
+            <button key={d} onClick={()=>set('prorroga',d===10)} style={{border:`1.5px solid ${on?BL:BR}`,background:on?'#EFF6FF':SURF,borderRadius:10,padding:'12px 14px',textAlign:'left'}}>
+              <div style={{display:'flex',gap:3,marginBottom:8}}>{Array.from({length:d}).map((_,i)=><span key={i} style={{width:9,height:16,borderRadius:2,background:on?BL:BR}}/>)}</div>
+              <div style={{fontSize:15,fontWeight:800,color:on?BL:TX2}}>{d} días hábiles</div>
+              <div style={{fontSize:10.5,color:TX3,marginTop:2}}>{t}</div>
+            </button>
+          ))}
+        </div>
+        <Regla ok={Boolean(e2.fechaNotificacion)}>La notificación de observaciones inicia el cómputo del plazo.</Regla>
+        <Regla ok={ev.subsOk} fail={ev.subsVencido}>Si no se subsana dentro del plazo, la AC <b>rechaza la solicitud</b> y el expediente se archiva.</Regla>
+      </Panel>
+      <Panel title="Registro de la subsanación">
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
+          <F label="Fecha de observación" type="date" value={e2.fechaObservacion} onChange={v=>set('fechaObservacion',v)}/>
+          <F label="Fecha de notificación" type="date" value={e2.fechaNotificacion} onChange={v=>set('fechaNotificacion',v)} hint="Inicia el cómputo"/>
+          <div>
+            <label style={lbl}>Vencimiento calculado</label>
+            <div style={{...inp,background:ev.subsVencido?RBG:'#F8FAFC',color:ev.subsVencido?RD:TX,fontWeight:700,display:'flex',alignItems:'center',gap:7}}>
+              <IClock size={13} c={ev.subsVencido?RD:TX3}/>{ev.subsVence?fmt(ev.subsVence):'—'}
+            </div>
+            <div style={{fontSize:10,color:TX3,marginTop:4}}>Automático: {ev.subsPlazo} días hábiles</div>
+          </div>
+          <F label="Fecha de respuesta" type="date" value={e2.fechaRespuesta} onChange={v=>set('fechaRespuesta',v)}/>
+          <F label="Resultado" type="select" opts={['Subsanó','No subsanó','Subsanó parcialmente']} value={e2.resultado} onChange={v=>set('resultado',v)}/>
+          <F label="Registrado por" type="select" opts={PROFS} value={e2.registradoPor||caso.profesional} onChange={v=>set('registradoPor',v)}/>
+          <F label="Detalle de la respuesta" type="textarea" span={3} value={e2.detalle} onChange={v=>set('detalle',v)}/>
+        </div>
+      </Panel>
+    </>
+  );
+}
+
+/* ══ ETAPA 3 ══ */
+function E3({caso,ev,upd}){
+  const e3=caso.etapa3||{};
+  const set=(k,v)=>upd('etapa3',{...e3,[k]:v});
+  if(!ev.e3Abierta)return <Bloqueo>Se habilita cuando el dictamen es <b>Completo</b>, o cuando el solicitante <b>subsana</b> las observaciones dentro del plazo legal.</Bloqueo>;
+  if(!caso.acPeru)return <Bloqueo>Define el <b>rol de la AC Perú</b> en Datos del caso: si es <b>Requerida</b> (NNA en Perú) corresponde entrevista y retorno voluntario; si es <b>Requirente</b> (NNA en el exterior), cooperación vía SGD.</Bloqueo>;
+
+  if(ev.esRequerida)return(
+    <>
+      <Panel title="Ruta aplicada — AC Requerida" sub="El NNA se encuentra en territorio peruano" right={<Chip tone="info"><IUsers size={10} c={BL}/> Entrevista amigable</Chip>}>
+        <Regla ok={Boolean(e3.fechaEntrevista)}>Se cita al progenitor requerido a <b>entrevista amigable</b>.</Regla>
+        <Regla ok={ev.acepta}>Si <b>acepta</b> el retorno: se otorga <b>1 mes</b> para pasajes y autorizaciones, y se <b>suspende la vía judicial</b>.</Regla>
+        <Regla ok={ev.rechaza} fail={false}>Si <b>rechaza o no asiste</b>: se agota la vía administrativa y se <b>habilita la Etapa 4</b>.</Regla>
+      </Panel>
+      <Panel title="Entrevista amigable">
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
+          <F label="Fecha de citación" type="date" value={e3.fechaCitacion} onChange={v=>set('fechaCitacion',v)}/>
+          <F label="Fecha de entrevista" type="date" value={e3.fechaEntrevista} onChange={v=>set('fechaEntrevista',v)}/>
+          <F label="Resultado" type="select" opts={['Acepta retorno voluntario','Rechaza retorno','No asiste','Reprogramada']} value={e3.resultadoEntrevista} onChange={v=>set('resultadoEntrevista',v)}/>
+          <F label="Observación de la entrevista" type="textarea" span={3} value={e3.observacionEntrevista} onChange={v=>set('observacionEntrevista',v)}/>
+        </div>
+      </Panel>
+      {ev.acepta&&(
+        <Panel title="Retorno voluntario — plazo de 1 mes" tone={ev.pasajesVencidos?'error':'ok'}
+          right={ev.pasajesVencidos?<Chip tone="err"><IAlert size={10} c={RD}/> Plazo vencido</Chip>:ev.plazoPasajes?<Chip tone="info">{restan(ev.plazoPasajes)} días</Chip>:null}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
+            <F label="Fecha del acuerdo" type="date" value={e3.fechaAcuerdo} onChange={v=>set('fechaAcuerdo',v)} hint="Inicia el plazo de 1 mes"/>
+            <div>
+              <label style={lbl}>Vence plazo de pasajes</label>
+              <div style={{...inp,background:ev.pasajesVencidos?RBG:'#F8FAFC',color:ev.pasajesVencidos?RD:TX,fontWeight:700,display:'flex',alignItems:'center',gap:7}}><IPlane size={13} c={ev.pasajesVencidos?RD:TX3}/>{ev.plazoPasajes?fmt(ev.plazoPasajes):'—'}</div>
+              <div style={{fontSize:10,color:TX3,marginTop:4}}>Automático: acuerdo + 1 mes</div>
+            </div>
+            <F label="Pasajes y autorizaciones recibidos" type="check" value={e3.pasajesRecibidos} onChange={v=>set('pasajesRecibidos',v)}/>
+            <F label="Fecha prevista de retorno" type="date" value={e3.fechaPrevistaRetorno} onChange={v=>set('fechaPrevistaRetorno',v)}/>
+            <F label="Fecha de retorno efectivo" type="date" value={e3.fechaRetornoEfectivo} onChange={v=>set('fechaRetornoEfectivo',v)} disabled={!e3.pasajesRecibidos} hint={!e3.pasajesRecibidos?'Requiere pasajes recibidos':undefined}/>
+            <F label="Acompañamiento" type="select" opts={['Progenitor solicitante','Progenitor requerido','Autoridad consular','Otro']} value={e3.acompanamiento} onChange={v=>set('acompanamiento',v)}/>
+            <F label="Compromisos acordados" type="textarea" span={3} value={e3.compromisos} onChange={v=>set('compromisos',v)}/>
+            <F label="Acuerdo extrajudicial formalizado" type="check" value={e3.acuerdoExtrajudicial} onChange={v=>set('acuerdoExtrajudicial',v)} hint="Habilita el motivo de cierre por acuerdo entre las partes"/>
+          </div>
+          {ev.pasajesVencidos&&<div style={{marginTop:12,padding:'10px 13px',background:RBG,border:`1px solid ${RBR}`,borderRadius:8,fontSize:11.5,color:'#991B1B',lineHeight:1.5}}>Transcurrido el mes sin recibir pasajes, el sistema <b>reactiva la vía judicial</b> (Etapa 4) por incumplimiento del acuerdo.</div>}
+        </Panel>
+      )}
+      {ev.rechaza&&(
+        <Panel title="Sin acuerdo — vía administrativa agotada" tone="error">
+          <div style={{display:'flex',alignItems:'center',gap:11,fontSize:12,color:TX,lineHeight:1.55}}>
+            <span style={{width:30,height:30,borderRadius:9,background:RBG,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><IGavel size={14} c={RD}/></span>
+            El resultado <b>«{e3.resultadoEntrevista}»</b> agota la vía administrativa. La <b>Etapa 4 — Proceso judicial</b> queda habilitada.
+          </div>
+        </Panel>
+      )}
+    </>
+  );
+
+  return(
+    <>
+      <Panel title="Ruta aplicada — AC Requirente" sub="El NNA se encuentra en el exterior" right={<Chip tone="info"><IGlobe size={10} c={BL}/> Cooperación internacional</Chip>}>
+        <Regla ok={Boolean(e3.oficioSgd)}>Se remite la solicitud vía <b>SGD</b> a la Autoridad Central extranjera.</Regla>
+        <Regla ok={Boolean(e3.respuestaRecibida)} fail={e3.fechaRespuestaEsperada&&vence(e3.fechaRespuestaEsperada)&&!e3.respuestaRecibida}>Se controla el <b>plazo de respuesta internacional</b> y la cooperación consular.</Regla>
+        <Regla ok={false}>El proceso judicial se sigue ante <b>tribunales del exterior</b>; DGNNA mantiene labor de enlace.</Regla>
+      </Panel>
+      <Panel title="Oficio y seguimiento internacional">
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
+          <F label="N.° de oficio SGD" value={e3.oficioSgd} onChange={v=>set('oficioSgd',v)}/>
+          <F label="Fecha de envío" type="date" value={e3.fechaEnvio} onChange={v=>set('fechaEnvio',v)}/>
+          <F label="AC extranjera destinataria" value={e3.acExtranjera} onChange={v=>set('acExtranjera',v)}/>
+          <F label="Respuesta esperada" type="date" value={e3.fechaRespuestaEsperada} onChange={v=>set('fechaRespuestaEsperada',v)}/>
+          <F label="Respuesta recibida" type="check" value={e3.respuestaRecibida} onChange={v=>set('respuestaRecibida',v)}/>
+          <F label="Estado de cooperación" type="select" opts={['En seguimiento','NNA localizado','Proceso judicial en curso','Retorno coordinado','Sin respuesta','Cerrado por AC extranjera']} value={e3.estadoCooperacion} onChange={v=>set('estadoCooperacion',v)}/>
+          <F label="Vía consular / enlace" value={e3.viaConsular} onChange={v=>set('viaConsular',v)} span={1}/>
+          <F label="Detalle de la respuesta / avance" type="textarea" span={2} value={e3.detalleRespuesta} onChange={v=>set('detalleRespuesta',v)}/>
+        </div>
+      </Panel>
+    </>
+  );
+}
+
+/* ══ ETAPA 4 ══ */
+function E4({caso,ev,upd}){
+  const e4=caso.etapa4||{};
+  const set=(k,v)=>upd('etapa4',{...e4,[k]:v});
+  if(ev.judBloqueadaPorAcuerdo)return <Bloqueo>La vía judicial está <b>suspendida</b>: existe un acuerdo de retorno voluntario vigente (vence {fmt(ev.plazoPasajes)}). Se reactivará si el plazo vence sin cumplimiento.</Bloqueo>;
+  if(!ev.e4Abierta)return <Bloqueo>Se habilita cuando el requerido <b>rechaza el retorno o no asiste</b> a la entrevista, cuando <b>vence el plazo de pasajes</b>, o cuando la AC extranjera responde en la ruta Requirente.</Bloqueo>;
+  return(
+    <>
+      <Panel title="Reglas del proceso judicial" right={ev.fundada?<Chip tone="ok">Fundada</Chip>:ev.infundada?<Chip tone="err">Infundada</Chip>:<Chip tone="info">En trámite</Chip>}>
+        <Regla ok={Boolean(e4.fechaDemanda)}>Presentación de <b>demanda de restitución</b> ante el Juzgado de Familia competente.</Regla>
+        <Regla ok={Boolean(e4.fechaAudiencia)}><b>Audiencia única</b> y actuación probatoria.</Regla>
+        <Regla ok={ev.ejecutada} fail={ev.infundada}>Sentencia <b>fundada</b> → ejecución y entrega del NNA. <b>Infundada</b> → archivo del expediente.</Regla>
+      </Panel>
+      <Panel title="Datos del expediente judicial">
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
+          <F label="Fecha de demanda" type="date" value={e4.fechaDemanda} onChange={v=>set('fechaDemanda',v)}/>
+          <F label="N.° de expediente judicial" value={e4.numExpediente} onChange={v=>set('numExpediente',v)} span={2}/>
+          <F label="Juzgado competente" value={e4.juzgado} onChange={v=>set('juzgado',v)} span={2}/>
+          <F label="Fecha de audiencia única" type="date" value={e4.fechaAudiencia} onChange={v=>set('fechaAudiencia',v)}/>
+        </div>
+      </Panel>
+      <Panel title="Sentencias y recursos">
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
+          <F label="Sentido de la sentencia" type="select" opts={['Fundada','Infundada']} value={e4.sentidoSentencia} onChange={v=>set('sentidoSentencia',v)}/>
+          <F label="Fecha sentencia 1ra instancia" type="date" value={e4.fechaSentencia1ra} onChange={v=>set('fechaSentencia1ra',v)}/>
+          <F label="Fundamento / artículo aplicado" value={e4.fundamentoSentencia} onChange={v=>set('fundamentoSentencia',v)} hint="Ej. Art. 13 B — grave riesgo"/>
+          <F label="Apelación / 2da instancia" type="select" opts={['No presentada','En trámite','Confirma 1ra instancia','Revoca 1ra instancia']} value={e4.segundaInstancia} onChange={v=>set('segundaInstancia',v)}/>
+          <F label="Recurso de casación" type="select" opts={['No presentado','En trámite','Fundado','Improcedente']} value={e4.casacion} onChange={v=>set('casacion',v)}/>
+          <F label="Medida cautelar" type="select" opts={['Ninguna','Impedimento de salida','Custodia provisional','Otra']} value={e4.medidaCautelar} onChange={v=>set('medidaCautelar',v)}/>
+          <F label="Fecha de ejecución / entrega" type="date" value={e4.fechaEjecucion} onChange={v=>set('fechaEjecucion',v)} disabled={!ev.fundada} hint={!ev.fundada?'Requiere sentencia fundada':undefined}/>
+          <F label="Observaciones judiciales" type="textarea" span={2} value={e4.observacionesJudiciales} onChange={v=>set('observacionesJudiciales',v)}/>
+        </div>
+      </Panel>
+    </>
+  );
+}
+
+/* ══ ETAPA 5 ══ */
+function E5({caso,ev,upd}){
+  const e5=caso.etapa5||{};
+  const set=(k,v)=>upd('etapa5',{...e5,[k]:v});
+  if(!ev.e5Abierta)return <Bloqueo>El cierre se habilita cuando el expediente alcanza un resultado: retorno voluntario acordado o concretado, sentencia ejecutada o infundada, acuerdo extrajudicial formalizado, o rechazo de la AC por falta de subsanación o inadmisibilidad.</Bloqueo>;
+  return(
+    <>
+      <Panel title="Motivos de cierre habilitados" sub="Solo se ofrecen los motivos compatibles con el camino recorrido por el expediente">
+        {Object.entries(MOTIVOS).map(([k,v])=>{
+          const ok=ev.motivos.includes(k),sel=e5.motivo===k;
+          return(
+            <button key={k} onClick={()=>ok&&set('motivo',k)} disabled={!ok} style={{width:'100%',display:'flex',alignItems:'center',gap:10,padding:'10px 12px',marginBottom:6,borderRadius:8,border:`1px solid ${sel?BL:ok?BR:'transparent'}`,background:sel?'#EFF6FF':ok?SURF:'#F8FAFC',textAlign:'left',cursor:ok?'pointer':'not-allowed',opacity:ok?1:.5}}>
+              <span style={{width:18,height:18,borderRadius:'50%',border:`1.5px solid ${sel?BL:BR}`,background:sel?BL:'#fff',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{sel&&<ICheck size={10} c="#fff"/>}</span>
+              <span style={{fontSize:12,color:ok?TX:TX3,lineHeight:1.4,flex:1}}>{v}</span>
+              {!ok&&<Chip tone="n"><ILock size={9} c={TX3}/> No aplica</Chip>}
+            </button>
+          );
+        })}
+      </Panel>
+      <Panel title="Cierre y archivo definitivo" tone={ev.cerrado?'ok':undefined} right={ev.cerrado?<Chip tone="ok"><IArchive size={10} c={GN}/> Archivado</Chip>:null}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
+          <F label="Fecha de cierre" type="date" value={e5.fechaCierre} onChange={v=>set('fechaCierre',v)} disabled={!e5.motivo} hint={!e5.motivo?'Selecciona primero el motivo':undefined}/>
+          <F label="Retorno efectivo del NNA" type="check" value={e5.retornoEfectivo} onChange={v=>set('retornoEfectivo',v)}/>
+          <F label="Cerrado por" type="select" opts={PROFS} value={e5.cerradoPor||caso.profesional} onChange={v=>set('cerradoPor',v)}/>
+          <F label="Observación de cierre" type="textarea" span={3} value={e5.observacionCierre} onChange={v=>set('observacionCierre',v)}/>
+        </div>
+      </Panel>
+    </>
+  );
+}
+
+/* ══ DATOS + PERSONAS + BITÁCORA ══ */
+function Datos({caso,upd}){
+  return(
+    <Panel title="Identificación del expediente">
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
+        <F label="Hoja de trámite" value={caso.codigo} onChange={v=>upd('codigo',v)}/>
+        <F label="País contraparte" type="select" opts={PAISES} value={caso.pais} onChange={v=>upd('pais',v)}/>
+        <F label="Rol de la AC Perú" type="select" opts={AC_ROL} value={caso.acPeru} onChange={v=>upd('acPeru',v)} hint="Define la ruta de la Etapa 3"/>
+        <F label="Tipo de solicitud" type="select" opts={TIPO_SOL} value={caso.tipoSolicitud} onChange={v=>upd('tipoSolicitud',v)}/>
+        <F label="Profesional responsable" type="select" opts={PROFS} value={caso.profesional} onChange={v=>upd('profesional',v)}/>
+        <F label="Fecha de ingreso" type="date" value={caso.fechaIngreso} onChange={v=>upd('fechaIngreso',v)}/>
+        <F label="Observaciones generales" type="textarea" span={3} value={caso.observaciones} onChange={v=>upd('observaciones',v)}/>
+      </div>
+    </Panel>
+  );
+}
+function Personas({caso,upd}){
+  const nna=caso.nna||[];
+  const setN=(id,k,v)=>upd('nna',nna.map(n=>n.id===id?{...n,[k]:v}:n));
+  const add=()=>upd('nna',[...nna,{id:`n${++_id}`,nombres:'',primerApellido:'',segundoApellido:'',sexo:'',fechaNacimiento:''}]);
+  const rm=id=>nna.length>1&&upd('nna',nna.filter(n=>n.id!==id));
+  return(
+    <>
+      <Panel title={`NNA involucrados (${nna.length})`} sub="La edad se calcula a la fecha de ingreso — regla de menor de 16 años"
+        right={<button onClick={add} style={{display:'flex',alignItems:'center',gap:5,padding:'6px 10px',border:0,borderRadius:6,background:'#EFF6FF',color:BL,fontSize:11,fontWeight:700}}><IPlus size={11}/> Agregar</button>}>
+        {nna.map((n,i)=>{
+          const e=edadA(n.fechaNacimiento,caso.fechaIngreso);
+          const mal=e!==null&&e>=16;
+          return(
+            <div key={n.id} style={{border:`1px solid ${mal?RBR:BR}`,background:mal?RBG:'#FAFBFD',borderRadius:9,padding:12,marginBottom:10}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:9}}>
+                <div style={{display:'flex',alignItems:'center',gap:9}}>
+                  <span style={{fontSize:9.5,fontWeight:800,color:TX3}}>NNA {String(i+1).padStart(2,'0')}</span>
+                  {e!==null&&<Chip tone={mal?'err':'ok'}>{e} años {mal?'— excede el límite':''}</Chip>}
+                </div>
+                {nna.length>1&&<button onClick={()=>rm(n.id)} style={{background:'none',border:0,display:'flex'}}><ITrash size={12} c="#CBD5E1"/></button>}
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:9,marginBottom:9}}>
+                <input value={n.nombres} onChange={e2=>setN(n.id,'nombres',e2.target.value)} placeholder="Nombres" style={inp}/>
+                <input value={n.primerApellido} onChange={e2=>setN(n.id,'primerApellido',e2.target.value)} placeholder="Primer apellido" style={inp}/>
+                <input value={n.segundoApellido} onChange={e2=>setN(n.id,'segundoApellido',e2.target.value)} placeholder="Segundo apellido" style={inp}/>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:9}}>
+                <select value={n.sexo||''} onChange={e2=>setN(n.id,'sexo',e2.target.value)} style={{...inp,cursor:'pointer'}}><option value="">Sexo</option>{SEXOS.map(s=><option key={s}>{s}</option>)}</select>
+                <input type="date" value={n.fechaNacimiento||''} onChange={e2=>setN(n.id,'fechaNacimiento',e2.target.value)} style={inp}/>
+                <input value={n.documento||''} onChange={e2=>setN(n.id,'documento',e2.target.value)} placeholder="Documento / partida" style={inp}/>
+              </div>
+            </div>
+          );
+        })}
+      </Panel>
+      <Panel title="Solicitante">
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
+          <F label="Nombre completo" value={caso.solicitanteNombre} onChange={v=>upd('solicitanteNombre',v)} span={2}/>
+          <F label="Teléfono" value={caso.solicitanteTelefono} onChange={v=>upd('solicitanteTelefono',v)}/>
+          <F label="Correo electrónico" value={caso.solicitanteCorreo} onChange={v=>upd('solicitanteCorreo',v)}/>
+          <F label="Domicilio" value={caso.solicitanteDomicilio} onChange={v=>upd('solicitanteDomicilio',v)} span={2}/>
+        </div>
+      </Panel>
+      <Panel title="Requerido / presunto sustractor">
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12}}>
+          <F label="Nombre completo" value={caso.requeridoNombre} onChange={v=>upd('requeridoNombre',v)} span={2}/>
+          <F label="Teléfono" value={caso.requeridoTelefono} onChange={v=>upd('requeridoTelefono',v)}/>
+          <F label="Correo electrónico" value={caso.requeridoCorreo} onChange={v=>upd('requeridoCorreo',v)}/>
+          <F label="Domicilio" value={caso.requeridoDomicilio} onChange={v=>upd('requeridoDomicilio',v)} span={2}/>
+        </div>
+      </Panel>
+    </>
+  );
+}
+function Bitacora({caso,add}){
+  const [t,setT]=useState('');
+  const list=[...(caso.bitacora||[])].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  return(
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      <div className="sc" style={{flex:1,overflowY:'auto'}}>
+        {list.length===0&&<div style={{textAlign:'center',padding:'40px 0',color:TX3,fontSize:12}}>Sin gestiones registradas.</div>}
+        <div style={{position:'relative',paddingLeft:28}}>
+          {list.length>0&&<div style={{position:'absolute',left:9,top:6,bottom:6,width:2,background:BR}}/>}
+          {list.map(b=>(
+            <div key={b.id} className="au" style={{position:'relative',marginBottom:14}}>
+              <div style={{position:'absolute',left:-24,top:5,width:12,height:12,borderRadius:'50%',background:'#EEF2FF',border:'2px solid #A5B4FC'}}/>
+              <div style={{background:SURF,border:`1px solid ${BR}`,borderRadius:9,padding:'11px 13px'}}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:5}}>
+                  <span style={{fontSize:10.5,fontWeight:800,color:TX2}}>{fmt(b.fecha)}</span>
+                  {b.autor&&<span style={{fontSize:10,color:TX3}}>{b.autor}</span>}
+                </div>
+                <div style={{fontSize:12,color:TX,lineHeight:1.6}}>{b.texto}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{borderTop:`1px solid ${BR}`,paddingTop:12,marginTop:12,display:'flex',gap:8,alignItems:'flex-end'}}>
+        <textarea rows={2} value={t} onChange={e=>setT(e.target.value)} placeholder="Registrar nueva gestión…" style={{...inp,flex:1,resize:'none'}}/>
+        <button onClick={()=>{if(t.trim()){add(t.trim());setT('')}}} style={{padding:'10px 18px',borderRadius:8,border:0,background:BL,color:'#fff',fontSize:12.5,fontWeight:700,height:56}}>Agregar</button>
+      </div>
+    </div>
+  );
+}
+
+/* ══ BANDEJA ══ */
+function Bandeja({casos,onOpen,onNuevo}){
+  const [q,setQ]=useState(''),[fp,setFp]=useState(''),[ff,setFf]=useState('');
+  const rows=casos.map(c=>({c,ev:evaluar(c)}));
+  const vis=rows.filter(({c,ev})=>{
+    if(q&&!nomCaso(c).toLowerCase().includes(q.toLowerCase())&&!c.codigo.toLowerCase().includes(q.toLowerCase()))return false;
+    if(fp&&c.profesional!==fp)return false;
+    if(ff==='alerta'&&!ev.alertas.some(a=>a.t==='error'))return false;
+    if(ff==='activos'&&ev.cerrado)return false;
+    if(ff==='cerrados'&&!ev.cerrado)return false;
+    return true;
+  });
+  const conAlerta=rows.filter(r=>r.ev.alertas.some(a=>a.t==='error')).length;
+  const kpis=[
+    {l:'Expedientes',v:casos.length,c:N2},
+    {l:'Activos',v:rows.filter(r=>!r.ev.cerrado).length,c:BL},
+    {l:'Con alerta crítica',v:conAlerta,c:RD},
+    {l:'Cerrados',v:rows.filter(r=>r.ev.cerrado).length,c:GN},
+  ];
+  return(
+    <main className="sc" style={{flex:1,overflowY:'auto',padding:'22px 24px'}}>
+      <div style={{maxWidth:1240,margin:'0 auto'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:16,gap:16}}>
+          <div>
+            <div style={{fontSize:20,fontWeight:800,color:TX}}>Bandeja de expedientes</div>
+            <div style={{fontSize:11.5,color:TX3,marginTop:4}}>El estado de cada caso se deriva automáticamente del flujo de la Directiva N.° 006-2021-MIMP.</div>
+          </div>
+          <button onClick={onNuevo} style={{display:'flex',alignItems:'center',gap:6,background:N2,color:'#fff',border:0,borderRadius:8,padding:'9px 15px',fontSize:12,fontWeight:700}}><IPlus size={13}/> Nuevo expediente</button>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:14}}>
+          {kpis.map(k=>(
+            <div key={k.l} style={{background:SURF,border:`1px solid ${BR}`,borderRadius:9,padding:'13px 15px',borderLeft:`3px solid ${k.c}`}}>
+              <div style={{fontSize:9.5,fontWeight:800,color:TX3,textTransform:'uppercase',letterSpacing:'.05em'}}>{k.l}</div>
+              <div style={{fontSize:23,fontWeight:800,color:k.c,marginTop:3}}>{k.v}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{background:SURF,border:`1px solid ${BR}`,borderRadius:10,overflow:'hidden'}}>
+          <div style={{padding:12,borderBottom:`1px solid ${BR}`,display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+            <div style={{position:'relative',flex:'1 1 240px'}}>
+              <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',color:TX3}}><ISearch size={13}/></span>
+              <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Buscar por NNA u hoja de trámite" style={{...inp,paddingLeft:30}}/>
+            </div>
+            <select value={fp} onChange={e=>setFp(e.target.value)} style={{...inp,width:170,cursor:'pointer'}}><option value="">Todos los profesionales</option>{PROFS.map(p=><option key={p}>{p}</option>)}</select>
+            {[['','Todos'],['activos','Activos'],['alerta','Con alerta'],['cerrados','Cerrados']].map(([k,l])=>(
+              <button key={k} onClick={()=>setFf(k)} style={{padding:'7px 12px',borderRadius:7,border:`1px solid ${ff===k?BL:BR}`,background:ff===k?'#EFF6FF':SURF,color:ff===k?BL:TX2,fontSize:11,fontWeight:700}}>{l}</button>
+            ))}
+            <button style={{...inp,width:'auto',display:'flex',alignItems:'center',gap:6,color:TX2,fontWeight:600,marginLeft:'auto'}}><IDown size={13}/> Exportar</button>
+          </div>
+          <table style={{width:'100%',borderCollapse:'collapse'}}>
+            <thead><tr style={{background:'#F8FAFC',borderBottom:`1px solid ${BR}`,textAlign:'left'}}>
+              {['NNA','Hoja de trámite','Rol / País','Etapa actual','Próxima acción','Avance',''].map(h=><th key={h} style={{padding:'10px 12px',fontSize:9,fontWeight:800,color:TX3,textTransform:'uppercase',letterSpacing:'.04em'}}>{h}</th>)}
+            </tr></thead>
+            <tbody>
+              {vis.length===0&&<tr><td colSpan={7} style={{padding:40,textAlign:'center',fontSize:12,color:TX3}}>Sin resultados.</td></tr>}
+              {vis.map(({c,ev})=>{
+                const act=ev.etapas.find(e=>e.estado==='activa')||ev.etapas.filter(e=>e.estado==='ok').slice(-1)[0];
+                const crit=ev.alertas.find(a=>a.t==='error');
+                return(
+                  <tr key={c.id} onClick={()=>onOpen(c)} style={{borderBottom:`1px solid ${BR}`,cursor:'pointer'}}
+                    onMouseEnter={e=>e.currentTarget.style.background='#F8FAFC'} onMouseLeave={e=>e.currentTarget.style.background=SURF}>
+                    <td style={{padding:'11px 12px'}}>
+                      <div style={{fontSize:12,fontWeight:700,color:TX}}>{nomCaso(c)}</div>
+                      <div style={{fontSize:10,color:TX3,marginTop:2}}>{(c.nna||[]).length} NNA · ingreso {fmt(c.fechaIngreso)}</div>
+                    </td>
+                    <td style={{padding:'11px 12px',fontSize:11}}><span className="mono" style={{fontWeight:600,color:N2}}>{c.codigo}</span></td>
+                    <td style={{padding:'11px 12px',fontSize:11,color:TX2}}>
+                      <div style={{display:'flex',alignItems:'center',gap:5}}>{c.acPeru==='Requerida'?<IUsers size={11} c={TX3}/>:<IPlane size={11} c={TX3}/>}{c.acPeru||'Sin rol'}</div>
+                      <div style={{fontSize:10,color:TX3,marginTop:2}}>{c.pais}</div>
+                    </td>
+                    <td style={{padding:'11px 12px'}}>
+                      <Chip tone={ev.cerrado?'ok':act?.estado==='falla'?'err':'info'}>{ev.cerrado?'Cerrado':`${act?.n}. ${act?.label}`}</Chip>
+                      {crit&&<div style={{marginTop:4}}><Chip tone="err"><IAlert size={9} c={RD}/> Alerta</Chip></div>}
+                    </td>
+                    <td style={{padding:'11px 12px',fontSize:11,color:TX2,maxWidth:260,lineHeight:1.45}}>{ev.proxima}</td>
+                    <td style={{padding:'11px 12px',width:110}}>
+                      <div style={{display:'flex',alignItems:'center',gap:7}}>
+                        <div style={{flex:1,height:5,background:'#F1F5F9',borderRadius:99,overflow:'hidden'}}><div style={{height:'100%',width:`${ev.avance}%`,background:ev.cerrado?GN:BL,borderRadius:99}}/></div>
+                        <span style={{fontSize:10,fontWeight:700,color:TX3}}>{ev.avance}%</span>
+                      </div>
+                    </td>
+                    <td style={{padding:'11px 12px',textAlign:'right'}}><IChevR size={14} c={TX3}/></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+/* ══ NUEVO ══ */
+function Nuevo({onClose,onCreate}){
+  const [f,setF]=useState({codigo:'',pais:'',acPeru:'',tipoSolicitud:'',profesional:'',fechaIngreso:hoy()});
+  const [nna,setNna]=useState([{id:`n${++_id}`,nombres:'',primerApellido:'',segundoApellido:'',sexo:'',fechaNacimiento:''}]);
+  const [err,setErr]=useState('');
+  const set=(k,v)=>setF(p=>({...p,[k]:v}));
+  const setN=(id,k,v)=>setNna(l=>l.map(n=>n.id===id?{...n,[k]:v}:n));
+  const edades=nna.map(n=>edadA(n.fechaNacimiento,f.fechaIngreso)).filter(x=>x!==null);
+  const edadMal=edades.some(x=>x>=16);
+  return(
+    <div style={{position:'fixed',inset:0,zIndex:60,background:'rgba(10,20,40,.55)',display:'flex',alignItems:'center',justifyContent:'center',padding:16,backdropFilter:'blur(3px)'}} onClick={onClose}>
+      <div className="au sc" style={{background:SURF,borderRadius:14,width:'100%',maxWidth:640,maxHeight:'88vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+        <div style={{padding:'18px 22px',borderBottom:`1px solid ${BR}`,display:'flex',justifyContent:'space-between',alignItems:'center',position:'sticky',top:0,background:SURF}}>
+          <div><div style={{fontSize:16,fontWeight:800,color:TX}}>Nuevo expediente</div><div style={{fontSize:11,color:TX3,marginTop:2}}>Se abrirá en Etapa 1 — Evaluación inicial</div></div>
+          <button onClick={onClose} style={{width:30,height:30,borderRadius:8,border:`1px solid ${BR}`,background:BG,display:'flex',alignItems:'center',justifyContent:'center'}}><IX size={13} c={TX2}/></button>
+        </div>
+        <div style={{padding:'18px 22px',display:'flex',flexDirection:'column',gap:16}}>
+          {err&&<div style={{display:'flex',gap:8,alignItems:'center',background:RBG,border:`1px solid ${RBR}`,borderRadius:8,padding:'9px 12px',fontSize:11.5,color:'#991B1B'}}><IAlert size={13} c={RD}/>{err}</div>}
+          {edadMal&&<div style={{display:'flex',gap:8,alignItems:'flex-start',background:ABG,border:`1px solid ${ABR}`,borderRadius:8,padding:'9px 12px',fontSize:11.5,color:'#92400E',lineHeight:1.5}}><IAlert size={13} c={AM}/>Un NNA tiene 16 años o más: el Convenio de La Haya no resulta aplicable y la evaluación quedará como inadmisible.</div>}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:11}}>
+            <F label="Hoja de trámite *" value={f.codigo} onChange={v=>set('codigo',v)}/>
+            <F label="País contraparte *" type="select" opts={PAISES} value={f.pais} onChange={v=>set('pais',v)}/>
+            <F label="Rol AC Perú *" type="select" opts={AC_ROL} value={f.acPeru} onChange={v=>set('acPeru',v)}/>
+            <F label="Tipo de solicitud" type="select" opts={TIPO_SOL} value={f.tipoSolicitud} onChange={v=>set('tipoSolicitud',v)}/>
+            <F label="Profesional" type="select" opts={PROFS} value={f.profesional} onChange={v=>set('profesional',v)}/>
+            <F label="Fecha de ingreso" type="date" value={f.fechaIngreso} onChange={v=>set('fechaIngreso',v)}/>
+          </div>
+          <div>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:9}}>
+              <span style={{fontSize:10,fontWeight:800,color:N2,textTransform:'uppercase',letterSpacing:'.05em'}}>NNA involucrados *</span>
+              <button onClick={()=>setNna(l=>[...l,{id:`n${++_id}`,nombres:'',primerApellido:'',segundoApellido:'',sexo:'',fechaNacimiento:''}])} style={{display:'flex',alignItems:'center',gap:5,padding:'5px 9px',border:0,borderRadius:6,background:'#EFF6FF',color:BL,fontSize:10.5,fontWeight:700}}><IPlus size={10}/> Agregar</button>
+            </div>
+            {nna.map((n,i)=>{
+              const e=edadA(n.fechaNacimiento,f.fechaIngreso);
+              return(
+                <div key={n.id} style={{border:`1px solid ${e!==null&&e>=16?RBR:BR}`,borderRadius:9,padding:11,marginBottom:9,background:'#FAFBFD'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+                    <div style={{display:'flex',gap:8,alignItems:'center'}}><span style={{fontSize:9.5,fontWeight:800,color:TX3}}>NNA {i+1}</span>{e!==null&&<Chip tone={e>=16?'err':'ok'}>{e} años</Chip>}</div>
+                    {nna.length>1&&<button onClick={()=>setNna(l=>l.filter(x=>x.id!==n.id))} style={{background:'none',border:0,display:'flex'}}><ITrash size={11} c="#CBD5E1"/></button>}
+                  </div>
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:8}}>
+                    <input value={n.nombres} onChange={e2=>setN(n.id,'nombres',e2.target.value)} placeholder="Nombres" style={inp}/>
+                    <input value={n.primerApellido} onChange={e2=>setN(n.id,'primerApellido',e2.target.value)} placeholder="1er apellido" style={inp}/>
+                    <input value={n.segundoApellido} onChange={e2=>setN(n.id,'segundoApellido',e2.target.value)} placeholder="2do apellido" style={inp}/>
+                  </div>
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:8}}>
+                    <select value={n.sexo} onChange={e2=>setN(n.id,'sexo',e2.target.value)} style={{...inp,cursor:'pointer'}}><option value="">Sexo</option>{SEXOS.map(s=><option key={s}>{s}</option>)}</select>
+                    <input type="date" value={n.fechaNacimiento} onChange={e2=>setN(n.id,'fechaNacimiento',e2.target.value)} style={inp}/>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:11}}>
+            <F label="Nombre del solicitante" value={f.solicitanteNombre} onChange={v=>set('solicitanteNombre',v)}/>
+            <F label="Nombre del requerido" value={f.requeridoNombre} onChange={v=>set('requeridoNombre',v)}/>
+          </div>
+        </div>
+        <div style={{padding:'14px 22px',borderTop:`1px solid ${BR}`,display:'flex',gap:8,position:'sticky',bottom:0,background:SURF}}>
+          <button onClick={onClose} style={{flex:1,padding:'10px',borderRadius:8,border:`1px solid ${BR}`,background:BG,color:TX2,fontSize:12.5,fontWeight:700}}>Cancelar</button>
+          <button onClick={()=>{
+            if(!f.codigo.trim())return setErr('La hoja de trámite es obligatoria.');
+            if(!f.pais)return setErr('Selecciona el país contraparte.');
+            if(!f.acPeru)return setErr('Define el rol de la AC Perú.');
+            if(!nna[0].nombres.trim())return setErr('Registra al menos un NNA.');
+            onCreate({...f,nna:nna.filter(n=>n.nombres.trim())});
+          }} style={{flex:2,padding:'10px',borderRadius:8,border:0,background:BL,color:'#fff',fontSize:12.5,fontWeight:700}}>Registrar expediente</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══ DASHBOARD ══ */
+function Dash({casos}){
+  const rows=casos.map(c=>({c,ev:evaluar(c)}));
+  const porEtapa=[1,2,3,4,5].map(n=>({n,label:['Evaluación','Subsanación','Cooperación','Judicial','Cierre'][n-1],
+    v:rows.filter(({ev})=>{const a=ev.etapas.find(e=>e.estado==='activa');return a?a.n===n:ev.cerrado&&n===5}).length}));
+  const max=Math.max(...porEtapa.map(p=>p.v),1);
+  const alertas=rows.flatMap(({c,ev})=>ev.alertas.filter(a=>a.t==='error').map(a=>({c,a})));
+  const card={background:SURF,border:`1px solid ${BR}`,borderRadius:10,padding:16};
+  return(
+    <main className="sc" style={{flex:1,overflowY:'auto',padding:'22px 24px'}}>
+      <div style={{maxWidth:1100,margin:'0 auto',display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+        <div style={{gridColumn:'1 / -1',display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12}}>
+          {[['Expedientes',casos.length,N2],['Activos',rows.filter(r=>!r.ev.cerrado).length,BL],['Alertas críticas',alertas.length,RD],['Retornos efectivos',rows.filter(r=>r.c.etapa5?.retornoEfectivo||r.ev.retornoConcretado).length,GN]].map(([l,v,c])=>(
+            <div key={l} style={{...card,borderLeft:`3px solid ${c}`}}>
+              <div style={{fontSize:9.5,fontWeight:800,color:TX3,textTransform:'uppercase',letterSpacing:'.05em'}}>{l}</div>
+              <div style={{fontSize:26,fontWeight:800,color:c,marginTop:4}}>{v}</div>
+            </div>
+          ))}
+        </div>
+        <div style={card}>
+          <div style={{fontSize:11,fontWeight:800,color:TX3,textTransform:'uppercase',letterSpacing:'.05em',marginBottom:14}}>Expedientes por etapa activa</div>
+          {porEtapa.map(p=>(
+            <div key={p.n} style={{display:'flex',alignItems:'center',gap:10,marginBottom:9}}>
+              <span style={{width:20,height:20,borderRadius:'50%',background:'#F1F5F9',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,color:TX2,flexShrink:0}}>{p.n}</span>
+              <span style={{fontSize:11.5,color:TX2,width:96,flexShrink:0}}>{p.label}</span>
+              <div style={{flex:1,height:18,background:'#F8FAFC',borderRadius:99,overflow:'hidden'}}>
+                {p.v>0&&<div style={{height:'100%',width:`${p.v/max*100}%`,background:`linear-gradient(90deg,${BL},#7C3AED)`,borderRadius:99,display:'flex',alignItems:'center',justifyContent:'flex-end',paddingRight:7}}><span style={{fontSize:10,color:'#fff',fontWeight:700}}>{p.v}</span></div>}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={card}>
+          <div style={{fontSize:11,fontWeight:800,color:TX3,textTransform:'uppercase',letterSpacing:'.05em',marginBottom:14}}>Alertas críticas activas</div>
+          {alertas.length===0&&<div style={{fontSize:12,color:TX3,padding:'16px 0',textAlign:'center'}}>Sin alertas críticas.</div>}
+          {alertas.map(({c,a},i)=>(
+            <div key={i} style={{display:'flex',gap:9,padding:'9px 11px',background:RBG,border:`1px solid ${RBR}`,borderRadius:8,marginBottom:7}}>
+              <IAlert size={13} c={RD}/>
+              <div><div style={{fontSize:11,fontWeight:700,color:'#991B1B'}}>{c.codigo} · {nomCaso(c)}</div><div style={{fontSize:11,color:'#7F1D1D',marginTop:2,lineHeight:1.45}}>{a.m}</div></div>
+            </div>
+          ))}
+        </div>
+        <div style={{...card,gridColumn:'1 / -1'}}>
+          <div style={{fontSize:11,fontWeight:800,color:TX3,textTransform:'uppercase',letterSpacing:'.05em',marginBottom:14}}>Carga por profesional</div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14}}>
+            {PROFS.map(p=>{
+              const n=casos.filter(c=>c.profesional===p).length;
+              const act=rows.filter(r=>r.c.profesional===p&&!r.ev.cerrado).length;
+              return(
+                <div key={p} style={{border:`1px solid ${BR}`,borderRadius:9,padding:'12px 14px'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:9,marginBottom:8}}>
+                    <span style={{width:26,height:26,borderRadius:'50%',background:`linear-gradient(135deg,${BL},#7C3AED)`,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800}}>{p[0]}</span>
+                    <span style={{fontSize:12,fontWeight:700,color:TX}}>{p}</span>
+                  </div>
+                  <div style={{display:'flex',gap:14}}>
+                    <div><div style={{fontSize:19,fontWeight:800,color:TX}}>{n}</div><div style={{fontSize:9.5,color:TX3,textTransform:'uppercase'}}>Total</div></div>
+                    <div><div style={{fontSize:19,fontWeight:800,color:BL}}>{act}</div><div style={{fontSize:9.5,color:TX3,textTransform:'uppercase'}}>Activos</div></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+/* ══ APP ══ */
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{"showReglas":true}/*EDITMODE-END*/;
+
+function App(){
+  const [tweaks,setTweak]=useTweaks(TWEAK_DEFAULTS);
+  const [casos,setCasos]=useState(SAMPLE);
+  const [sel,setSel]=useState(null);
+  const [view,setView]=useState('bandeja');
+  const [tab,setTab]=useState('e1');
+  const [nuevo,setNuevo]=useState(false);
+
+  const ev=useMemo(()=>sel?evaluar(sel):null,[sel]);
+
+  const upd=(k,v)=>setSel(p=>{const n={...p,[k]:v};setCasos(cs=>cs.map(c=>c.id===n.id?n:c));return n});
+  const addBit=t=>upd('bitacora',[...(sel.bitacora||[]),{id:`b${++_id}`,fecha:hoy(),texto:t,autor:'Usuario actual'}]);
+  const open=c=>{setSel(c);const e=evaluar(c);setTab((e.etapas.find(x=>x.estado==='activa')||e.etapas[0]).id)};
+
+  const TABS=[['e1','1. Evaluación'],['e2','2. Subsanación'],['e3',`3. ${(ev?.etapas.find(e=>e.id==='e3')||{}).label||'Retorno / Cooperación'}`],['e4','4. Judicial'],['e5','5. Cierre'],['datos','Datos'],['personas','Personas'],['bitacora','Bitácora']];
+
+  return(
+    <div style={{display:'flex',flexDirection:'column',height:'100vh',background:BG}}>
+      <header style={{background:SURF,borderBottom:`1px solid ${BR}`,flexShrink:0,boxShadow:'0 1px 3px rgba(0,0,0,.04)'}}>
+        <div style={{padding:'0 20px',height:56,display:'flex',alignItems:'center',gap:12}}>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <div style={{width:32,height:32,borderRadius:9,background:BL,display:'flex',alignItems:'center',justifyContent:'center'}}><IGlobe size={15} c="#fff"/></div>
+            <div>
+              <div style={{fontSize:9.5,color:TX3,textTransform:'uppercase',letterSpacing:'.5px'}}>DGNNA — MIMP</div>
+              <div style={{fontSize:14,fontWeight:800,color:TX,letterSpacing:'-.01em'}}>Sustracción Internacional</div>
+            </div>
+          </div>
+          <div style={{marginLeft:'auto',display:'flex',gap:8}}>
+            <button onClick={()=>{setSel(null);setView(view==='dash'?'bandeja':'dash')}} style={{display:'flex',alignItems:'center',gap:6,background:view==='dash'?BL:BG,color:view==='dash'?'#fff':TX2,border:`1px solid ${view==='dash'?BL:BR}`,borderRadius:8,padding:'7px 13px',fontSize:12,fontWeight:600}}>
+              {view==='dash'?<><IFile size={13}/> Bandeja</>:<><IChart size={13}/> Panel</>}
+            </button>
+            <button onClick={()=>setNuevo(true)} style={{display:'flex',alignItems:'center',gap:5,background:BL,color:'#fff',border:0,borderRadius:8,padding:'7px 13px',fontSize:12,fontWeight:700}}><IPlus size={13}/> Nuevo</button>
+          </div>
+        </div>
+      </header>
+
+      {view==='dash'?<Dash casos={casos}/>:
+       !sel?<Bandeja casos={casos} onOpen={open} onNuevo={()=>setNuevo(true)}/>:(
+        <div className="ar" style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+          <div style={{background:SURF,borderBottom:`1px solid ${BR}`,padding:'12px 20px',display:'flex',alignItems:'center',gap:14,flexShrink:0}}>
+            <button onClick={()=>setSel(null)} style={{width:32,height:32,borderRadius:8,border:`1px solid ${BR}`,background:SURF,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><IArrowL size={14} c={TX2}/></button>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:9.5,fontWeight:800,color:TX3,textTransform:'uppercase',letterSpacing:'.04em'}}>Expediente · <span className="mono">{sel.codigo}</span></div>
+              <div style={{fontSize:17,fontWeight:800,color:TX,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{nomCaso(sel)}</div>
+            </div>
+            <div style={{display:'flex',gap:7,flexShrink:0,alignItems:'center'}}>
+              <Chip tone="n">{sel.acPeru==='Requerida'?<IUsers size={10} c={TX2}/>:<IPlane size={10} c={TX2}/>} AC {sel.acPeru||'sin rol'}</Chip>
+              <Chip tone="n">{sel.pais}</Chip>
+              <Chip tone={ev.cerrado?'ok':'info'}>{ev.cerrado?'Cerrado':`Etapa ${(ev.etapas.find(e=>e.estado==='activa')||{}).n||'—'}`}</Chip>
+            </div>
+          </div>
+
+          {/* Barra de próxima acción + alertas */}
+          <div style={{background:ev.alertas.some(a=>a.t==='error')?RBG:'#EFF6FF',borderBottom:`1px solid ${ev.alertas.some(a=>a.t==='error')?RBR:'#BFDBFE'}`,padding:'11px 20px',flexShrink:0}}>
+            <div style={{display:'flex',alignItems:'flex-start',gap:11,maxWidth:1100}}>
+              <span style={{width:26,height:26,borderRadius:8,background:'#fff',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:1}}>
+                {ev.alertas.some(a=>a.t==='error')?<IAlert size={13} c={RD}/>:<IInfo size={13} c={BL}/>}
+              </span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:9.5,fontWeight:800,color:ev.alertas.some(a=>a.t==='error')?'#991B1B':BL,textTransform:'uppercase',letterSpacing:'.05em'}}>Próxima acción</div>
+                <div style={{fontSize:12.5,fontWeight:700,color:TX,marginTop:3,lineHeight:1.45}}>{ev.proxima}</div>
+                {ev.alertas.length>0&&(
+                  <div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:8}}>
+                    {ev.alertas.map((a,i)=><Chip key={i} tone={a.t==='error'?'err':a.t==='warn'?'warn':'info'}>{a.m}</Chip>)}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div style={{flex:1,display:'flex',overflow:'hidden',minHeight:0}}>
+            <Rail etapas={ev.etapas} active={tab} onGo={setTab} avance={ev.avance}/>
+            <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minWidth:0}}>
+              <div className="sc" style={{display:'flex',gap:3,padding:'10px 20px 0',background:SURF,borderBottom:`1px solid ${BR}`,overflowX:'auto',flexShrink:0}}>
+                {TABS.map(([id,l])=>(
+                  <button key={id} onClick={()=>setTab(id)} style={{padding:'8px 12px',border:0,borderBottom:`2px solid ${tab===id?BL:'transparent'}`,background:'none',color:tab===id?BL:TX2,fontSize:11.5,fontWeight:tab===id?800:600,whiteSpace:'nowrap'}}>{l}</button>
+                ))}
+              </div>
+              <div className="sc" style={{flex:1,overflowY:'auto',padding:'18px 20px'}}>
+                {tab==='e1'&&<E1 caso={sel} ev={ev} upd={upd}/>}
+                {tab==='e2'&&<E2 caso={sel} ev={ev} upd={upd}/>}
+                {tab==='e3'&&<E3 caso={sel} ev={ev} upd={upd}/>}
+                {tab==='e4'&&<E4 caso={sel} ev={ev} upd={upd}/>}
+                {tab==='e5'&&<E5 caso={sel} ev={ev} upd={upd}/>}
+                {tab==='datos'&&<Datos caso={sel} upd={upd}/>}
+                {tab==='personas'&&<Personas caso={sel} upd={upd}/>}
+                {tab==='bitacora'&&<Bitacora caso={sel} add={addBit}/>}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {nuevo&&<Nuevo onClose={()=>setNuevo(false)} onCreate={f=>{
+        const n=mk({...f,id:`c${++_id}`,etapa1:{requisitos:REQS.map(()=>'Pendiente')},
+          bitacora:[{id:`b${++_id}`,fecha:hoy(),texto:'Registro del expediente en el sistema.',autor:'Usuario actual'}]});
+        setCasos(cs=>[n,...cs]);setNuevo(false);open(n);
+      }}/>}
+
+      <TweaksPanel>
+        <TweakSection title="Expediente">
+          <TweakToggle id="showReglas" label="Mostrar panel de reglas" value={tweaks.showReglas} onChange={v=>setTweak('showReglas',v)}/>
+        </TweakSection>
+      </TweaksPanel>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
