@@ -61,9 +61,13 @@ def crear_caso(
             raise HTTPException(status_code=409, detail=f"El código '{body.codigo}' ya existe")
 
         data = body.model_dump()
-        data["codigo"]    = data["codigo"].strip()
-        data["nnaNombre"] = data["nnaNombre"].strip()
-        data["pais"]      = data["pais"].strip()
+        data["codigo"]    = (data.get("codigo") or "").strip()
+        data["nnaNombre"] = (data.get("nnaNombre") or "").strip()
+        data["pais"]      = (data.get("pais") or "").strip()
+
+        if not data["nnaNombre"]:
+            raise HTTPException(status_code=400, detail="El nombre del menor involucrado (NNA) es obligatorio")
+
         data["creadoPor"] = data.get("creadoPor") or current_user.get("nombre", "")
 
         caso = CasoSustracion(**data)
@@ -138,6 +142,50 @@ def actualizar_caso(
             selectinload(CasoSustracion.historialJudicial),
         ).filter(CasoSustracion.id == id).first()
 
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/{id}/proceso-operativo", response_model=CasoSustracionOut)
+def actualizar_proceso_operativo(
+    id: str,
+    body: dict,
+    db: Session = Depends(get_db),
+    _: dict = Depends(get_current_user),
+):
+    try:
+        caso = db.query(CasoSustracion).filter(CasoSustracion.id == id).first()
+        if not caso:
+            raise HTTPException(status_code=404, detail="Caso no encontrado")
+
+        # Mapear campos relevantes del proceso operativo al modelo de base de datos
+        if "faseOperativa" in body:
+            fase = body["faseOperativa"]
+            if "judicial" in fase.lower():
+                caso.etapa = "Judicial"
+            elif "cierre" in fase.lower():
+                caso.etapa = "Cierre"
+            else:
+                caso.etapa = "Administrativo"
+
+        if "fechaEntrevista" in body and body["fechaEntrevista"]:
+            caso.fechaEntrevista = body["fechaEntrevista"]
+        if "resultadoEntrevista" in body and body["resultadoEntrevista"]:
+            caso.resultadoEntrevista = body["resultadoEntrevista"]
+
+        from datetime import datetime
+        caso.updatedAt = datetime.utcnow()
+        db.commit()
+
+        return db.query(CasoSustracion).options(
+            selectinload(CasoSustracion.bitacora),
+            selectinload(CasoSustracion.historialJudicial),
+        ).filter(CasoSustracion.id == id).first()
     except HTTPException:
         db.rollback()
         raise

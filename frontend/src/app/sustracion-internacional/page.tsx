@@ -114,7 +114,13 @@ function estadoBadge(e: string) {
   return { bg: '#F1F5F9', color: '#475569', border: '#CBD5E1', label: 'Archivado', accent: '#64748B' };
 }
 
-function todayStr() { return new Date().toISOString().split('T')[0]; }
+function todayStr() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dia = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dia}`;
+}
 
 function fmtFecha(f?: string): string {
   if (!f) return '—';
@@ -354,7 +360,9 @@ export default function SustracionPage() {
 
   // Nuevo caso
   const [formNew, setFormNew] = useState<Partial<Caso>>(emptyForm());
-  const [nnaNew, setNnaNew] = useState<NnaForm[]>([emptyNnaForm()]);
+  const [nnaNew, setNnaNew] = useState<NnaForm[]>([]);
+  const [modalNnaIndex, setModalNnaIndex] = useState<number | null>(null);
+  const [modalNnaForm, setModalNnaForm] = useState<NnaForm>(emptyNnaForm());
   const [savingNew, setSavingNew] = useState(false);
   const [errorNew, setErrorNew] = useState('');
 
@@ -497,7 +505,7 @@ export default function SustracionPage() {
     } finally { setSaving(false); }
   };
 
-  const guardarProceso = async (proc: ProcesoOperativo) => {
+  const guardarProceso = async (proc: ProcesoOperativo, notaBitacora?: string, targetTab?: ExpedienteTab) => {
     if (!selected) return;
     try {
       const res = await fetch(`/api/sustracion/${selected.id}/proceso-operativo`, {
@@ -509,16 +517,33 @@ export default function SustracionPage() {
         const error = await res.json().catch(() => null);
         throw new Error(error?.detail || 'Error al actualizar el flujo');
       }
-      const updated = await res.json();
+      let updated = await res.json();
+
+      // Registro automático en Bitácora si se proporciona nota
+      if (notaBitacora) {
+        try {
+          const bitRes = await fetch(`/api/sustracion/${selected.id}/bitacora`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fecha: todayStr(), texto: notaBitacora, creadoPor: me?.nombre || me?.username || 'Sistema' }),
+          });
+          if (bitRes.ok) {
+            const nueva = await bitRes.json();
+            updated = { ...updated, bitacora: [...(updated.bitacora || []), nueva] };
+          }
+        } catch {}
+      }
+
       setSelected(updated);
       setCasos(prev => prev.map(c => (c.id === updated.id ? updated : c)));
       setPending(current => {
-        const rest = { ...current }
-        delete rest.fechaEntrevista
-        delete rest.resultadoEntrevista
-        return rest
+        const rest = { ...current };
+        delete rest.fechaEntrevista;
+        delete rest.resultadoEntrevista;
+        return rest;
       });
-      setTab(deriveCaseFlow(updated).current.id);
+      const nextId = targetTab || deriveCaseFlow(updated).current.id;
+      setTab(nextId);
       toast.success('Flujo operativo actualizado');
     } catch (error: any) {
       toast.error(error?.message || 'Error al actualizar el flujo de la directiva');
@@ -530,24 +555,36 @@ export default function SustracionPage() {
       setErrorNew('Hoja de Trámite, País y Fecha de Ingreso son obligatorios.');
       return;
     }
-    const primerNna = nnaNew[0];
-    const nombreMenor = primerNna ? [primerNna.nombres, primerNna.primerApellido, primerNna.segundoApellido].filter(Boolean).join(' ') : '';
-    if (!nombreMenor.trim()) {
-      setErrorNew('Debes ingresar al menos el nombre y apellido del menor involucrado.');
+    const menoresValidos = nnaNew.filter(n => n && (Boolean(n.nombres?.trim()) || Boolean(n.primerApellido?.trim())));
+    if (menoresValidos.length === 0) {
+      setErrorNew('Debes agregar al menos un menor involucrado (NNA) usando el botón "+ Agregar NNA".');
       return;
     }
+    const primerNna = menoresValidos[0];
+    const nombreMenor = menoresValidos
+      .map(n => [n.nombres, n.primerApellido, n.segundoApellido].filter(Boolean).join(' ').trim())
+      .filter(Boolean)
+      .join(' / ');
+
+    if (!nombreMenor.trim()) {
+      setErrorNew('El nombre y apellido del menor son obligatorios.');
+      return;
+    }
+
     setSavingNew(true);
     setErrorNew('');
     try {
       const payload = {
         ...formNew,
+        profesional: me?.nombre || me?.username || 'Usuario en sesión',
         nnaNombre: nombreMenor,
-        nnaSexo: primerNna.sexo,
-        nnaEdad: primerNna.edad,
-        nnaTipoEdad: primerNna.tipoEdad,
-        nnaFechaNac: primerNna.fechaNacimiento,
-        creadoPor: me?.nombre || 'Usuario',
+        nnaSexo: primerNna.sexo || '',
+        nnaEdad: primerNna.edad ? String(primerNna.edad) : '',
+        nnaTipoEdad: primerNna.tipoEdad || 'Años',
+        nnaFechaNac: primerNna.fechaNacimiento || '',
+        creadoPor: me?.nombre || me?.username || 'Usuario',
         bitacora: [],
+        nna: menoresValidos,
       };
       const res = await fetch('/api/sustracion', {
         method: 'POST',
@@ -646,6 +683,14 @@ export default function SustracionPage() {
           .si-drawer .main-scroll > div { grid-template-columns: 1fr !important; }
           .si-drawer .main-scroll > div > * { grid-column: 1 / -1 !important; border-right: 0 !important; }
         }
+        .si-input {
+          transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+        }
+        .si-input:focus {
+          border-color: #2563EB !important;
+          background: #FFFFFF !important;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+        }
       `}</style>
 
       {/* Header Institucional */}
@@ -683,9 +728,10 @@ export default function SustracionPage() {
           <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px' }} className="main-scroll">
             <div style={{ maxWidth: 1000, margin: '0 auto' }}>
 
+              {/* ENCABEZADO SUPERIOR */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <button onClick={() => setView('casos')} style={{ width: 34, height: 34, borderRadius: 7, border: `1px solid ${BR}`, background: SURF, color: TX2, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                  <button onClick={() => setView('casos')} style={{ width: 34, height: 34, borderRadius: 7, border: `1px solid ${BR}`, background: SURF, color: TX2, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} title="Volver a la bandeja">
                     <ArrowLeft size={16} />
                   </button>
                   <div>
@@ -694,10 +740,10 @@ export default function SustracionPage() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button onClick={cargarBorrador} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 6, border: `1px solid ${BR}`, background: SURF, color: TX2, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                  <button onClick={cargarBorrador} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 7, border: `1px solid ${BR}`, background: SURF, color: TX2, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
                     <Save size={13} /> Cargar Borrador
                   </button>
-                  <button onClick={crearCasoDesdePagina} disabled={savingNew} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 6, border: 'none', background: BL, color: '#fff', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
+                  <button onClick={crearCasoDesdePagina} disabled={savingNew} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 7, border: 'none', background: BL, color: '#fff', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
                     <Plus size={14} /> {savingNew ? 'Registrando...' : 'Registrar Caso'}
                   </button>
                 </div>
@@ -709,101 +755,447 @@ export default function SustracionPage() {
                 </div>
               )}
 
+              {/* ALERTA PREVENTIVA: MAYORÍA DE EDAD (ART. 4 CONVENIO DE LA HAYA) */}
+              {(() => {
+                const hayMayor16 = nnaNew.some(n => {
+                  if (!n.fechaNacimiento) return false;
+                  const ed = edadDesdeNacimiento(n.fechaNacimiento, formNew.fechaIngreso || todayStr());
+                  return ed.tipoEdad === 'Años' && parseInt(ed.edad || '0', 10) >= 16;
+                });
+                if (!hayMayor16) return null;
+                return (
+                  <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', padding: '10px 14px', borderRadius: 7, color: '#92400E', fontSize: 11.5, fontWeight: 600, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <AlertTriangle size={15} color="#D97706" />
+                    <span><b>Advertencia:</b> Un NNA tiene 16 años o más al ingreso. Según el Art. 4 del Convenio de La Haya de 1980, el procedimiento de restitución internacional no resulta aplicable.</span>
+                  </div>
+                );
+              })()}
+
               {/* BLOQUE 1: DATOS DEL TRÁMITE */}
-              <section style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 18, marginBottom: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 12, paddingBottom: 6, borderBottom: `1px solid ${BR}` }}>1. Datos del Trámite Institucional</div>
+              <section style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 18, marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 12, paddingBottom: 6, borderBottom: `1px solid ${BR}` }}>
+                  1. Datos del Trámite Institucional
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14 }}>
-                  <label style={fieldLabelStyle}>Hoja de Trámite / Código *<input value={formNew.codigo || ''} onChange={e => setFormNew(p => ({ ...p, codigo: e.target.value }))} placeholder="Ej. HT-2026-0045" style={fieldInputStyle} /></label>
-                  <label style={fieldLabelStyle}>Fecha de Ingreso *<input type="date" value={formNew.fechaIngreso || ''} onChange={e => setFormNew(p => ({ ...p, fechaIngreso: e.target.value }))} style={fieldInputStyle} /></label>
-                  <label style={fieldLabelStyle}>País Contraparte *<select value={formNew.pais || ''} onChange={e => setFormNew(p => ({ ...p, pais: e.target.value }))} style={fieldInputStyle}><option value="">Seleccionar país</option>{PAISES.map(p => <option key={p} value={p}>{p}</option>)}</select></label>
-                  <label style={fieldLabelStyle}>Tipo de Solicitud<select value={formNew.tipoSolicitud || 'Restitución'} onChange={e => setFormNew(p => ({ ...p, tipoSolicitud: e.target.value }))} style={fieldInputStyle}>{TIPO_SOL.map(t => <option key={t} value={t}>{t}</option>)}</select></label>
-                  <label style={fieldLabelStyle}>Rol AC Perú<select value={formNew.acPeru || 'Requerida'} onChange={e => setFormNew(p => ({ ...p, acPeru: e.target.value }))} style={fieldInputStyle}>{AC_PERU.map(a => <option key={a} value={a}>{a} {a === 'Requerida' ? '(Menor en Perú)' : '(Menor en Exterior)'}</option>)}</select></label>
-                  <label style={fieldLabelStyle}>Profesional Asignado<select value={formNew.profesional || me?.nombre || ''} onChange={e => setFormNew(p => ({ ...p, profesional: e.target.value }))} style={fieldInputStyle}><option value="">Sin asignar</option>{PROFESIONALES.map(p => <option key={p} value={p}>{p}</option>)}</select></label>
+                  <label style={fieldLabelStyle}>
+                    Hoja de Trámite / Código *
+                    <input className="si-input" value={formNew.codigo || ''} onChange={e => setFormNew(p => ({ ...p, codigo: e.target.value }))} placeholder="Ej. HT-2026-0045" style={fieldInputStyle} />
+                  </label>
+                  <label style={fieldLabelStyle}>
+                    Fecha de Ingreso *
+                    <input className="si-input" type="date" value={formNew.fechaIngreso || ''} onChange={e => setFormNew(p => ({ ...p, fechaIngreso: e.target.value }))} style={fieldInputStyle} />
+                  </label>
+                  <label style={fieldLabelStyle}>
+                    País Contraparte *
+                    <select className="si-input" value={formNew.pais || ''} onChange={e => setFormNew(p => ({ ...p, pais: e.target.value }))} style={fieldInputStyle}>
+                      <option value="">Seleccionar país</option>
+                      {PAISES.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </label>
+                  <label style={fieldLabelStyle}>
+                    Tipo de Solicitud
+                    <select className="si-input" value={formNew.tipoSolicitud || 'Restitución'} onChange={e => setFormNew(p => ({ ...p, tipoSolicitud: e.target.value }))} style={fieldInputStyle}>
+                      {TIPO_SOL.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </label>
+                  <label style={fieldLabelStyle}>
+                    Rol AC Perú
+                    <select className="si-input" value={formNew.acPeru || 'Requerida'} onChange={e => setFormNew(p => ({ ...p, acPeru: e.target.value }))} style={fieldInputStyle}>
+                      {AC_PERU.map(a => <option key={a} value={a}>{a} {a === 'Requerida' ? '(Menor en Perú)' : '(Menor en Exterior)'}</option>)}
+                    </select>
+                  </label>
+                  <label style={fieldLabelStyle}>
+                    Profesional que Registra
+                    <div style={{ ...fieldInputStyle, background: '#F8FAFC', color: TX, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 7, cursor: 'default', border: `1.5px solid ${BR}` }}>
+                      <User size={13} color={BL} />
+                      <span style={{ color: TX }}>{me?.nombre || me?.username || 'Usuario en sesión'}</span>
+                      <span style={{ fontSize: 9.5, color: TX3, fontWeight: 600, marginLeft: 'auto', background: '#F1F5F9', padding: '2px 6px', borderRadius: 4 }}>
+                        Sesión activa
+                      </span>
+                    </div>
+                  </label>
                 </div>
               </section>
 
-              {/* BLOQUE 2: MENORES INVOLUCRADOS */}
-              <section style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 18, marginBottom: 16 }}>
+              {/* BLOQUE 2: MENORES INVOLUCRADOS (TABLA + MODAL) */}
+              <section style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 18, marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.4px' }}>2. Menores Involucrados (NNA)</div>
-                  <button type="button" onClick={() => setNnaNew(p => [...p, emptyNnaForm()])} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 6, border: '1px solid #BFDBFE', background: '#EFF6FF', color: BL, fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
-                    <Plus size={13} /> Agregar otro menor
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                      2. Menores Involucrados (NNA) *
+                    </div>
+                    <div style={{ fontSize: 10.5, color: TX3, marginTop: 2 }}>
+                      {nnaNew.filter(n => n.nombres.trim()).length} menor(es) registrado(s) en el caso
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalNnaForm(emptyNnaForm());
+                      setModalNnaIndex(-1);
+                    }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '7px 14px', borderRadius: 6,
+                      border: '1px solid #BFDBFE', background: '#EFF6FF',
+                      color: BL, fontSize: 11, fontWeight: 800, cursor: 'pointer'
+                    }}
+                  >
+                    <Plus size={13} /> Agregar NNA
                   </button>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {nnaNew.map((n, idx) => (
-                    <div key={idx} style={{ border: `1px solid ${BR}`, borderRadius: 8, padding: 14, background: '#F8FAFC' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                        <div style={{ fontSize: 11, fontWeight: 800, color: N2 }}>Menor Involucrado N.° {idx + 1}</div>
-                        {nnaNew.length > 1 && (
-                          <button type="button" onClick={() => setNnaNew(p => p.filter((_, i) => i !== idx))} style={{ border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626', borderRadius: 6, padding: '4px 8px', fontSize: 10, cursor: 'pointer' }}>
-                            <Trash2 size={12} />
-                          </button>
-                        )}
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12 }}>
-                        <label style={fieldLabelStyle}>Nombres *<input value={n.nombres} onChange={e => { const val = e.target.value; setNnaNew(p => p.map((item, i) => i === idx ? { ...item, nombres: val } : item)) }} style={fieldInputStyle} /></label>
-                        <label style={fieldLabelStyle}>Primer Apellido *<input value={n.primerApellido} onChange={e => { const val = e.target.value; setNnaNew(p => p.map((item, i) => i === idx ? { ...item, primerApellido: val } : item)) }} style={fieldInputStyle} /></label>
-                        <label style={fieldLabelStyle}>Segundo Apellido<input value={n.segundoApellido || ''} onChange={e => { const val = e.target.value; setNnaNew(p => p.map((item, i) => i === idx ? { ...item, segundoApellido: val } : item)) }} style={fieldInputStyle} /></label>
-                        <label style={fieldLabelStyle}>Sexo<select value={n.sexo || ''} onChange={e => { const val = e.target.value; setNnaNew(p => p.map((item, i) => i === idx ? { ...item, sexo: val } : item)) }} style={fieldInputStyle}><option value="">Seleccionar</option>{SEXOS.map(s => <option key={s} value={s}>{s}</option>)}</select></label>
-                        <label style={fieldLabelStyle}>Fecha de Nacimiento<input type="date" value={n.fechaNacimiento || ''} onChange={e => { const val = e.target.value; const ed = edadDesdeNacimiento(val, formNew.fechaIngreso || todayStr()); setNnaNew(p => p.map((item, i) => i === idx ? { ...item, fechaNacimiento: val, edad: ed.edad, tipoEdad: ed.tipoEdad } : item)) }} style={fieldInputStyle} /></label>
-                        <label style={fieldLabelStyle}>Edad Calculada<input value={n.edad ? `${n.edad} ${n.tipoEdad}` : ''} readOnly style={{ ...fieldInputStyle, background: '#E2E8F0', fontWeight: 700 }} /></label>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+
+                {nnaNew.filter(n => n.nombres.trim() || n.primerApellido.trim()).length === 0 ? (
+                  <div style={{ padding: '24px 16px', textAlign: 'center', border: `1.5px dashed ${BR}`, borderRadius: 8, background: '#FAFBFD', color: TX3 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: TX2, marginBottom: 4 }}>No hay menores agregados</div>
+                    <div style={{ fontSize: 11, marginBottom: 12 }}>Haz clic en el botón para ingresar los datos del menor involucrado.</div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModalNnaForm(emptyNnaForm());
+                        setModalNnaIndex(-1);
+                      }}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 5,
+                        padding: '6px 12px', borderRadius: 6,
+                        border: 'none', background: BL, color: '#fff',
+                        fontSize: 11, fontWeight: 700, cursor: 'pointer'
+                      }}
+                    >
+                      <Plus size={12} /> Agregar primer NNA
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ overflowX: 'auto', border: `1px solid ${BR}`, borderRadius: 8 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5, background: '#fff' }}>
+                      <thead>
+                        <tr style={{ textAlign: 'left', color: TX3, textTransform: 'uppercase', fontSize: 10, background: '#F8FAFC', borderBottom: `1px solid ${BR}` }}>
+                          <th style={{ padding: '9px 12px', width: 44 }}>N.°</th>
+                          <th style={{ padding: '9px 12px' }}>Nombres y Apellidos</th>
+                          <th style={{ padding: '9px 12px' }}>Sexo</th>
+                          <th style={{ padding: '9px 12px' }}>Fecha de Nacimiento</th>
+                          <th style={{ padding: '9px 12px' }}>Edad Calculada</th>
+                          <th style={{ padding: '9px 12px', textAlign: 'right', width: 80 }}>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {nnaNew.filter(n => n.nombres.trim() || n.primerApellido.trim()).map((n, idx) => {
+                          const esMayor16 = n.tipoEdad === 'Años' && parseInt(n.edad || '0', 10) >= 16;
+                          return (
+                            <tr key={idx} style={{ borderTop: idx ? `1px solid ${BR}` : 'none' }}>
+                              <td style={{ padding: '10px 12px', color: TX3, fontWeight: 700 }}>{String(idx + 1).padStart(2, '0')}</td>
+                              <td style={{ padding: '10px 12px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#EFF6FF', color: BL, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>
+                                    {n.nombres?.[0]?.toUpperCase() || 'N'}
+                                  </div>
+                                  <span style={{ fontWeight: 700, color: TX }}>{[n.nombres, n.primerApellido, n.segundoApellido].filter(Boolean).join(' ')}</span>
+                                </div>
+                              </td>
+                              <td style={{ padding: '10px 12px', color: TX2 }}>{n.sexo || '—'}</td>
+                              <td style={{ padding: '10px 12px', color: TX2 }}>{fmtFecha(n.fechaNacimiento)}</td>
+                              <td style={{ padding: '10px 12px' }}>
+                                {n.edad ? (
+                                  <span style={{ padding: '2px 8px', borderRadius: 99, background: esMayor16 ? '#FEE2E2' : '#DCFCE7', color: esMayor16 ? '#991B1B' : '#15803D', fontSize: 10.5, fontWeight: 800 }}>
+                                    {n.edad} {n.tipoEdad}
+                                  </span>
+                                ) : '—'}
+                              </td>
+                              <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setModalNnaForm({ ...n });
+                                      setModalNnaIndex(idx);
+                                    }}
+                                    title="Editar datos del menor"
+                                    style={{ width: 28, height: 28, borderRadius: 6, border: `1px solid ${BR}`, background: '#F8FAFC', color: TX2, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                  >
+                                    <Edit3 size={12} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setNnaNew(prev => prev.filter((_, i) => i !== idx))}
+                                    title="Quitar menor"
+                                    style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </section>
 
               {/* BLOQUE 3: SUJETOS DEL PROCEDIMIENTO */}
-              <section style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 18, marginBottom: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 12, paddingBottom: 6, borderBottom: `1px solid ${BR}` }}>3. Sujetos del Procedimiento</div>
+              <section style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 18, marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 12, paddingBottom: 6, borderBottom: `1px solid ${BR}` }}>
+                  3. Sujetos del Procedimiento
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                  <div style={{ border: `1px solid ${BR}`, borderRadius: 8, padding: 12, background: '#F8FAFC' }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: BL, marginBottom: 8 }}>Parte Solicitante (Requirente)</div>
+                  <div style={{ border: `1px solid ${BR}`, borderRadius: 8, padding: 14, background: '#F8FAFC' }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: BL, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <User size={13} /> Parte Solicitante (Requirente)
+                    </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <label style={fieldLabelStyle}>Nombres y Apellidos<input value={formNew.solicitanteNombre || ''} onChange={e => setFormNew(p => ({ ...p, solicitanteNombre: e.target.value }))} style={fieldInputStyle} /></label>
+                      <label style={fieldLabelStyle}>
+                        Nombres y Apellidos *
+                        <input className="si-input" value={formNew.solicitanteNombre || ''} onChange={e => setFormNew(p => ({ ...p, solicitanteNombre: e.target.value }))} placeholder="Nombres completos" style={fieldInputStyle} />
+                      </label>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                        <label style={fieldLabelStyle}>Sexo<select value={formNew.solicitanteSexo || ''} onChange={e => setFormNew(p => ({ ...p, solicitanteSexo: e.target.value }))} style={fieldInputStyle}><option value="">Seleccionar</option>{SEXOS.map(s => <option key={s} value={s}>{s}</option>)}</select></label>
-                        <label style={fieldLabelStyle}>Teléfono<input value={formNew.solicitanteTelefono || ''} onChange={e => setFormNew(p => ({ ...p, solicitanteTelefono: e.target.value }))} style={fieldInputStyle} /></label>
+                        <label style={fieldLabelStyle}>
+                          Sexo
+                          <select className="si-input" value={formNew.solicitanteSexo || ''} onChange={e => setFormNew(p => ({ ...p, solicitanteSexo: e.target.value }))} style={fieldInputStyle}>
+                            <option value="">Seleccionar</option>
+                            {SEXOS.map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </label>
+                        <label style={fieldLabelStyle}>
+                          Teléfono
+                          <input className="si-input" value={formNew.solicitanteTelefono || ''} onChange={e => setFormNew(p => ({ ...p, solicitanteTelefono: e.target.value }))} placeholder="Teléfono de contacto" style={fieldInputStyle} />
+                        </label>
                       </div>
-                      <label style={fieldLabelStyle}>Correo Electrónico<input value={formNew.solicitanteCorreo || ''} onChange={e => setFormNew(p => ({ ...p, solicitanteCorreo: e.target.value }))} style={fieldInputStyle} /></label>
-                      <label style={fieldLabelStyle}>Domicilio en el Extranjero<input value={formNew.solicitanteDomicilio || ''} onChange={e => setFormNew(p => ({ ...p, solicitanteDomicilio: e.target.value }))} style={fieldInputStyle} /></label>
+                      <label style={fieldLabelStyle}>
+                        Correo Electrónico
+                        <input className="si-input" value={formNew.solicitanteCorreo || ''} onChange={e => setFormNew(p => ({ ...p, solicitanteCorreo: e.target.value }))} placeholder="correo@ejemplo.com" style={fieldInputStyle} />
+                      </label>
+                      <label style={fieldLabelStyle}>
+                        Domicilio en el Extranjero
+                        <input className="si-input" value={formNew.solicitanteDomicilio || ''} onChange={e => setFormNew(p => ({ ...p, solicitanteDomicilio: e.target.value }))} placeholder="Dirección en el país requirente" style={fieldInputStyle} />
+                      </label>
                     </div>
                   </div>
 
-                  <div style={{ border: `1px solid ${BR}`, borderRadius: 8, padding: 12, background: '#F8FAFC' }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: '#D97706', marginBottom: 8 }}>Parte Requerida (Sustractor / Retenedor)</div>
+                  <div style={{ border: `1px solid ${BR}`, borderRadius: 8, padding: 14, background: '#F8FAFC' }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: '#D97706', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <User size={13} /> Parte Requerida (Sustractor / Retenedor)
+                    </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <label style={fieldLabelStyle}>Nombres y Apellidos<input value={formNew.requeridoNombre || ''} onChange={e => setFormNew(p => ({ ...p, requeridoNombre: e.target.value }))} style={fieldInputStyle} /></label>
+                      <label style={fieldLabelStyle}>
+                        Nombres y Apellidos
+                        <input className="si-input" value={formNew.requeridoNombre || ''} onChange={e => setFormNew(p => ({ ...p, requeridoNombre: e.target.value }))} placeholder="Nombres completos" style={fieldInputStyle} />
+                      </label>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                        <label style={fieldLabelStyle}>Sexo<select value={formNew.requeridoSexo || ''} onChange={e => setFormNew(p => ({ ...p, requeridoSexo: e.target.value }))} style={fieldInputStyle}><option value="">Seleccionar</option>{SEXOS.map(s => <option key={s} value={s}>{s}</option>)}</select></label>
-                        <label style={fieldLabelStyle}>Teléfono<input value={formNew.requeridoTelefono || ''} onChange={e => setFormNew(p => ({ ...p, requeridoTelefono: e.target.value }))} style={fieldInputStyle} /></label>
+                        <label style={fieldLabelStyle}>
+                          Sexo
+                          <select className="si-input" value={formNew.requeridoSexo || ''} onChange={e => setFormNew(p => ({ ...p, requeridoSexo: e.target.value }))} style={fieldInputStyle}>
+                            <option value="">Seleccionar</option>
+                            {SEXOS.map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </label>
+                        <label style={fieldLabelStyle}>
+                          Teléfono
+                          <input className="si-input" value={formNew.requeridoTelefono || ''} onChange={e => setFormNew(p => ({ ...p, requeridoTelefono: e.target.value }))} placeholder="Teléfono de contacto" style={fieldInputStyle} />
+                        </label>
                       </div>
-                      <label style={fieldLabelStyle}>Correo Electrónico<input value={formNew.requeridoCorreo || ''} onChange={e => setFormNew(p => ({ ...p, requeridoCorreo: e.target.value }))} style={fieldInputStyle} /></label>
-                      <label style={fieldLabelStyle}>Domicilio / Ubicación en el Perú<input value={formNew.requeridoDomicilio || ''} onChange={e => setFormNew(p => ({ ...p, requeridoDomicilio: e.target.value }))} style={fieldInputStyle} /></label>
+                      <label style={fieldLabelStyle}>
+                        Correo Electrónico
+                        <input className="si-input" value={formNew.requeridoCorreo || ''} onChange={e => setFormNew(p => ({ ...p, requeridoCorreo: e.target.value }))} placeholder="correo@ejemplo.com" style={fieldInputStyle} />
+                      </label>
+                      <label style={fieldLabelStyle}>
+                        Domicilio / Ubicación en el Perú
+                        <input className="si-input" value={formNew.requeridoDomicilio || ''} onChange={e => setFormNew(p => ({ ...p, requeridoDomicilio: e.target.value }))} placeholder="Dirección o referencia en Perú" style={fieldInputStyle} />
+                      </label>
                     </div>
                   </div>
                 </div>
               </section>
 
               {/* BLOQUE 4: ESTADO Y OBSERVACIONES */}
-              <section style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 18, marginBottom: 20 }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 12, paddingBottom: 6, borderBottom: `1px solid ${BR}` }}>4. Estado y Observaciones Iniciales</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-                  <label style={fieldLabelStyle}>Estado Inicial<select value={formNew.estado || 'Tramite'} onChange={e => setFormNew(p => ({ ...p, estado: e.target.value }))} style={fieldInputStyle}><option value="Tramite">En trámite</option><option value="Pendiente">Pendiente</option></select></label>
-                  <label style={fieldLabelStyle}>Etapa Inicial<select value={formNew.etapa || 'Administrativo'} onChange={e => setFormNew(p => ({ ...p, etapa: e.target.value }))} style={fieldInputStyle}><option value="Administrativo">Administrativo</option><option value="Judicial">Judicial</option></select></label>
+              <section style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 18, marginBottom: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 12, paddingBottom: 6, borderBottom: `1px solid ${BR}` }}>
+                  4. Estado y Observaciones Iniciales
                 </div>
-                <label style={fieldLabelStyle}>Observaciones / Resumen de Hechos Iniciales<textarea value={formNew.observaciones || ''} onChange={e => setFormNew(p => ({ ...p, observaciones: e.target.value }))} rows={3} style={{ ...fieldInputStyle, resize: 'vertical' }} /></label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+                  <label style={fieldLabelStyle}>
+                    Estado Inicial
+                    <select className="si-input" value={formNew.estado || 'Tramite'} onChange={e => setFormNew(p => ({ ...p, estado: e.target.value }))} style={fieldInputStyle}>
+                      <option value="Tramite">En trámite</option>
+                      <option value="Pendiente">Pendiente</option>
+                    </select>
+                  </label>
+                  <label style={fieldLabelStyle}>
+                    Etapa Inicial
+                    <select className="si-input" value={formNew.etapa || 'Administrativo'} onChange={e => setFormNew(p => ({ ...p, etapa: e.target.value }))} style={fieldInputStyle}>
+                      <option value="Administrativo">Administrativo</option>
+                      <option value="Judicial">Judicial</option>
+                    </select>
+                  </label>
+                </div>
+                <label style={fieldLabelStyle}>
+                  Observaciones / Resumen de Hechos Iniciales
+                  <textarea className="si-input" value={formNew.observaciones || ''} onChange={e => setFormNew(p => ({ ...p, observaciones: e.target.value }))} rows={3} placeholder="Ingrese un resumen de los hechos o antecedentes del caso..." style={{ ...fieldInputStyle, resize: 'vertical' }} />
+                </label>
               </section>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingBottom: 40 }}>
+              {/* BOTONES DE ACCIÓN AL PIE */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, paddingBottom: 40 }}>
                 <button onClick={() => setView('casos')} style={{ padding: '9px 18px', borderRadius: 7, border: `1px solid ${BR}`, background: SURF, color: TX2, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
                   Cancelar
+                </button>
+                <button onClick={cargarBorrador} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 7, border: `1px solid ${BR}`, background: SURF, color: TX2, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                  <Save size={13} /> Guardar Borrador
                 </button>
                 <button onClick={crearCasoDesdePagina} disabled={savingNew} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 24px', borderRadius: 7, border: 'none', background: BL, color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>
                   <Plus size={14} /> {savingNew ? 'Registrando expediente...' : 'Registrar y Abrir Expediente'}
                 </button>
               </div>
+
+              {/* MODAL EMERGENTE PARA AGREGAR / EDITAR MENOR (NNA) */}
+              {modalNnaIndex !== null && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(15, 23, 42, 0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, backdropFilter: 'blur(3px)' }} onClick={() => setModalNnaIndex(null)}>
+                  <div style={{ background: SURF, borderRadius: 12, width: '100%', maxWidth: 520, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)', overflow: 'hidden', border: `1px solid ${BR}` }} onClick={e => e.stopPropagation()}>
+                    <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BR}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#FAFAFA' }}>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: TX }}>
+                          {modalNnaIndex >= 0 ? 'Editar Menor Involucrado (NNA)' : 'Agregar Menor Involucrado (NNA)'}
+                        </div>
+                        <div style={{ fontSize: 10.5, color: TX3, marginTop: 2 }}>
+                          Ingrese los datos personales y de nacimiento del menor.
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => setModalNnaIndex(null)} style={{ width: 30, height: 30, borderRadius: 6, border: `1px solid ${BR}`, background: SURF, color: TX2, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                        <X size={14} />
+                      </button>
+                    </div>
+
+                    <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <label style={fieldLabelStyle}>
+                        Nombres del Menor *
+                        <input
+                          className="si-input"
+                          value={modalNnaForm.nombres || ''}
+                          onChange={e => setModalNnaForm(p => ({ ...p, nombres: e.target.value }))}
+                          placeholder="Ej. Mateo Alejandro"
+                          autoFocus
+                          style={fieldInputStyle}
+                        />
+                      </label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <label style={fieldLabelStyle}>
+                          Primer Apellido *
+                          <input
+                            className="si-input"
+                            value={modalNnaForm.primerApellido || ''}
+                            onChange={e => setModalNnaForm(p => ({ ...p, primerApellido: e.target.value }))}
+                            placeholder="Primer apellido"
+                            style={fieldInputStyle}
+                          />
+                        </label>
+                        <label style={fieldLabelStyle}>
+                          Segundo Apellido
+                          <input
+                            className="si-input"
+                            value={modalNnaForm.segundoApellido || ''}
+                            onChange={e => setModalNnaForm(p => ({ ...p, segundoApellido: e.target.value }))}
+                            placeholder="Segundo apellido"
+                            style={fieldInputStyle}
+                          />
+                        </label>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <label style={fieldLabelStyle}>
+                          Sexo
+                          <select
+                            className="si-input"
+                            value={modalNnaForm.sexo || ''}
+                            onChange={e => setModalNnaForm(p => ({ ...p, sexo: e.target.value }))}
+                            style={fieldInputStyle}
+                          >
+                            <option value="">Seleccionar</option>
+                            {SEXOS.map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </label>
+                        <label style={fieldLabelStyle}>
+                          Fecha de Nacimiento
+                          <input
+                            className="si-input"
+                            type="date"
+                            value={modalNnaForm.fechaNacimiento || ''}
+                            onChange={e => {
+                              const val = e.target.value;
+                              const ed = edadDesdeNacimiento(val, formNew.fechaIngreso || todayStr());
+                              setModalNnaForm(p => ({ ...p, fechaNacimiento: val, edad: ed.edad, tipoEdad: ed.tipoEdad }));
+                            }}
+                            style={fieldInputStyle}
+                          />
+                        </label>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        <label style={fieldLabelStyle}>
+                          Edad al Ingreso *
+                          <input
+                            className="si-input"
+                            type="number"
+                            min="0"
+                            max="18"
+                            value={modalNnaForm.edad || ''}
+                            onChange={e => setModalNnaForm(p => ({ ...p, edad: e.target.value }))}
+                            placeholder="Ej. 8"
+                            style={fieldInputStyle}
+                          />
+                        </label>
+                        <label style={fieldLabelStyle}>
+                          Unidad de Tiempo
+                          <select
+                            className="si-input"
+                            value={modalNnaForm.tipoEdad || 'Años'}
+                            onChange={e => setModalNnaForm(p => ({ ...p, tipoEdad: e.target.value }))}
+                            style={fieldInputStyle}
+                          >
+                            <option value="Años">Años</option>
+                            <option value="Meses">Meses</option>
+                            <option value="Días">Días</option>
+                          </select>
+                        </label>
+                      </div>
+
+                      {/* ALERTA PREVENTIVA SI ES MAYOR O IGUAL A 16 AÑOS */}
+                      {modalNnaForm.tipoEdad === 'Años' && parseInt(modalNnaForm.edad || '0', 10) >= 16 && (
+                        <div style={{ padding: '8px 12px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 7, color: '#92400E', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <AlertTriangle size={13} color="#D97706" />
+                          <span>Atención: El NNA tiene 16 años o más al ingreso (Art. 4 Convenio de La Haya).</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ padding: '14px 20px', borderTop: `1px solid ${BR}`, background: '#FAFAFA', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => setModalNnaIndex(null)}
+                        style={{ padding: '8px 16px', borderRadius: 6, border: `1px solid ${BR}`, background: SURF, color: TX2, fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!modalNnaForm.nombres?.trim() || !modalNnaForm.primerApellido?.trim()) {
+                            toast.error('Debe ingresar al menos Nombres y Primer Apellido del menor');
+                            return;
+                          }
+                          if (modalNnaIndex >= 0) {
+                            setNnaNew(prev => prev.map((item, idx) => idx === modalNnaIndex ? { ...modalNnaForm } : item));
+                          } else {
+                            setNnaNew(prev => [...prev.filter(x => x && ((x.nombres && x.nombres.trim()) || (x.primerApellido && x.primerApellido.trim()))), { ...modalNnaForm }]);
+                          }
+                          setModalNnaIndex(null);
+                        }}
+                        style={{ padding: '8px 18px', borderRadius: 6, border: 'none', background: BL, color: '#fff', fontSize: 11.5, fontWeight: 800, cursor: 'pointer' }}
+                      >
+                        {modalNnaIndex >= 0 ? 'Guardar Cambios' : 'Agregar Menor'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : !selected ? (
@@ -814,7 +1206,7 @@ export default function SustracionPage() {
                   <h1 style={{ fontSize: 20, fontWeight: 800, color: TX, margin: 0 }}>Bandeja de expedientes</h1>
                   <p style={{ fontSize: 11.5, color: TX3, margin: '4px 0 0' }}>Seguimiento del flujo operativo de Sustracción Internacional.</p>
                 </div>
-                <button onClick={() => { setFormNew(emptyForm()); setNnaNew([emptyNnaForm()]); setErrorNew(''); setView('nuevo') }} style={{ display: 'flex', alignItems: 'center', gap: 6, background: N2, color: '#fff', border: 0, borderRadius: 8, padding: '9px 15px', fontSize: 12, fontWeight: 700 }}>
+                <button onClick={() => { setFormNew(emptyForm()); setNnaNew([]); setErrorNew(''); setView('nuevo') }} style={{ display: 'flex', alignItems: 'center', gap: 6, background: N2, color: '#fff', border: 0, borderRadius: 8, padding: '9px 15px', fontSize: 12, fontWeight: 700 }}>
                   <Plus size={13} /> Nuevo expediente
                 </button>
               </div>
@@ -1190,8 +1582,8 @@ function TabPersonas({ caso, getVal, onChange, onRefresh }: { caso: Caso; getVal
   );
 }
 
-// ── PESTAÑA: EVALUACIÓN INICIAL (v2) ──────────────────────────────────
-function TabEvaluacion({ caso, onGuardarProceso }: { caso: Caso; onGuardarProceso: (p: ProcesoOperativo) => void }) {
+// ── PESTAÑA: EVALUACIÓN INICIAL (v2 AUTOMATIZADA) ────────────────────
+function TabEvaluacion({ caso, onGuardarProceso }: { caso: Caso; onGuardarProceso: (p: ProcesoOperativo, nota?: string, targetTab?: ExpedienteTab) => void }) {
   const isSpanishCountry = useMemo(() => {
     const hispanoHablantes = ['Argentina', 'Bolivia', 'Chile', 'Colombia', 'Costa Rica', 'Cuba', 'Ecuador', 'El Salvador', 'España', 'Guatemala', 'Honduras', 'México', 'Nicaragua', 'Panamá', 'Paraguay', 'Perú', 'República Dominicana', 'Uruguay', 'Venezuela'];
     return hispanoHablantes.includes(caso.pais);
@@ -1201,7 +1593,6 @@ function TabEvaluacion({ caso, onGuardarProceso }: { caso: Caso; onGuardarProces
     const base = caso.procesoOperativo || {
       casoId: caso.id, faseOperativa: 'Evaluación', evaluacionResultado: 'Pendiente', requisitos: REQ_BASE,
     };
-    // Auto-detección: Si el país es de habla hispana y el requisito 7 está pendiente, preseleccionar 'No aplica'
     if (isSpanishCountry && base.requisitos) {
       base.requisitos = base.requisitos.map(r => (r.id === 'r7' && r.estado === 'Pendiente' ? { ...r, estado: 'No aplica' } : r));
     }
@@ -1209,10 +1600,9 @@ function TabEvaluacion({ caso, onGuardarProceso }: { caso: Caso; onGuardarProces
   });
 
   useEffect(() => {
-    if (caso.procesoOperativo) setProc(caso.procesoOperativo)
+    if (caso.procesoOperativo) setProc(caso.procesoOperativo);
   }, [caso.id, caso.procesoOperativo?.updatedAt]);
 
-  // Cálculo automático del resultado según los requisitos
   const calcularResultadoAuto = (reqs: RequisitoProceso[]) => {
     const hayObservado = reqs.some(r => r.estado === 'Observado');
     if (hayObservado) return 'Observada';
@@ -1230,8 +1620,53 @@ function TabEvaluacion({ caso, onGuardarProceso }: { caso: Caso; onGuardarProces
     setProc(prev => ({
       ...prev,
       requisitos: nuevosReqs,
-      evaluacionResultado: autoRes !== 'Pendiente' ? autoRes : (prev.evaluacionResultado === 'Completa' || prev.evaluacionResultado === 'Observada' ? autoRes : prev.evaluacionResultado),
+      evaluacionResultado: autoRes,
     }));
+  };
+
+  const ejecutarGuardado = (customProc?: ProcesoOperativo) => {
+    const p = customProc || proc;
+    const autoRes = calcularResultadoAuto(p.requisitos);
+    const obsCount = p.requisitos.filter(r => r.estado === 'Observado').length;
+
+    let fase: string = 'Evaluación';
+    let accion: string = '';
+    let targetTab: ExpedienteTab = 'evaluacion';
+    let nota: string = '';
+
+    if (autoRes === 'Completa') {
+      fase = caso.acPeru === 'Requirente' ? 'Gestión internacional' : 'Retorno voluntario';
+      accion = caso.acPeru === 'Requirente'
+        ? 'Remitir solicitud formal y oficios vía SGD a la Autoridad Central extranjera.'
+        : 'Citar al presunto sustractor a entrevista amigable de retorno voluntario.';
+      targetTab = caso.acPeru === 'Requirente' ? 'internacional' : 'retorno';
+      nota = `Evaluación inicial COMPLETADA CONFORME. Expediente derivado a ${caso.acPeru === 'Requirente' ? 'Cooperación Internacional' : 'Retorno Voluntario'}.`;
+    } else if (autoRes === 'Observada') {
+      fase = 'Subsanación';
+      accion = 'Notificar observaciones al solicitante (plazo legal 5 días hábiles).';
+      targetTab = 'subsanacion';
+      nota = `Evaluación inicial OBSERVADA (${obsCount} requisito(s) con observación). Plazo de subsanación habilitado.`;
+    } else if (autoRes === 'No corresponde') {
+      fase = 'Cierre';
+      accion = 'Emitir comunicación formal de no admisibilidad y archivar expediente.';
+      targetTab = 'cierre';
+      nota = 'Evaluación inicial NO CORRESPONDE: La solicitud no cumple los presupuestos del Convenio de La Haya.';
+    } else {
+      fase = 'Evaluación';
+      accion = 'Completar la matriz de 8 requisitos normativos de admisibilidad.';
+      targetTab = 'evaluacion';
+      nota = 'Revisión parcial de requisitos de evaluación inicial guardada en borrador.';
+    }
+
+    const payload: ProcesoOperativo = {
+      ...p,
+      evaluacionResultado: autoRes,
+      faseOperativa: fase,
+      proximaAccion: accion,
+      fechaObservacion: autoRes === 'Observada' ? (p.fechaObservacion || todayStr()) : p.fechaObservacion,
+    };
+
+    onGuardarProceso(payload, nota, targetTab);
   };
 
   const marcarTodosConformes = () => {
@@ -1239,69 +1674,112 @@ function TabEvaluacion({ caso, onGuardarProceso }: { caso: Caso; onGuardarProces
       ...r,
       estado: (isSpanishCountry && r.id === 'r7') ? 'No aplica' : ('Completo' as const),
     }));
-    setProc(prev => ({
-      ...prev,
+    const updatedProc: ProcesoOperativo = {
+      ...proc,
       requisitos: nuevosReqs,
       evaluacionResultado: 'Completa',
-    }));
+    };
+    setProc(updatedProc);
+    ejecutarGuardado(updatedProc);
   };
 
   const completos = proc.requisitos.filter(r => r.estado === 'Completo').length;
   const observados = proc.requisitos.filter(r => r.estado === 'Observado').length;
 
-  const resColor = proc.evaluacionResultado === 'Completa'
-    ? { bg: '#DCFCE7', border: '#16A34A', text: '#15803D' }
-    : proc.evaluacionResultado === 'Observada'
-    ? { bg: '#FEE2E2', border: '#DC2626', text: '#B91C1C' }
-    : proc.evaluacionResultado === 'No corresponde'
-    ? { bg: '#EEF2FF', border: '#6366F1', text: '#4338CA' }
-    : { bg: '#FFFFFF', border: BR, text: TX };
+  const resBadge = useMemo(() => {
+    if (proc.evaluacionResultado === 'Completa') {
+      return {
+        label: 'Evaluación Completa',
+        bg: '#DCFCE7', border: '#16A34A', text: '#15803D',
+        icon: <Check size={13} strokeWidth={3} />
+      };
+    }
+    if (proc.evaluacionResultado === 'Observada') {
+      return {
+        label: 'Con Observaciones',
+        bg: '#FEE2E2', border: '#DC2626', text: '#B91C1C',
+        icon: <AlertTriangle size={13} strokeWidth={2.6} />
+      };
+    }
+    if (proc.evaluacionResultado === 'No corresponde') {
+      return {
+        label: 'No Corresponde',
+        bg: '#EEF2FF', border: '#6366F1', text: '#4338CA',
+        icon: <MinusCircle size={13} strokeWidth={2.4} />
+      };
+    }
+    return {
+      label: 'Pendiente de Evaluación',
+      bg: '#FEF3C7', border: '#D97706', text: '#B45309',
+      icon: <Clock size={13} strokeWidth={2.4} />
+    };
+  }, [proc.evaluacionResultado]);
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }} className="main-scroll">
       <div style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, overflow: 'hidden' }}>
-        <div style={{ padding: '12px 14px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 12, color: TX }}>
+        <div style={{ padding: '12px 14px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 12, color: TX, flexWrap: 'wrap' }}>
           <div>
-            <b>Lista de verificación</b>
+            <b>Matriz de 8 Requisitos Normativos</b>
             <span style={{ display: 'block', fontSize: 10, color: TX3, marginTop: 2 }}>
               {completos} de {proc.requisitos.length} conformes{observados > 0 ? ` · ${observados} observado${observados > 1 ? 's' : ''}` : ''}
             </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <button
               type="button"
               onClick={marcarTodosConformes}
               style={{
                 display: 'flex', alignItems: 'center', gap: 5,
-                padding: '6px 10px', borderRadius: 6,
+                padding: '7px 12px', borderRadius: 6,
                 border: '1px solid #BBF7D0', background: '#F0FDF4',
                 color: '#15803D', fontSize: 11, fontWeight: 700,
                 cursor: 'pointer'
               }}
-              title="Marcar todos los requisitos como Conformes de 1 clic"
+              title="Marcar todos los requisitos conformes y avanzar de inmediato"
             >
-              <Check size={13} strokeWidth={2.8} /> Todo conforme
+              <Check size={13} strokeWidth={2.8} /> Todo conforme (1-Clic)
             </button>
-            <select
-              value={proc.evaluacionResultado || ''}
-              onChange={e => setProc({ ...proc, evaluacionResultado: e.target.value })}
+            {/* Badge Dinámico de Estado */}
+            <div
               style={{
-                padding: '6px 10px',
-                border: `1.5px solid ${resColor.border}`,
-                background: resColor.bg,
-                color: resColor.text,
-                borderRadius: 6,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 12px',
+                borderRadius: 99,
+                border: `1.5px solid ${resBadge.border}`,
+                background: resBadge.bg,
+                color: resBadge.text,
                 fontSize: 11,
-                fontWeight: 700,
-                outline: 'none',
-                cursor: 'pointer'
+                fontWeight: 800,
+                letterSpacing: '.02em'
               }}
             >
-              <option value="">Pendiente de evaluación</option>
-              {['Completa', 'Observada', 'No corresponde'].map(x => <option key={x} value={x}>{x}</option>)}
-            </select>
-            <button onClick={() => onGuardarProceso(proc)} style={{ padding: '6px 12px', border: 'none', borderRadius: 6, background: BL, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-              Guardar
+              {resBadge.icon}
+              <span>{resBadge.label}</span>
+            </div>
+            {/* Botón Principal de Acción Inteligente */}
+            <button
+              type="button"
+              onClick={() => ejecutarGuardado()}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '7px 14px', border: 'none', borderRadius: 6,
+                background: proc.evaluacionResultado === 'Completa' ? '#16A34A' : proc.evaluacionResultado === 'Observada' ? '#DC2626' : proc.evaluacionResultado === 'No corresponde' ? '#4F46E5' : BL,
+                color: '#fff', fontSize: 11, fontWeight: 800, cursor: 'pointer',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+              }}
+            >
+              {proc.evaluacionResultado === 'Completa' ? (
+                <><span>Guardar y Pasar a Gestión</span> <ChevronRight size={13} /></>
+              ) : proc.evaluacionResultado === 'Observada' ? (
+                <><span>Guardar e Ir a Subsanación</span> <ChevronRight size={13} /></>
+              ) : proc.evaluacionResultado === 'No corresponde' ? (
+                <><span>Guardar y Derivar a Cierre</span> <ChevronRight size={13} /></>
+              ) : (
+                <span>Guardar Evaluación</span>
+              )}
             </button>
           </div>
         </div>
