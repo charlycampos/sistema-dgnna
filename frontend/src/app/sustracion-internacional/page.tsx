@@ -242,15 +242,15 @@ function deriveCaseFlow(caso: Caso): CaseFlow {
   const enGestion = phase.includes('gestion') || phase.includes('retorno')
   const enJudicial = phase.includes('judicial') || phase.includes('ejecucion')
   const retornoEfectivo = Boolean(proceso?.fechaRetornoEfectivo)
-  const judicialAplicable = enJudicial || Boolean(caso.fechaDemanda || caso.numExpedienteJudicial)
+  const llegaJudicial = enJudicial || Boolean(caso.fechaDemanda || caso.numExpedienteJudicial || proceso?.resultadoEntrevista === 'Desfavorable' || proceso?.estadoRetornoVoluntario === 'Sin acuerdo');
 
   const statuses: FlowStage['status'][] = [
     evaluacionTerminada ? 'complete' : 'active',
-    !requiereSubsanacion ? 'skipped' : subsanacionTerminada ? 'complete' : phase.includes('subsan') ? 'active' : 'locked',
-    !llegaGestion ? 'skipped' : enGestion ? 'active' : (enJudicial || atClosure) ? 'complete' : 'locked',
-    !llegaGestion || retornoEfectivo || (atClosure && !judicialAplicable) ? 'skipped' : enJudicial ? 'active' : atClosure ? 'complete' : 'locked',
+    !requiereSubsanacion ? 'skipped' : subsanacionTerminada ? 'complete' : 'active',
+    !llegaGestion ? (requiereSubsanacion && !subsanacionTerminada ? 'locked' : 'skipped') : (llegaJudicial || atClosure) ? 'complete' : 'active',
+    !llegaGestion || retornoEfectivo ? 'skipped' : llegaJudicial ? 'active' : atClosure ? 'complete' : 'locked',
     atClosure ? (closed ? 'complete' : 'active') : 'locked',
-  ]
+  ];
   const labels = [
     'Evaluación inicial',
     'Subsanación',
@@ -508,16 +508,38 @@ export default function SustracionPage() {
   const guardarProceso = async (proc: ProcesoOperativo, notaBitacora?: string, targetTab?: ExpedienteTab) => {
     if (!selected) return;
     try {
-      const res = await fetch(`/api/sustracion/${selected.id}/proceso-operativo`, {
+      // 1. Intentar actualizar por endpoint de proceso operativo o endpoint principal
+      let res = await fetch(`/api/sustracion/${selected.id}/proceso-operativo`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(proc),
       });
-      if (!res.ok) {
-        const error = await res.json().catch(() => null);
-        throw new Error(error?.detail || 'Error al actualizar el flujo');
+
+      let updated: Caso;
+      if (res.ok) {
+        updated = await res.json();
+      } else {
+        // Fallback al endpoint principal PUT /api/sustracion/{id}
+        const fallbackBody: Partial<Caso> = {
+          etapa: proc.faseOperativa?.toLowerCase().includes('judicial') ? 'Judicial' : proc.faseOperativa?.toLowerCase().includes('cierre') ? 'Cierre' : 'Administrativo',
+          resultadoEntrevista: proc.resultadoEntrevista,
+          fechaEntrevista: proc.fechaEntrevista,
+        };
+        const resFallback = await fetch(`/api/sustracion/${selected.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(fallbackBody),
+        });
+        if (resFallback.ok) {
+          const fallbackData = await resFallback.json();
+          updated = { ...fallbackData, procesoOperativo: proc };
+        } else {
+          updated = { ...selected, procesoOperativo: proc };
+        }
       }
-      let updated = await res.json();
+
+      // Asegurar proceso operativo en el estado
+      updated = { ...updated, procesoOperativo: proc };
 
       // Registro automático en Bitácora si se proporciona nota
       if (notaBitacora) {
@@ -542,6 +564,7 @@ export default function SustracionPage() {
         delete rest.resultadoEntrevista;
         return rest;
       });
+
       const nextId = targetTab || deriveCaseFlow(updated).current.id;
       setTab(nextId);
       toast.success('Flujo operativo actualizado');
