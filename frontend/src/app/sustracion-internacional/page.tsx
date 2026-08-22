@@ -452,8 +452,8 @@ function Row({
 }) {
   const safeVal = value === null || value === undefined ? '' : String(value);
   return (
-    <div style={{ gridColumn: `span ${span}`, padding: '10px 14px', borderBottom: `1px solid ${BR}`, display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <span style={{ fontSize: 9.5, fontWeight: 700, color: TX3, textTransform: 'uppercase' }}>{label}</span>
+    <div style={{ gridColumn: `span ${span}`, padding: '10px 14px', borderBottom: `1px solid ${BR}`, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 4 }}>
+      <span style={{ fontSize: 9.5, fontWeight: 700, color: TX3, textTransform: 'uppercase', minHeight: 14, display: 'flex', alignItems: 'center' }}>{label}</span>
       {type === 'select' ? (
         <select
           className="si-input"
@@ -778,6 +778,541 @@ function DrawerSGD({ caso, onClose }: { caso: Caso; onClose: () => void }) {
     </div>
   </>
 );
+}
+
+// ── MODAL ESTADÍSTICAS Y REPORTES OPERATIVOS ──────────────────────────
+
+function ModalEstadisticas({
+  isOpen,
+  onClose,
+  casos,
+  flows,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  casos: Caso[];
+  flows: Map<string, any>;
+}) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  const stats = useMemo(() => {
+    const total = casos.length;
+    const tramite = casos.filter(c => c.estado === 'Tramite').length;
+    const pendientes = casos.filter(c => c.estado === 'Pendiente').length;
+    const archivados = casos.filter(c => c.estado === 'Archivado').length;
+
+    // Retornos Concretados
+    const retornos = casos.filter(c => {
+      const retDirecto = (c.retorno || '').toUpperCase() === 'SI';
+      const retProc = c.procesoOperativo?.estadoRetornoVoluntario === 'Retorno concretado' || Boolean(c.procesoOperativo?.fechaRetornoEfectivo);
+      const retCierre = (c.motivoCierre || '').toLowerCase().includes('retorno');
+      return retDirecto || retProc || retCierre;
+    }).length;
+
+    // Distribución Rol AC Perú
+    const requerida = casos.filter(c => (c.acPeru || 'Requerida') === 'Requerida').length;
+    const requirente = casos.filter(c => c.acPeru === 'Requirente').length;
+    const pctRequerida = total > 0 ? Math.round((requerida / total) * 100) : 0;
+    const pctRequirente = total > 0 ? Math.round((requirente / total) * 100) : 0;
+
+    // Top Países Involucrados
+    const paisesCount: Record<string, number> = {};
+    casos.forEach(c => {
+      const p = c.pais?.trim() || 'No especificado';
+      paisesCount[p] = (paisesCount[p] || 0) + 1;
+    });
+    const topPaises = Object.entries(paisesCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6);
+    const maxPaisCount = topPaises.length > 0 ? Math.max(...topPaises.map(p => p[1])) : 1;
+
+    // Reloj de La Haya (Art. 11 - Meta Resolutiva de 6 Semanas / 42 días)
+    const activos = casos.filter(c => c.estado !== 'Archivado');
+    let dentroPlazo = 0;
+    let fueraPlazo = 0;
+    activos.forEach(c => {
+      const d = diasDesde(c.fechaIngreso);
+      if (d <= 42) dentroPlazo++;
+      else fueraPlazo++;
+    });
+    const tasaCumplimiento = activos.length > 0 ? Math.round((dentroPlazo / activos.length) * 100) : 100;
+
+    // Distribución por Fase Operativa
+    let fEvaluacion = 0;
+    let fSubsanacion = 0;
+    let fRetorno = 0;
+    let fJudicial = 0;
+    let fCierre = archivados;
+
+    casos.forEach(c => {
+      if (c.estado !== 'Archivado') {
+        const f = flows.get(c.id);
+        const stageId = f?.current?.id;
+        if (stageId === 'evaluacion') fEvaluacion++;
+        else if (stageId === 'subsanacion') fSubsanacion++;
+        else if (stageId === 'retorno' || stageId === 'internacional') fRetorno++;
+        else if (stageId === 'judicial') fJudicial++;
+        else fEvaluacion++;
+      }
+    });
+
+    const pctFase = (count: number) => total > 0 ? Math.round((count / total) * 100) : 0;
+
+    return {
+      total,
+      tramite,
+      pendientes,
+      archivados,
+      retornos,
+      pctRetornos: total > 0 ? Math.round((retornos / total) * 100) : 0,
+      requerida,
+      requirente,
+      pctRequerida,
+      pctRequirente,
+      topPaises,
+      maxPaisCount,
+      activosCount: activos.length,
+      dentroPlazo,
+      fueraPlazo,
+      tasaCumplimiento,
+      fases: [
+        { id: 'evaluacion', label: '1. Evaluación Inicial', count: fEvaluacion, pct: pctFase(fEvaluacion), color: BL, bg: '#EFF6FF', border: '#BFDBFE', desc: 'Control de admisibilidad formal y verificación de los 8 requisitos del Convenio' },
+        { id: 'subsanacion', label: '2. Subsanación', count: fSubsanacion, pct: pctFase(fSubsanacion), color: '#D97706', bg: '#FFFBEB', border: '#FDE68A', desc: 'Requerimientos documentales con plazo de 5 días hábiles a la parte solicitante' },
+        { id: 'retorno', label: '3. Retorno Vol. / Coop.', count: fRetorno, pct: pctFase(fRetorno), color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE', desc: 'Entrevistas de mediación amigable o coordinación con Autoridades Centrales del exterior' },
+        { id: 'judicial', label: '4. Proceso Judicial', count: fJudicial, pct: pctFase(fJudicial), color: '#DC2626', bg: '#FEF2F2', border: '#FECACA', desc: 'Acciones ante Juzgados de Familia peruanos o tribunales de jurisdicción extranjera' },
+        { id: 'cierre', label: '5. Cierre y Archivo', count: fCierre, pct: pctFase(fCierre), color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0', desc: 'Resolución de conclusión definitiva conforme a causales de la Directiva N.° 006-2021' },
+      ],
+    };
+  }, [casos, flows]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      onClick={e => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(15, 23, 42, 0.55)',
+        backdropFilter: 'blur(3px)',
+        zIndex: 9998,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px 16px',
+      }}
+    >
+      <div
+        style={{
+          background: SURF,
+          borderRadius: 12,
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)',
+          width: '100%',
+          maxWidth: 920,
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
+          border: `1px solid ${BR}`,
+          overflow: 'hidden',
+        }}
+      >
+        {/* Modal Header */}
+        <div
+          style={{
+            padding: '16px 22px',
+            background: '#F8FAFC',
+            borderBottom: `1px solid ${BR}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 9,
+                background: 'linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#FFFFFF',
+                flexShrink: 0,
+                boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)',
+              }}
+            >
+              <BarChart2 size={19} />
+            </div>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: NK, lineHeight: 1.2 }}>
+                Panel de Analítica Operativa y Estadísticas
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: TX3, marginTop: 2 }}>
+                Módulo de Sustracción Internacional · DGNNA / MIMP (Convenio de La Haya de 1980)
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              border: `1px solid ${BR}`,
+              background: '#FFFFFF',
+              color: TX2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = '#FEE2E2';
+              e.currentTarget.style.color = '#DC2626';
+              e.currentTarget.style.borderColor = '#FECACA';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = '#FFFFFF';
+              e.currentTarget.style.color = TX2;
+              e.currentTarget.style.borderColor = BR;
+            }}
+            title="Cerrar modal (Esc)"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Modal Scrollable Body */}
+        <div style={{ padding: '20px 22px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 18 }} className="main-scroll">
+          {/* KPI CARDS GLOBALES */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
+            <div
+              style={{
+                background: '#F8FAFC',
+                border: `1px solid ${BR}`,
+                borderLeft: `4px solid ${N2}`,
+                borderRadius: 8,
+                padding: '12px 14px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 10, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                  Total Expedientes
+                </span>
+                <Globe size={14} color={N2} />
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: N2, marginTop: 4 }}>{stats.total}</div>
+              <div style={{ fontSize: 10, color: TX3, marginTop: 2 }}>100% de la carga procesal</div>
+            </div>
+
+            <div
+              style={{
+                background: '#EFF6FF',
+                border: '1px solid #BFDBFE',
+                borderLeft: `4px solid ${BL}`,
+                borderRadius: 8,
+                padding: '12px 14px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 10, fontWeight: 800, color: '#1D4ED8', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                  En Trámite
+                </span>
+                <Clock size={14} color={BL} />
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: BL, marginTop: 4 }}>{stats.tramite}</div>
+              <div style={{ fontSize: 10, color: '#2563EB', marginTop: 2 }}>
+                {stats.total > 0 ? Math.round((stats.tramite / stats.total) * 100) : 0}% en gestión activa
+              </div>
+            </div>
+
+            <div
+              style={{
+                background: '#F0FDF4',
+                border: '1px solid #BBF7D0',
+                borderLeft: '4px solid #16A34A',
+                borderRadius: 8,
+                padding: '12px 14px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 10, fontWeight: 800, color: '#15803D', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                  Archivados / Concluidos
+                </span>
+                <CheckCircle size={14} color="#16A34A" />
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#16A34A', marginTop: 4 }}>{stats.archivados}</div>
+              <div style={{ fontSize: 10, color: '#15803D', marginTop: 2 }}>
+                {stats.total > 0 ? Math.round((stats.archivados / stats.total) * 100) : 0}% concluidos formalmente
+              </div>
+            </div>
+
+            <div
+              style={{
+                background: '#F5F3FF',
+                border: '1px solid #DDD6FE',
+                borderLeft: '4px solid #7C3AED',
+                borderRadius: 8,
+                padding: '12px 14px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 10, fontWeight: 800, color: '#6D28D9', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                  Retornos Concretados
+                </span>
+                <TrendingUp size={14} color="#7C3AED" />
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#7C3AED', marginTop: 4 }}>{stats.retornos}</div>
+              <div style={{ fontSize: 10, color: '#6D28D9', marginTop: 2 }}>
+                {stats.pctRetornos}% efectividad de restitución
+              </div>
+            </div>
+          </div>
+
+          {/* FILA 2: ROL AC PERÚ & RELOJ DE LA HAYA */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
+            {/* ROL AC PERÚ */}
+            <div style={{ background: '#FFFFFF', border: `1px solid ${BR}`, borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontSize: 12.5, fontWeight: 800, color: N2 }}>Distribución según Rol AC Perú</div>
+                  <div style={{ fontSize: 10.5, color: TX3, marginTop: 1 }}>Autoridad Central Requirente vs Requerida</div>
+                </div>
+                <Users size={16} color={N2} />
+              </div>
+
+              {/* Bar 1: Requerida */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, marginBottom: 4 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: TX }}>
+                    <Users size={12} color={BL} /> AC Requerida (Menor en Perú)
+                  </span>
+                  <span style={{ color: BL, fontWeight: 800 }}>{stats.requerida} ({stats.pctRequerida}%)</span>
+                </div>
+                <div style={{ height: 8, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}>
+                  <div style={{ width: `${stats.pctRequerida}%`, height: '100%', background: BL, borderRadius: 99, transition: 'width 0.4s ease' }} />
+                </div>
+                <div style={{ fontSize: 10, color: TX3, marginTop: 3 }}>
+                  Solicitud promovida por Estado extranjero para restitución de NNA en territorio peruano.
+                </div>
+              </div>
+
+              {/* Bar 2: Requirente */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, marginBottom: 4 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: TX }}>
+                    <Plane size={12} color="#6366F1" /> AC Requirente (Menor en Exterior)
+                  </span>
+                  <span style={{ color: '#6366F1', fontWeight: 800 }}>{stats.requirente} ({stats.pctRequirente}%)</span>
+                </div>
+                <div style={{ height: 8, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}>
+                  <div style={{ width: `${stats.pctRequirente}%`, height: '100%', background: '#6366F1', borderRadius: 99, transition: 'width 0.4s ease' }} />
+                </div>
+                <div style={{ fontSize: 10, color: TX3, marginTop: 3 }}>
+                  Solicitud formulada por progenitor en Perú para restitución desde el país extranjero.
+                </div>
+              </div>
+            </div>
+
+            {/* RELOJ DE LA HAYA (ART. 11) */}
+            <div style={{ background: '#FFFFFF', border: `1px solid ${BR}`, borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontSize: 12.5, fontWeight: 800, color: N2 }}>Reloj de La Haya (Art. 11 Convenio 1980)</div>
+                  <div style={{ fontSize: 10.5, color: TX3, marginTop: 1 }}>Meta preferente de resolución: 6 semanas (42 días)</div>
+                </div>
+                <Clock size={16} color={BL} />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: '#F8FAFC', border: `1px solid ${BR}`, borderRadius: 8, padding: '10px 14px' }}>
+                <div style={{ textAlign: 'center', minWidth: 60 }}>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: stats.tasaCumplimiento >= 70 ? '#16A34A' : '#D97706' }}>
+                    {stats.tasaCumplimiento}%
+                  </div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: TX3, textTransform: 'uppercase' }}>Tasa Oportuna</div>
+                </div>
+                <div style={{ width: 1, height: 34, background: BR }} />
+                <div style={{ flex: 1, fontSize: 11, lineHeight: 1.4, color: TX2 }}>
+                  <b style={{ color: '#16A34A' }}>{stats.dentroPlazo} expedientes</b> dentro de las 6 semanas reglamentarias;{' '}
+                  <b style={{ color: stats.fueraPlazo > 0 ? '#DC2626' : TX3 }}>{stats.fueraPlazo} expedientes</b> con alerta de plazo extendido.
+                </div>
+              </div>
+
+              {/* Progress bar dual */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, fontWeight: 700, color: TX3, marginBottom: 4 }}>
+                  <span style={{ color: '#16A34A' }}>≤ 6 Semanas ({stats.dentroPlazo})</span>
+                  <span style={{ color: stats.fueraPlazo > 0 ? '#DC2626' : TX3 }}>&gt; 6 Semanas ({stats.fueraPlazo})</span>
+                </div>
+                <div style={{ height: 8, background: stats.fueraPlazo > 0 ? '#FEE2E2' : '#F1F5F9', borderRadius: 99, overflow: 'hidden', display: 'flex' }}>
+                  <div style={{ width: `${stats.tasaCumplimiento}%`, height: '100%', background: '#16A34A', transition: 'width 0.4s ease' }} />
+                  <div style={{ width: `${100 - stats.tasaCumplimiento}%`, height: '100%', background: '#DC2626', transition: 'width 0.4s ease' }} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* FILA 3: TOP PAÍSES & DISTRIBUCIÓN POR FASE OPERATIVA */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
+            {/* TOP PAÍSES */}
+            <div style={{ background: '#FFFFFF', border: `1px solid ${BR}`, borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                <div>
+                  <div style={{ fontSize: 12.5, fontWeight: 800, color: N2 }}>Top Países Involucrados</div>
+                  <div style={{ fontSize: 10.5, color: TX3, marginTop: 1 }}>Estados de procedencia o destino con mayor incidencia</div>
+                </div>
+                <Globe size={16} color={N2} />
+              </div>
+
+              {stats.topPaises.length === 0 ? (
+                <div style={{ padding: '20px 0', textAlign: 'center', color: TX3, fontSize: 11 }}>
+                  No se registran países en los expedientes.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                  {stats.topPaises.map(([pais, count], idx) => {
+                    const pct = stats.total > 0 ? Math.round((count / stats.total) * 100) : 0;
+                    const relPct = Math.round((count / stats.maxPaisCount) * 100);
+                    return (
+                      <div key={pais} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 10, fontWeight: 800, color: TX3, width: 14, textAlign: 'right' }}>
+                          {idx + 1}.
+                        </span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, marginBottom: 2 }}>
+                            <span style={{ color: TX, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {pais}
+                            </span>
+                            <span style={{ color: N2, fontWeight: 800, flexShrink: 0 }}>
+                              {count} {count === 1 ? 'exp.' : 'exp.'} ({pct}%)
+                            </span>
+                          </div>
+                          <div style={{ height: 6, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}>
+                            <div style={{ width: `${relPct}%`, height: '100%', background: BL, borderRadius: 99 }} />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* DISTRIBUCIÓN POR FASE OPERATIVA */}
+            <div style={{ background: '#FFFFFF', border: `1px solid ${BR}`, borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                <div>
+                  <div style={{ fontSize: 12.5, fontWeight: 800, color: N2 }}>Distribución por Fase Operativa</div>
+                  <div style={{ fontSize: 10.5, color: TX3, marginTop: 1 }}>Carga actual según la etapa procesal del expediente</div>
+                </div>
+                <TrendingUp size={16} color={N2} />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                {stats.fases.map(f => (
+                  <div key={f.id} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+                      <span style={{ fontWeight: 700, color: TX, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: f.color }} />
+                        {f.label}
+                      </span>
+                      <span style={{ fontWeight: 800, color: f.color }}>
+                        {f.count} ({f.pct}%)
+                      </span>
+                    </div>
+                    <div style={{ height: 6, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}>
+                      <div style={{ width: `${f.pct}%`, height: '100%', background: f.color, borderRadius: 99 }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div
+          style={{
+            padding: '12px 22px',
+            background: '#F8FAFC',
+            borderTop: `1px solid ${BR}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: TX3 }}>
+            <Info size={13} color={BL} />
+            <span>Datos procesados en tiempo real según registros del módulo.</span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => descargarExcelSustracion(casos as any)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '7px 14px',
+                borderRadius: 7,
+                border: `1px solid ${BR}`,
+                background: '#FFFFFF',
+                color: TX2,
+                fontSize: 11.5,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = '#F0FDF4';
+                e.currentTarget.style.color = '#15803D';
+                e.currentTarget.style.borderColor = '#BBF7D0';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = '#FFFFFF';
+                e.currentTarget.style.color = TX2;
+                e.currentTarget.style.borderColor = BR;
+              }}
+            >
+              <Download size={13} />
+              <span>Exportar Reporte</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: '7px 16px',
+                borderRadius: 7,
+                border: 'none',
+                background: BL,
+                color: '#FFFFFF',
+                fontSize: 11.5,
+                fontWeight: 800,
+                cursor: 'pointer',
+              }}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── PESTAÑA: RESUMEN DEL CASO (CON RELOJ DE LA HAYA) ──────────────────
@@ -1953,6 +2488,7 @@ export default function SustracionPage() {
   const [tab, setTab] = useState<ExpedienteTab>('resumen');
   const [drawer, setDrawer] = useState<'ficha' | 'sgd' | null>(null);
   const [fichaTab, setFichaTab] = useState<'datos' | 'personas' | 'bitacora'>('datos');
+  const [showStats, setShowStats] = useState(false);
 
   // Nuevo caso
   const [view, setView] = useState<'bandeja' | 'nuevo'>('bandeja');
@@ -1967,7 +2503,9 @@ export default function SustracionPage() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (modalNnaIndex >= -1) {
+        if (showStats) {
+          setShowStats(false);
+        } else if (modalNnaIndex >= -1) {
           setModalNnaIndex(-2);
         } else if (drawer !== null) {
           setDrawer(null);
@@ -1976,7 +2514,7 @@ export default function SustracionPage() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [modalNnaIndex, drawer]);
+  }, [showStats, modalNnaIndex, drawer]);
 
   const cargar = useCallback(async () => {
     try {
@@ -2466,7 +3004,7 @@ export default function SustracionPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
                   <Sec title="1. Datos del Trámite" />
                   <Row label="Hoja de Trámite *" value={formNew.codigo || ''} onChange={v => setFormNew(p => ({ ...p, codigo: v }))} />
-                  <Row label="Rol de la Autoridad Central (AC Perú)" value={formNew.acPeru || 'Requerida'} type="select" opts={AC_PERU} onChange={v => setFormNew(p => ({ ...p, acPeru: v }))} />
+                  <Row label="Rol AC Perú" value={formNew.acPeru || 'Requerida'} type="select" opts={AC_PERU} onChange={v => setFormNew(p => ({ ...p, acPeru: v }))} />
                   <Row label={formNew.acPeru === 'Requirente' ? 'País de Destino (Exterior) *' : 'País de Procedencia *'} value={formNew.pais || ''} type="select" opts={PAISES} onChange={v => setFormNew(p => ({ ...p, pais: v }))} />
                   <Row label="Tipo de Solicitud" value={formNew.tipoSolicitud || 'Restitución'} type="select" opts={TIPO_SOL} onChange={v => setFormNew(p => ({ ...p, tipoSolicitud: v }))} />
 
@@ -2554,21 +3092,324 @@ export default function SustracionPage() {
             </div>
           </div>
         ) : !selected ? (
-          <main className="main-scroll si-page" style={{ flex: 1, overflowY: 'auto', background: BG, padding: '22px 24px' }}>
-            <div style={{ maxWidth: 1240, margin: '0 auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
-                <div>
-                  <h1 style={{ fontSize: 20, fontWeight: 800, color: TX, margin: 0 }}>Bandeja de expedientes</h1>
-                  <p style={{ fontSize: 11.5, color: TX3, margin: '4px 0 0' }}>Seguimiento del flujo operativo de Sustracción Internacional.</p>
-                </div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {/* ── BARRA SUPERIOR INSTITUCIONAL EN BANDEJA PRINCIPAL ── */}
+            <header
+              style={{
+                background: SURF,
+                borderBottom: `1px solid ${BR}`,
+                padding: '0 24px',
+                height: 64,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 16,
+                flexShrink: 0,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                zIndex: 30,
+              }}
+            >
+              {/* Left: Navegación & Título Institucional */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
                 <button
                   type="button"
-                  onClick={() => { setFormNew(emptyForm()); setNnaNew([]); setErrorNew(''); setView('nuevo'); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: N2, color: '#fff', border: 0, borderRadius: 8, padding: '9px 15px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                  onClick={() => router.push('/menu')}
+                  title="Volver al Menú Principal"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    background: '#F8FAFC',
+                    color: TX2,
+                    border: `1px solid ${BR}`,
+                    borderRadius: 8,
+                    padding: '7px 12px',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = '#EFF6FF';
+                    e.currentTarget.style.color = BL;
+                    e.currentTarget.style.borderColor = '#BFDBFE';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = '#F8FAFC';
+                    e.currentTarget.style.color = TX2;
+                    e.currentTarget.style.borderColor = BR;
+                  }}
                 >
-                  <Plus size={13} /> Nuevo expediente
+                  <LayoutGrid size={15} />
+                  <span>Menú Principal</span>
                 </button>
+
+                <div style={{ width: 1, height: 28, background: BR, flexShrink: 0 }} />
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 9,
+                      background: 'linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#FFFFFF',
+                      flexShrink: 0,
+                      boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)',
+                    }}
+                  >
+                    <Globe size={18} />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <h1
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 800,
+                        color: NK,
+                        margin: 0,
+                        lineHeight: 1.2,
+                        letterSpacing: '-0.01em',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      Sustracción Internacional de Menores
+                    </h1>
+                    <p
+                      style={{
+                        fontSize: 10.5,
+                        fontWeight: 600,
+                        color: TX3,
+                        margin: '2px 0 0',
+                        lineHeight: 1,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      Autoridad Central de Perú (DGNNA / MIMP) · Convenio de La Haya de 1980
+                    </p>
+                  </div>
+                </div>
               </div>
+
+              {/* Right: Estadísticas, Exportar Excel, Nuevo Expediente y Chip de Sesión */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                {/* Botón Estadísticas */}
+                <button
+                  type="button"
+                  onClick={() => setShowStats(true)}
+                  title="Ver estadísticas y analítica operativa"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    background: '#F8FAFC',
+                    color: N2,
+                    border: `1px solid ${BR}`,
+                    borderRadius: 8,
+                    padding: '7px 13px',
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = '#EFF6FF';
+                    e.currentTarget.style.color = BL;
+                    e.currentTarget.style.borderColor = '#BFDBFE';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = '#F8FAFC';
+                    e.currentTarget.style.color = N2;
+                    e.currentTarget.style.borderColor = BR;
+                  }}
+                >
+                  <BarChart2 size={15} color={BL} />
+                  <span>Estadísticas</span>
+                </button>
+
+                {/* Botón Exportar Excel */}
+                <button
+                  type="button"
+                  onClick={() => descargarExcelSustracion(visibles as any)}
+                  title="Descargar reporte en formato Excel con los expedientes filtrados"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    background: '#F8FAFC',
+                    color: TX2,
+                    border: `1px solid ${BR}`,
+                    borderRadius: 8,
+                    padding: '7px 13px',
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = '#F0FDF4';
+                    e.currentTarget.style.color = '#15803D';
+                    e.currentTarget.style.borderColor = '#BBF7D0';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = '#F8FAFC';
+                    e.currentTarget.style.color = TX2;
+                    e.currentTarget.style.borderColor = BR;
+                  }}
+                >
+                  <Download size={14} />
+                  <span>Exportar Excel</span>
+                </button>
+
+                {/* Botón + Nuevo Expediente */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormNew(emptyForm());
+                    setNnaNew([]);
+                    setErrorNew('');
+                    setView('nuevo');
+                  }}
+                  title="Registrar nuevo expediente de sustracción internacional"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    background: BL,
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: 8,
+                    padding: '7px 15px',
+                    fontSize: 11.5,
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(37, 99, 235, 0.35)',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = BLH;
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = BL;
+                  }}
+                >
+                  <Plus size={15} strokeWidth={2.5} />
+                  <span>+ Nuevo Expediente</span>
+                </button>
+
+                <div style={{ width: 1, height: 28, background: BR, margin: '0 2px' }} />
+
+                {/* Identificador del Usuario en Sesión Activa */}
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    background: '#F8FAFC',
+                    border: `1px solid ${BR}`,
+                    borderRadius: 8,
+                    padding: '4px 8px 4px 10px',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: '50%',
+                      background: '#EFF6FF',
+                      border: '1px solid #BFDBFE',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: BL,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <User size={13} strokeWidth={2.5} />
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15 }}>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 800,
+                        color: TX,
+                        maxWidth: 140,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                      title={me?.nombre || (me as any)?.username || 'Usuario'}
+                    >
+                      {me?.nombre || (me as any)?.username || 'Usuario'}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 700,
+                        color: me?.rol === 'admin' ? '#1D4ED8' : '#64748B',
+                        textTransform: 'uppercase',
+                        letterSpacing: '.03em',
+                      }}
+                    >
+                      {me?.rol === 'admin' ? 'Administrador' : 'Especialista DGNNA'}
+                    </span>
+                  </div>
+
+                  {/* Botón de Cierre de Sesión */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await fetch('/api/auth/logout', { method: 'POST' });
+                        router.push('/login');
+                        router.refresh();
+                      } catch {
+                        router.push('/login');
+                      }
+                    }}
+                    title="Cerrar sesión"
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 6,
+                      border: '1px solid transparent',
+                      background: 'transparent',
+                      color: TX3,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      marginLeft: 2,
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = '#FEE2E2';
+                      e.currentTarget.style.color = '#DC2626';
+                      e.currentTarget.style.borderColor = '#FECACA';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = TX3;
+                      e.currentTarget.style.borderColor = 'transparent';
+                    }}
+                  >
+                    <LogOut size={13} />
+                  </button>
+                </div>
+              </div>
+            </header>
+
+            {/* ── CUERPO PRINCIPAL DE LA BANDEJA ── */}
+            <main className="main-scroll si-page" style={{ flex: 1, overflowY: 'auto', background: BG, padding: '20px 24px' }}>
+              <div style={{ maxWidth: 1280, margin: '0 auto' }}>
 
               {/* KPIS EN 4 COLUMNAS HORIZONTALES (INTERACTIVOS 1-CLIC) */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, marginBottom: 14 }}>
@@ -2751,7 +3592,8 @@ export default function SustracionPage() {
               </div>
             </div>
           </main>
-        ) : selectedFlow ? (
+        </div>
+      ) : selectedFlow ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div className="si-exp-header" style={{ position: 'sticky', top: 0, zIndex: 100, background: SURF, borderBottom: `1px solid ${BR}`, padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexShrink: 0, boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
@@ -2987,6 +3829,14 @@ export default function SustracionPage() {
           </div>
         </>
       )}
+
+      {/* MODAL ESTADÍSTICAS Y ANALÍTICA OPERATIVA */}
+      <ModalEstadisticas
+        isOpen={showStats}
+        onClose={() => setShowStats(false)}
+        casos={casos}
+        flows={flows}
+      />
     </div>
   );
 }
