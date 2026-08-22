@@ -142,6 +142,136 @@ const REQ_BASE: RequisitoProceso[] = [
   { id: 'r8', nombre: '8. Información para ubicación del NNA y del presunto sustractor', estado: 'Pendiente' },
 ];
 
+const BASE_LEGAL_REQUISITOS: Record<string, {
+  articuloHaya: string;
+  numeralDirectiva: string;
+  descripcionLegal: string;
+}> = {
+  r1: {
+    articuloHaya: 'Art. 8 Convenio de La Haya (1980)',
+    numeralDirectiva: 'Num. 6.1 Directiva N.° 006-2021-MIMP',
+    descripcionLegal: 'Solicitud formal de restitución internacional o régimen de visitas con designación de partes, NNA y fundamentación fáctica.',
+  },
+  r2: {
+    articuloHaya: 'Arts. 4 y 8.a Convenio de La Haya (1980)',
+    numeralDirectiva: 'Num. 6.1.1 Directiva N.° 006-2021-MIMP',
+    descripcionLegal: 'Acreditación de identidad, fecha de nacimiento y minoría de edad (menor de 16 años cumplidos al momento de los hechos).',
+  },
+  r3: {
+    articuloHaya: 'Arts. 3 y 4 Convenio de La Haya (1980)',
+    numeralDirectiva: 'Num. 6.1.2 Directiva N.° 006-2021-MIMP',
+    descripcionLegal: 'Acreditación de residencia habitual del NNA en el Estado requirente inmediatamente antes del traslado o retención ilícita.',
+  },
+  r4: {
+    articuloHaya: 'Arts. 3 y 5 Convenio de La Haya (1980)',
+    numeralDirectiva: 'Num. 6.1.3 Directiva N.° 006-2021-MIMP',
+    descripcionLegal: 'Acreditación del derecho de custodia o visitas atribuido legalmente y ejercido efectivamente al momento del traslado/retención.',
+  },
+  r5: {
+    articuloHaya: 'Arts. 3 y 12 Convenio de La Haya (1980)',
+    numeralDirectiva: 'Num. 6.1.4 Directiva N.° 006-2021-MIMP',
+    descripcionLegal: 'Identificación de la ilicitud del traslado/retención y verificación del cómputo del plazo preferente (menor a 1 año).',
+  },
+  r6: {
+    articuloHaya: 'Arts. 8.c y 8.d Convenio de La Haya (1980)',
+    numeralDirectiva: 'Num. 6.1.5 Directiva N.° 006-2021-MIMP',
+    descripcionLegal: 'Documentación probatoria oficial: partida de nacimiento, resoluciones de custodia, certificados escolares o de salud.',
+  },
+  r7: {
+    articuloHaya: 'Art. 24 Convenio de La Haya (1980)',
+    numeralDirectiva: 'Num. 6.1.6 Directiva N.° 006-2021-MIMP',
+    descripcionLegal: 'Traducción oficial o certificada al idioma español para su tramitación ante la Autoridad Central peruana.',
+  },
+  r8: {
+    articuloHaya: 'Arts. 7.a y 8.b Convenio de La Haya (1980)',
+    numeralDirectiva: 'Num. 6.1.7 Directiva N.° 006-2021-MIMP',
+    descripcionLegal: 'Información y referencias de ubicación del NNA en el territorio nacional o exterior y datos del presunto sustractor.',
+  },
+};
+
+function TooltipBaseLegal({ reqId }: { reqId: string }) {
+  const [show, setShow] = useState(false);
+  const base = BASE_LEGAL_REQUISITOS[reqId];
+  if (!base) return null;
+
+  return (
+    <div
+      style={{ position: 'relative', display: 'inline-block', marginTop: 3 }}
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+      onFocus={() => setShow(true)}
+      onBlur={() => setShow(false)}
+    >
+      <span
+        tabIndex={0}
+        title={`${base.articuloHaya} | ${base.numeralDirectiva} — ${base.descripcionLegal}`}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          fontSize: 10,
+          fontWeight: 700,
+          color: BL,
+          background: '#EFF6FF',
+          border: '1px solid #BFDBFE',
+          borderRadius: 4,
+          padding: '2px 7px',
+          cursor: 'help',
+          transition: 'all 0.15s ease',
+        }}
+      >
+        <Info size={11} strokeWidth={2.5} />
+        <span>{base.articuloHaya.split(' (')[0]} · {base.numeralDirectiva.split(' ')[0]} {base.numeralDirectiva.split(' ')[1]}</span>
+      </span>
+
+      {show && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 'calc(100% + 6px)',
+            left: 0,
+            zIndex: 1000,
+            width: 320,
+            background: '#0F172A',
+            color: '#F8FAFC',
+            borderRadius: 8,
+            padding: '10px 12px',
+            fontSize: 11,
+            lineHeight: 1.4,
+            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)',
+            pointerEvents: 'none',
+          }}
+        >
+          <div style={{ fontSize: 9.5, fontWeight: 800, color: '#93C5FD', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
+            Base Legal Normativa
+          </div>
+          <div style={{ fontWeight: 700, color: '#FFFFFF', marginBottom: 2 }}>
+            📜 {base.articuloHaya}
+          </div>
+          <div style={{ fontWeight: 600, color: '#CBD5E1', marginBottom: 6 }}>
+            📋 {base.numeralDirectiva}
+          </div>
+          <div style={{ fontSize: 10.5, color: '#94A3B8', borderTop: '1px solid #334155', paddingTop: 6 }}>
+            {base.descripcionLegal}
+          </div>
+          <div
+            style={{
+              position: 'absolute',
+              top: '100%',
+              left: 16,
+              width: 0,
+              height: 0,
+              borderLeft: '5px solid transparent',
+              borderRight: '5px solid transparent',
+              borderTop: '5px solid #0F172A',
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function estadoBadge(e: string) {
   if (e === 'Tramite') return { bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE', label: 'En trámite', accent: BL };
   if (e === 'Pendiente') return { bg: '#FFFBEB', color: '#92400E', border: '#FDE68A', label: 'Pendiente', accent: '#D97706' };
@@ -380,10 +510,15 @@ function ModalNna({
   const esMayor16 = modalNnaForm.tipoEdad === 'Años' && parseInt(modalNnaForm.edad || '0', 10) >= 16;
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(2px)',
-      zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16
-    }}>
+    <div
+      onClick={e => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(2px)',
+        zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16
+      }}
+    >
       <div style={{
         background: SURF, borderRadius: 10, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
         width: '100%', maxWidth: 520, border: `1px solid ${BR}`, overflow: 'hidden'
@@ -578,11 +713,19 @@ function DrawerSGD({ caso, onClose }: { caso: Caso; onClose: () => void }) {
   };
 
   return (
-    <div style={{
-      position: 'fixed', top: 0, right: 0, bottom: 0, width: 560, maxWidth: '90vw',
-      background: '#fff', boxShadow: '-10px 0 25px rgba(0,0,0,0.15)', zIndex: 9000,
-      display: 'flex', flexDirection: 'column', borderLeft: `1px solid ${BR}`
-    }}>
+    <>
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', backdropFilter: 'blur(1.5px)',
+          zIndex: 8999,
+        }}
+      />
+      <div style={{
+        position: 'fixed', top: 0, right: 0, bottom: 0, width: 560, maxWidth: '90vw',
+        background: '#fff', boxShadow: '-10px 0 25px rgba(0,0,0,0.15)', zIndex: 9000,
+        display: 'flex', flexDirection: 'column', borderLeft: `1px solid ${BR}`
+      }}>
       <div style={{ padding: '16px 20px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <b style={{ fontSize: 13, color: N2 }}>Generador de Plantillas Oficiales SGD</b>
@@ -633,7 +776,8 @@ function DrawerSGD({ caso, onClose }: { caso: Caso; onClose: () => void }) {
         </button>
       </div>
     </div>
-  );
+  </>
+);
 }
 
 // ── PESTAÑA: RESUMEN DEL CASO (CON RELOJ DE LA HAYA) ──────────────────
@@ -1174,11 +1318,12 @@ function TabEvaluacion({
                   {isConforme ? <Check size={13} strokeWidth={3} /> : isObservado ? <AlertTriangle size={12} strokeWidth={2.5} /> : i + 1}
                 </div>
 
-                {/* Nombre del Requisito */}
+                {/* Nombre del Requisito y Base Legal */}
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 12.5, fontWeight: isConforme || isObservado ? 700 : 600, color: isObservado ? '#991B1B' : TX, lineHeight: 1.4 }}>
                     {r.nombre}
                   </div>
+                  <TooltipBaseLegal reqId={r.id} />
                 </div>
 
                 {/* BOTONERA DE ESTADOS INTERACTIVOS (1 CLIC CON ÍCONO Y TEXTO) */}
@@ -1793,6 +1938,8 @@ function TabCierre({
 // ORQUESTADOR PRINCIPAL (PÁGINA COMPLETA)
 // ══════════════════════════════════════════════════════════════════════
 
+type KpiFilter = 'all' | 'tramite' | 'pendiente' | 'archivado';
+
 export default function SustracionPage() {
   const router = useRouter();
   const { me } = useMe();
@@ -1805,6 +1952,7 @@ export default function SustracionPage() {
   const [search, setSearch] = useState('');
   const [fProfesional, setFProfesional] = useState('');
   const [subBandeja, setSubBandeja] = useState('todos');
+  const [kpiFilter, setKpiFilter] = useState<KpiFilter>('all');
   const [tab, setTab] = useState<ExpedienteTab>('resumen');
   const [drawer, setDrawer] = useState<'ficha' | 'sgd' | null>(null);
   const [fichaTab, setFichaTab] = useState<'datos' | 'personas' | 'bitacora'>('datos');
@@ -1817,6 +1965,21 @@ export default function SustracionPage() {
   const [modalNnaIndex, setModalNnaIndex] = useState<number>(-2);
   const [savingNew, setSavingNew] = useState(false);
   const [errorNew, setErrorNew] = useState('');
+
+  // Atajo de teclado: Escape (Esc) para cerrar modales y drawers inmediatamente
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (modalNnaIndex >= -1) {
+          setModalNnaIndex(-2);
+        } else if (drawer !== null) {
+          setDrawer(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [modalNnaIndex, drawer]);
 
   const cargar = useCallback(async () => {
     try {
@@ -2154,6 +2317,23 @@ export default function SustracionPage() {
     return flows.get(selected.id) || deriveCaseFlow(selected);
   }, [selected, flows, deriveCaseFlow]);
 
+  const handleKpiSelect = (filterId: KpiFilter) => {
+    if (kpiFilter === filterId && filterId !== 'all') {
+      setKpiFilter('all');
+    } else {
+      setKpiFilter(filterId);
+      if (filterId === 'archivado') {
+        if (subBandeja !== 'todos' && subBandeja !== 'cerrados') {
+          setSubBandeja('cerrados');
+        }
+      } else if (filterId === 'tramite' || filterId === 'pendiente') {
+        if (subBandeja === 'cerrados') {
+          setSubBandeja('todos');
+        }
+      }
+    }
+  };
+
   const visibles = useMemo(() => {
     return casos.filter(c => {
       const txt = search.toLowerCase();
@@ -2161,6 +2341,11 @@ export default function SustracionPage() {
       const matchTxt = !txt || c.codigo.toLowerCase().includes(txt) || nnaStr.includes(txt) || (c.pais || '').toLowerCase().includes(txt);
       const matchProf = !fProfesional || c.profesional === fProfesional;
       if (!matchTxt || !matchProf) return false;
+
+      // Filtro interactivo de KPIs (1-clic)
+      if (kpiFilter === 'tramite' && c.estado !== 'Tramite') return false;
+      if (kpiFilter === 'pendiente' && c.estado !== 'Pendiente') return false;
+      if (kpiFilter === 'archivado' && c.estado !== 'Archivado') return false;
 
       const f = flows.get(c.id);
       if (subBandeja === 'activos') return c.estado !== 'Archivado';
@@ -2178,18 +2363,59 @@ export default function SustracionPage() {
       }
       return true;
     });
-  }, [casos, search, fProfesional, subBandeja, flows]);
+  }, [casos, search, fProfesional, subBandeja, kpiFilter, flows]);
 
-  const counters = useMemo(() => {
+  const stageCounts = useMemo(() => {
+    const baseList = casos.filter(c => {
+      const txt = search.toLowerCase();
+      const nnaStr = nombreCaso(c).toLowerCase();
+      const matchTxt = !txt || c.codigo.toLowerCase().includes(txt) || nnaStr.includes(txt) || (c.pais || '').toLowerCase().includes(txt);
+      const matchProf = !fProfesional || c.profesional === fProfesional;
+      return matchTxt && matchProf;
+    });
+
+    let todos = baseList.length;
+    let evaluacion = 0;
+    let subsanacion = 0;
+    let retorno = 0;
+    let judicial = 0;
+    let cerrados = 0;
+    let alerta = 0;
+
+    baseList.forEach(c => {
+      const f = flows.get(c.id);
+      const isArchived = c.estado === 'Archivado';
+      if (isArchived) {
+        cerrados++;
+      } else {
+        if (f?.current?.id === 'evaluacion') evaluacion++;
+        else if (f?.current?.id === 'subsanacion') subsanacion++;
+        else if (f?.current?.id === 'retorno' || f?.current?.id === 'internacional') retorno++;
+        else if (f?.current?.id === 'judicial') judicial++;
+      }
+
+      const proc = c.procesoOperativo;
+      const lim = proc?.fechaLimite || proc?.fechaLimiteSubsanacion || proc?.fechaLimitePasajes;
+      const esVencido = lim ? vencido(lim) : false;
+      const reloj = calcularRelojLaHaya(c.fechaIngreso);
+      if (esVencido || reloj.estado === 'excedido' || (f && f.alerts?.some((a: any) => a.tone === 'error'))) {
+        alerta++;
+      }
+    });
+
+    return { todos, evaluacion, subsanacion, retorno, judicial, cerrados, alerta };
+  }, [casos, search, fProfesional, flows]);
+
+  const kpis: { id: KpiFilter; label: string; value: number; color: string; bgActive: string }[] = useMemo(() => {
     const total = casos.length;
     const enTramite = casos.filter(c => c.estado === 'Tramite').length;
     const pendientes = casos.filter(c => c.estado === 'Pendiente').length;
     const archivados = casos.filter(c => c.estado === 'Archivado').length;
     return [
-      { label: 'Total expedientes', value: total, color: N2 },
-      { label: 'En trámite', value: enTramite, color: BL },
-      { label: 'Pendientes', value: pendientes, color: '#D97706' },
-      { label: 'Archivados', value: archivados, color: '#16A34A' },
+      { id: 'all', label: 'Total expedientes', value: total, color: N2, bgActive: '#F1F5F9' },
+      { id: 'tramite', label: 'En trámite', value: enTramite, color: BL, bgActive: '#EFF6FF' },
+      { id: 'pendiente', label: 'Pendientes', value: pendientes, color: '#D97706', bgActive: '#FFFBEB' },
+      { id: 'archivado', label: 'Archivados', value: archivados, color: '#16A34A', bgActive: '#F0FDF4' },
     ];
   }, [casos]);
 
@@ -2348,14 +2574,47 @@ export default function SustracionPage() {
                 </button>
               </div>
 
-              {/* KPIS EN 4 COLUMNAS HORIZONTALES */}
+              {/* KPIS EN 4 COLUMNAS HORIZONTALES (INTERACTIVOS 1-CLIC) */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12, marginBottom: 14 }}>
-                {counters.map(item => (
-                  <div key={item.label} style={{ background: SURF, border: `1px solid ${BR}`, borderLeft: `3px solid ${item.color}`, borderRadius: 8, padding: '13px 15px' }}>
-                    <div style={{ fontSize: 9.5, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.05em' }}>{item.label}</div>
-                    <div style={{ fontSize: 23, fontWeight: 800, color: item.color, marginTop: 3 }}>{item.value}</div>
-                  </div>
-                ))}
+                {kpis.map(item => {
+                  const isSelected = kpiFilter === item.id;
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => handleKpiSelect(item.id)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleKpiSelect(item.id); } }}
+                      title={`Filtrar por ${item.label} (1-clic)`}
+                      style={{
+                        background: isSelected ? item.bgActive : SURF,
+                        border: isSelected ? `2px solid ${item.color}` : `1px solid ${BR}`,
+                        borderLeft: `4px solid ${item.color}`,
+                        borderRadius: 8,
+                        padding: '12px 15px',
+                        cursor: 'pointer',
+                        boxShadow: isSelected ? '0 4px 12px -2px rgba(0,0,0,0.1)' : '0 1px 2px 0 rgba(0,0,0,0.05)',
+                        transform: isSelected ? 'translateY(-2px)' : 'none',
+                        transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
+                        userSelect: 'none',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ fontSize: 9.5, fontWeight: 800, color: isSelected ? item.color : TX3, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                          {item.label}
+                        </div>
+                        {isSelected && (
+                          <span style={{ fontSize: 9, fontWeight: 800, color: item.color, background: 'rgba(255,255,255,0.85)', padding: '2px 6px', borderRadius: 99, border: `1px solid ${item.color}` }}>
+                            Filtro Activo
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 23, fontWeight: 800, color: item.color, marginTop: 3 }}>
+                        {item.value}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               <div style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 10, overflow: 'hidden' }}>
@@ -2374,29 +2633,65 @@ export default function SustracionPage() {
                     {PROFESIONALES.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
                   {[
-                    ['todos', 'Todos'],
-                    ['evaluacion', '1. Evaluación'],
-                    ['subsanacion', '2. Subsanación'],
-                    ['retorno', '3. Retorno / Coop.'],
-                    ['judicial', '4. Judicial'],
-                    ['cerrados', '5. Archivados'],
-                    ['alerta', '⚠️ Con alerta'],
-                  ].map(([id, label]) => {
+                    { id: 'todos', label: 'Todos', count: stageCounts.todos },
+                    { id: 'evaluacion', label: '1. Evaluación', count: stageCounts.evaluacion },
+                    { id: 'subsanacion', label: '2. Subsanación', count: stageCounts.subsanacion },
+                    { id: 'retorno', label: '3. Retorno / Coop.', count: stageCounts.retorno },
+                    { id: 'judicial', label: '4. Judicial', count: stageCounts.judicial },
+                    { id: 'cerrados', label: '5. Archivados', count: stageCounts.cerrados },
+                    { id: 'alerta', label: '⚠️ Con alerta', count: stageCounts.alerta },
+                  ].map(({ id, label, count }) => {
                     const active = subBandeja === id;
                     return (
                       <button
                         key={id}
-                        onClick={() => setSubBandeja(id)}
+                        type="button"
+                        onClick={() => {
+                          setSubBandeja(id);
+                          if (id === 'cerrados') setKpiFilter('archivado');
+                          else if (kpiFilter === 'archivado' && id !== 'todos') setKpiFilter('all');
+                        }}
                         style={{
-                          padding: '7px 11px', borderRadius: 7,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '6px 11px',
+                          borderRadius: 7,
                           border: `1px solid ${active ? BL : BR}`,
                           background: active ? '#EFF6FF' : SURF,
                           color: active ? BL : id === 'alerta' ? '#DC2626' : TX2,
-                          fontSize: 11, fontWeight: active ? 800 : 600,
-                          cursor: 'pointer'
+                          fontSize: 11,
+                          fontWeight: active ? 800 : 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
                         }}
                       >
-                        {label}
+                        <span>{label}</span>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '1px 6px',
+                            borderRadius: 99,
+                            fontSize: 10,
+                            fontWeight: 800,
+                            background: active
+                              ? BL
+                              : id === 'alerta' && count > 0
+                              ? '#FEE2E2'
+                              : '#F1F5F9',
+                            color: active
+                              ? '#FFFFFF'
+                              : id === 'alerta' && count > 0
+                              ? '#B91C1C'
+                              : TX3,
+                            minWidth: 18,
+                            lineHeight: '14px',
+                          }}
+                        >
+                          {count}
+                        </span>
                       </button>
                     );
                   })}
@@ -2462,7 +2757,7 @@ export default function SustracionPage() {
           </main>
         ) : selectedFlow ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div className="si-exp-header" style={{ background: SURF, borderBottom: `1px solid ${BR}`, padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexShrink: 0 }}>
+            <div className="si-exp-header" style={{ position: 'sticky', top: 0, zIndex: 100, background: SURF, borderBottom: `1px solid ${BR}`, padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexShrink: 0, boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
                 <button onClick={() => { setSelected(null); setPending({}); setDrawer(null); }} title="Volver a la bandeja" style={{ width: 34, height: 34, borderRadius: 8, border: `1px solid ${BR}`, background: SURF, color: TX2, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: 'pointer' }}>
                   <ArrowLeft size={16} />
@@ -2477,10 +2772,10 @@ export default function SustracionPage() {
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
-                <button onClick={() => { setFichaTab('datos'); setDrawer('ficha'); }} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 7, border: `1px solid ${BR}`, background: SURF, color: TX2, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                <button onClick={() => { setFichaTab('datos'); setDrawer('ficha'); }} title="Abrir ficha integral del expediente" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 7, border: `1px solid ${BR}`, background: SURF, color: TX2, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
                   <FileText size={13} /> Ficha
                 </button>
-                <button onClick={() => setDrawer('sgd')} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 7, border: '1px solid #BFDBFE', background: '#EFF6FF', color: BL, fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
+                <button onClick={() => setDrawer('sgd')} title="Generar plantillas oficiales SGD" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 7, border: '1px solid #BFDBFE', background: '#EFF6FF', color: BL, fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
                   <FileCode size={13} /> Plantillas SGD
                 </button>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 99, background: '#F1F5F9', border: `1px solid ${BR}`, color: TX2, fontSize: 10, fontWeight: 700 }}>
@@ -2494,11 +2789,28 @@ export default function SustracionPage() {
                   <option value="Pendiente">Pendiente</option>
                   <option value="Archivado">Archivado</option>
                 </select>
-                {hasPending && (
-                  <button onClick={guardar} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px', borderRadius: 7, border: 0, background: '#16A34A', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                    <Save size={13} /> {saving ? 'Guardando...' : 'Guardar'}
-                  </button>
-                )}
+                <button
+                  onClick={guardar}
+                  disabled={saving || !hasPending}
+                  title={hasPending ? "Guardar cambios pendientes en el expediente" : "No hay cambios pendientes por guardar"}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '7px 13px',
+                    borderRadius: 7,
+                    border: 'none',
+                    background: hasPending ? '#16A34A' : '#E2E8F0',
+                    color: hasPending ? '#FFFFFF' : TX3,
+                    fontSize: 11,
+                    fontWeight: 800,
+                    cursor: hasPending && !saving ? 'pointer' : 'default',
+                    boxShadow: hasPending ? '0 2px 6px rgba(22, 163, 74, 0.3)' : 'none',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <Save size={13} /> {saving ? 'Guardando...' : hasPending ? 'Guardar' : 'Guardado'}
+                </button>
                 <button onClick={eliminarCaso} title="Eliminar expediente" style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                   <Trash2 size={14} />
                 </button>
@@ -2639,36 +2951,45 @@ export default function SustracionPage() {
 
       {/* DRAWER FICHA CON PESTAÑA DE BITÁCORA */}
       {drawer === 'ficha' && selected && (
-        <div style={{
-          position: 'fixed', top: 0, right: 0, bottom: 0, width: 720, maxWidth: '95vw',
-          background: '#fff', boxShadow: '-10px 0 25px rgba(0,0,0,0.15)', zIndex: 9000,
-          display: 'flex', flexDirection: 'column', borderLeft: `1px solid ${BR}`
-        }}>
-          <div style={{ padding: '16px 20px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <b style={{ fontSize: 13, color: N2 }}>Ficha del Expediente · {selected.codigo}</b>
-              <span style={{ display: 'block', fontSize: 10.5, color: TX3 }}>{nombreCaso(selected)}</span>
+        <>
+          <div
+            onClick={() => setDrawer(null)}
+            style={{
+              position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', backdropFilter: 'blur(1.5px)',
+              zIndex: 8999,
+            }}
+          />
+          <div style={{
+            position: 'fixed', top: 0, right: 0, bottom: 0, width: 720, maxWidth: '95vw',
+            background: '#fff', boxShadow: '-10px 0 25px rgba(0,0,0,0.15)', zIndex: 9000,
+            display: 'flex', flexDirection: 'column', borderLeft: `1px solid ${BR}`
+          }}>
+            <div style={{ padding: '16px 20px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <b style={{ fontSize: 13, color: N2 }}>Ficha del Expediente · {selected.codigo}</b>
+                <span style={{ display: 'block', fontSize: 10.5, color: TX3 }}>{nombreCaso(selected)}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {hasPending && (
+                  <button onClick={guardar} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 6, border: 0, background: '#16A34A', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                    <Save size={13} /> Guardar
+                  </button>
+                )}
+                <button type="button" onClick={() => setDrawer(null)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: TX3 }}><X size={18} /></button>
+              </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {hasPending && (
-                <button onClick={guardar} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 6, border: 0, background: '#16A34A', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                  <Save size={13} /> Guardar
-                </button>
-              )}
-              <button type="button" onClick={() => setDrawer(null)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: TX3 }}><X size={18} /></button>
+            <div style={{ display: 'flex', gap: 6, padding: '10px 16px', borderBottom: `1px solid ${BR}`, background: '#FAFBFD' }}>
+              <button onClick={() => setFichaTab('datos')} style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${fichaTab === 'datos' ? BL : BR}`, background: fichaTab === 'datos' ? '#EFF6FF' : '#fff', color: fichaTab === 'datos' ? BL : TX2, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Datos del caso</button>
+              <button onClick={() => setFichaTab('personas')} style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${fichaTab === 'personas' ? BL : BR}`, background: fichaTab === 'personas' ? '#EFF6FF' : '#fff', color: fichaTab === 'personas' ? BL : TX2, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Personas involucradas</button>
+              <button onClick={() => setFichaTab('bitacora')} style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${fichaTab === 'bitacora' ? BL : BR}`, background: fichaTab === 'bitacora' ? '#EFF6FF' : '#fff', color: fichaTab === 'bitacora' ? BL : TX2, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Bitácora ({selected.bitacora?.length || 0})</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {fichaTab === 'datos' && <TabDatos caso={selected} getVal={getVal} onChange={onChange} />}
+              {fichaTab === 'personas' && <TabPersonas caso={selected} getVal={getVal} onChange={onChange} onOpenNnaModal={idx => { setModalNnaForm(selected.nna?.[idx] ? { ...selected.nna[idx] } : emptyNnaForm()); setModalNnaIndex(idx); }} />}
+              {fichaTab === 'bitacora' && <TabBitacora caso={selected} me={me} onAgregarBitacora={onAgregarBitacora} />}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 6, padding: '10px 16px', borderBottom: `1px solid ${BR}`, background: '#FAFBFD' }}>
-            <button onClick={() => setFichaTab('datos')} style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${fichaTab === 'datos' ? BL : BR}`, background: fichaTab === 'datos' ? '#EFF6FF' : '#fff', color: fichaTab === 'datos' ? BL : TX2, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Datos del caso</button>
-            <button onClick={() => setFichaTab('personas')} style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${fichaTab === 'personas' ? BL : BR}`, background: fichaTab === 'personas' ? '#EFF6FF' : '#fff', color: fichaTab === 'personas' ? BL : TX2, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Personas involucradas</button>
-            <button onClick={() => setFichaTab('bitacora')} style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${fichaTab === 'bitacora' ? BL : BR}`, background: fichaTab === 'bitacora' ? '#EFF6FF' : '#fff', color: fichaTab === 'bitacora' ? BL : TX2, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Bitácora ({selected.bitacora?.length || 0})</button>
-          </div>
-          <div style={{ flex: 1, overflowY: 'auto' }}>
-            {fichaTab === 'datos' && <TabDatos caso={selected} getVal={getVal} onChange={onChange} />}
-            {fichaTab === 'personas' && <TabPersonas caso={selected} getVal={getVal} onChange={onChange} onOpenNnaModal={idx => { setModalNnaForm(selected.nna?.[idx] ? { ...selected.nna[idx] } : emptyNnaForm()); setModalNnaIndex(idx); }} />}
-            {fichaTab === 'bitacora' && <TabBitacora caso={selected} me={me} onAgregarBitacora={onAgregarBitacora} />}
-          </div>
-        </div>
+        </>
       )}
     </div>
   );
