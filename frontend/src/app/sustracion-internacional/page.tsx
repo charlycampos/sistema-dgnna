@@ -415,7 +415,7 @@ function emptyForm(): FormCasoInput {
     fechaIngreso: todayStr(), fechaSalida: '',
     solicitanteNombre: '', solicitanteSexo: '', solicitanteTelefono: '', solicitanteCorreo: '', solicitanteDomicilio: '',
     requeridoNombre: '', requeridoSexo: '', requeridoTelefono: '', requeridoCorreo: '', requeridoDomicilio: '',
-    profesional: 'EMMA', estado: 'Tramite',
+    profesional: '', estado: 'Tramite',
     fechaEntrevista: '', resultadoEntrevista: '', estadoJudicial: '',
     fechaDemanda: '', numExpedienteJudicial: '', juzgado: '',
     sentencia1ra: '', sentencia2da: '', casacion: '', motivoCierre: '',
@@ -916,15 +916,15 @@ function TabPersonas({
     <div style={{ flex: 1, overflowY: 'auto' }} className="main-scroll">
       <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BR}`, background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <b style={{ fontSize: 12, color: N2 }}>MENORES INVOLUCRADOS (NNA)</b>
-          <span style={{ display: 'block', fontSize: 10.5, color: TX3 }}>Lista de niños, niñas y adolescentes sujetos a restitución</span>
+          <b style={{ fontSize: 12, color: N2 }}>NIÑA, NIÑO O ADOLESCENTE INVOLUCRADOS</b>
+          <span style={{ display: 'block', fontSize: 10.5, color: TX3 }}>Lista de niñas, niños y adolescentes sujetos al procedimiento</span>
         </div>
         <button
           type="button"
           onClick={() => onOpenNnaModal(-1)}
           style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 6, border: 'none', background: BL, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
         >
-          <Plus size={13} /> Agregar NNA
+          <Plus size={13} /> Agregar
         </button>
       </div>
 
@@ -1326,81 +1326,78 @@ function TabEvaluacion({
                   <TooltipBaseLegal reqId={r.id} />
                 </div>
 
-                {/* BOTONERA DE ESTADOS INTERACTIVOS (1 CLIC CON ÍCONO Y TEXTO) */}
+                {/* BOTONERA DE ESTADOS INTERACTIVOS (1 CLIC SOLO ÍCONOS) */}
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   {/* Botón Conforme */}
                   <button
                     type="button"
                     onClick={() => actualizarRequisito(r.id, 'Completo')}
-                    title="Marcar como Conforme"
+                    title="Conforme"
                     style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 5,
-                      padding: '5px 10px', borderRadius: 6,
+                      width: 32, height: 32,
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      borderRadius: 6,
                       border: `1.5px solid ${isConforme ? '#16A34A' : '#E2E8F0'}`,
                       background: isConforme ? '#DCFCE7' : '#FFFFFF',
                       color: isConforme ? '#15803D' : TX3,
-                      fontSize: 11, fontWeight: isConforme ? 800 : 600,
                       cursor: 'pointer', transition: 'all 0.15s ease'
                     }}
                   >
-                    <Check size={12} strokeWidth={isConforme ? 3 : 2} />
-                    Conforme
+                    <Check size={15} strokeWidth={isConforme ? 3 : 2} />
                   </button>
 
                   {/* Botón Observado */}
                   <button
                     type="button"
                     onClick={() => actualizarRequisito(r.id, 'Observado')}
-                    title="Marcar como Observado"
+                    title="Observado"
                     style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 5,
-                      padding: '5px 10px', borderRadius: 6,
+                      width: 32, height: 32,
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      borderRadius: 6,
                       border: `1.5px solid ${isObservado ? '#DC2626' : '#E2E8F0'}`,
                       background: isObservado ? '#FEE2E2' : '#FFFFFF',
                       color: isObservado ? '#B91C1C' : TX3,
-                      fontSize: 11, fontWeight: isObservado ? 800 : 600,
                       cursor: 'pointer', transition: 'all 0.15s ease'
                     }}
                   >
-                    <AlertTriangle size={12} strokeWidth={isObservado ? 2.5 : 2} />
-                    Observado
+                    <AlertTriangle size={14} strokeWidth={isObservado ? 2.5 : 2} />
                   </button>
 
                   {/* Botón Pendiente */}
                   <button
                     type="button"
                     onClick={() => actualizarRequisito(r.id, 'Pendiente')}
-                    title="Marcar como Pendiente"
+                    title="Pendiente"
                     style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 5,
-                      padding: '5px 9px', borderRadius: 6,
-                      border: `1.5px solid ${isPendiente ? '#64748B' : '#E2E8F0'}`,
-                      background: isPendiente ? '#F1F5F9' : '#FFFFFF',
-                      color: isPendiente ? '#334155' : TX3,
-                      fontSize: 11, fontWeight: isPendiente ? 700 : 500,
+                      width: 32, height: 32,
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      borderRadius: 6,
+                      border: `1.5px solid ${isPendiente ? '#D97706' : '#E2E8F0'}`,
+                      background: isPendiente ? '#FEF3C7' : '#FFFFFF',
+                      color: isPendiente ? '#B45309' : TX3,
                       cursor: 'pointer', transition: 'all 0.15s ease'
                     }}
                   >
-                    <Clock size={11} />
-                    Pendiente
+                    <Clock size={14} strokeWidth={isPendiente ? 2.5 : 2} />
                   </button>
 
                   {/* Botón No aplica */}
                   <button
                     type="button"
                     onClick={() => actualizarRequisito(r.id, 'No aplica')}
-                    title="No aplica a esta solicitud"
+                    title="No aplica"
                     style={{
-                      display: 'inline-flex', alignItems: 'center',
-                      padding: '5px 8px', borderRadius: 6,
-                      border: `1.5px solid ${isNoAplica ? '#94A3B8' : '#E2E8F0'}`,
-                      background: isNoAplica ? '#E2E8F0' : '#FFFFFF',
+                      width: 32, height: 32,
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      borderRadius: 6,
+                      border: `1.5px solid ${isNoAplica ? '#64748B' : '#E2E8F0'}`,
+                      background: isNoAplica ? '#F1F5F9' : '#FFFFFF',
                       color: isNoAplica ? '#475569' : TX3,
-                      fontSize: 10.5, fontWeight: isNoAplica ? 700 : 500,
                       cursor: 'pointer', transition: 'all 0.15s ease'
                     }}
                   >
-                    N/A
+                    <MinusCircle size={14} strokeWidth={isNoAplica ? 2.5 : 2} />
                   </button>
                 </div>
               </div>
@@ -2209,7 +2206,7 @@ export default function SustracionPage() {
         tipoSolicitud: formNew.tipoSolicitud || 'Restitución',
         acPeru: formNew.acPeru || 'Requerida',
         etapa: formNew.etapa || 'Administrativo',
-        profesional: formNew.profesional || me?.nombre || (me as any)?.username || 'EMMA',
+        profesional: me?.nombre || (me as any)?.username || 'Usuario en sesión',
         estado: 'Tramite',
         solicitanteNombre: formNew.solicitanteNombre?.trim() || null,
         solicitanteSexo: formNew.solicitanteSexo || null,
@@ -2473,8 +2470,7 @@ export default function SustracionPage() {
                   <Row label={formNew.acPeru === 'Requirente' ? 'País de Destino (Exterior) *' : 'País de Procedencia *'} value={formNew.pais || ''} type="select" opts={PAISES} onChange={v => setFormNew(p => ({ ...p, pais: v }))} />
                   <Row label="Tipo de Solicitud" value={formNew.tipoSolicitud || 'Restitución'} type="select" opts={TIPO_SOL} onChange={v => setFormNew(p => ({ ...p, tipoSolicitud: v }))} />
 
-                  <Row label="Fecha de Ingreso *" value={formNew.fechaIngreso || todayStr()} type="date" onChange={v => setFormNew(p => ({ ...p, fechaIngreso: v }))} />
-                  <Row label="Especialista Responsable" value={formNew.profesional || 'EMMA'} type="select" opts={PROFESIONALES} onChange={v => setFormNew(p => ({ ...p, profesional: v }))} />
+                  <Row label="Fecha de Ingreso *" value={formNew.fechaIngreso || todayStr()} type="date" span={2} onChange={v => setFormNew(p => ({ ...p, fechaIngreso: v }))} />
                   <div style={{ gridColumn: 'span 2', padding: '10px 14px', borderBottom: `1px solid ${BR}` }}>
                     <label style={fieldLabelStyle}>
                       Profesional que Registra
@@ -2488,7 +2484,7 @@ export default function SustracionPage() {
 
                 <div style={{ padding: '14px 18px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
-                    <b style={{ fontSize: 11, color: N2 }}>2. MENORES INVOLUCRADOS (NNA) *</b>
+                    <b style={{ fontSize: 11, color: N2 }}>2. NIÑA, NIÑO O ADOLESCENTE INVOLUCRADOS</b>
                     <span style={{ display: 'block', fontSize: 10, color: TX3 }}>Debes registrar al menos un menor para dar apertura al expediente</span>
                   </div>
                   <button
@@ -2496,14 +2492,14 @@ export default function SustracionPage() {
                     onClick={() => { setModalNnaForm(emptyNnaForm()); setModalNnaIndex(-1); }}
                     style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 6, border: 'none', background: BL, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
                   >
-                    <Plus size={13} /> Agregar Menor
+                    <Plus size={13} /> Agregar
                   </button>
                 </div>
 
                 <div style={{ padding: 14 }}>
                   {nnaNew.length === 0 ? (
                     <div style={{ padding: '24px 16px', textAlign: 'center', background: '#FAFBFD', border: `1.5px dashed ${BR}`, borderRadius: 8, color: TX3, fontSize: 11.5 }}>
-                      No se han agregado menores al expediente. Haz clic en <b>«Agregar Menor»</b> arriba.
+                      No se han agregado menores al expediente. Haz clic en <b>«Agregar»</b> arriba.
                     </div>
                   ) : (
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5, background: '#fff', border: `1px solid ${BR}`, borderRadius: 6, overflow: 'hidden' }}>
