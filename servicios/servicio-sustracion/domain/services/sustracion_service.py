@@ -309,6 +309,8 @@ class SustracionService:
         return True
 
     def _resolver_fase(self, caso: CasoSustracion, proceso: ProcesoOperativoSustracion) -> str:
+        if proceso.faseOperativa == "Cierre":
+            return "Cierre"
         evaluacion = proceso.evaluacionResultado or "Pendiente"
         if evaluacion == "Pendiente":
             return "Evaluación"

@@ -15,7 +15,8 @@ import {
   Save, AlertCircle, Eye, User, Edit3, X,
   Check, ChevronRight, BarChart2,
   TrendingUp, LayoutGrid, ChevronDown, LogOut,
-  Calendar, AlertTriangle, UserCheck, Info, Lock, Plane, Users, MinusCircle, Copy, FileCode, Send
+  Calendar, AlertTriangle, UserCheck, Info, Lock, Plane, Users, MinusCircle, Copy, FileCode, Send,
+  ArrowUpDown, ArrowUp, ArrowDown, ExternalLink, RefreshCw, RotateCcw
 } from 'lucide-react'
 import { descargarExcelSustracion } from '@/lib/export-excel'
 import { toast } from 'sonner'
@@ -281,7 +282,11 @@ function estadoBadge(e: string) {
 // ── UTILIDADES DE FECHA Y TEXTO ────────────────────────────────────────
 
 function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function fmtFecha(f?: string | null): string {
@@ -403,6 +408,81 @@ function calcularRelojLaHaya(fechaIngreso?: string | null) {
   return { semanas, dias, porcentaje, estado: 'ok', texto: `Semana ${semanas + 1} de 6 (${dias}/42 días) · Plazo estándar de La Haya` };
 }
 
+function calcularCaducidadHaya(fechaNacimientoIso?: string | null, edadNum?: string | number, tipoEdad?: string) {
+  if (fechaNacimientoIso) {
+    const nac = new Date(fechaNacimientoIso);
+    if (!isNaN(nac.getTime())) {
+      const fecha16 = new Date(nac.getFullYear() + 16, nac.getMonth(), nac.getDate());
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      fecha16.setHours(0, 0, 0, 0);
+      const diffMs = fecha16.getTime() - hoy.getTime();
+      const diffDias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+      if (diffDias <= 0) {
+        return {
+          esMayor16: true,
+          esInminente: false,
+          diasRestantes: 0,
+          tiempoStr: '0 días',
+          texto: 'El menor ha alcanzado los 16 años de edad. Conforme al Art. 4 del Convenio de La Haya de 1980, el Convenio deja de ser aplicable.',
+          badge: 'Menor ≥ 16 años (Art. 4 Haya)',
+          urgente: false,
+        };
+      }
+
+      if (diffDias <= 365) {
+        const meses = Math.floor(diffDias / 30.4375);
+        const dias = Math.floor(diffDias % 30.4375);
+        let tiempoStr = '';
+        if (meses > 0) {
+          tiempoStr = `${meses} mes${meses > 1 ? 'es' : ''}${dias > 0 ? ` y ${dias} día${dias > 1 ? 's' : ''}` : ''}`;
+        } else {
+          tiempoStr = `${diffDias} día${diffDias > 1 ? 's' : ''}`;
+        }
+        return {
+          esMayor16: false,
+          esInminente: true,
+          diasRestantes: diffDias,
+          tiempoStr,
+          texto: `⚠️ ALERTA DE CADUCIDAD: El NNA cumplirá 16 años en ${tiempoStr}. Trámite judicial y de restitución de máxima prioridad internacional (Art. 4 Convenio 1980).`,
+          badge: `Caduca en ${tiempoStr} (Art. 4)`,
+          urgente: true,
+        };
+      }
+    }
+  }
+
+  // Fallback if only numeric age is provided
+  if (tipoEdad === 'Años' || !tipoEdad) {
+    const e = parseInt(String(edadNum || '0'), 10);
+    if (e >= 16) {
+      return {
+        esMayor16: true,
+        esInminente: false,
+        diasRestantes: 0,
+        tiempoStr: '0 días',
+        texto: 'El menor tiene 16 años o más (Inaplicable según Art. 4 Convenio de La Haya 1980).',
+        badge: 'Menor ≥ 16 años (Art. 4 Haya)',
+        urgente: false,
+      };
+    }
+    if (e === 15) {
+      return {
+        esMayor16: false,
+        esInminente: true,
+        diasRestantes: 180,
+        tiempoStr: 'pocos meses (15 años)',
+        texto: '⚠️ ALERTA DE CADUCIDAD: El NNA tiene 15 años y cumplirá 16 años próximamente. Trámite judicial y de restitución de máxima prioridad internacional (Art. 4 Convenio 1980).',
+        badge: '15 años (Prioridad Art. 4)',
+        urgente: true,
+      };
+    }
+  }
+
+  return null;
+}
+
 function emptyNnaForm(): NnaForm {
   return { nombres: '', primerApellido: '', segundoApellido: '', sexo: 'Hombre', fechaNacimiento: '', edad: '', tipoEdad: 'Años' };
 }
@@ -450,17 +530,51 @@ function Row({
   label: string; value: string; type?: 'text' | 'date' | 'select' | 'textarea';
   opts?: readonly string[] | string[]; span?: number; onChange?: (v: string) => void; disabled?: boolean;
 }) {
+  const [isFocused, setIsFocused] = useState(false);
   const safeVal = value === null || value === undefined ? '' : String(value);
+
+  const inputActiveStyle: React.CSSProperties = {
+    ...fieldInputStyle,
+    border: isFocused ? '1.5px solid #2563EB' : `1px solid ${BR}`,
+    boxShadow: isFocused ? '0 0 0 3.5px rgba(37, 99, 235, 0.22)' : 'none',
+    background: disabled ? '#F8FAFC' : '#FFFFFF',
+    transition: 'border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease',
+    outline: 'none',
+  };
+
   return (
-    <div style={{ gridColumn: `span ${span}`, padding: '10px 14px', borderBottom: `1px solid ${BR}`, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 4 }}>
-      <span style={{ fontSize: 9.5, fontWeight: 700, color: TX3, textTransform: 'uppercase', minHeight: 14, display: 'flex', alignItems: 'center' }}>{label}</span>
+    <div style={{
+      gridColumn: `span ${span}`,
+      padding: '10px 14px',
+      borderBottom: `1px solid ${BR}`,
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      gap: 4,
+      background: isFocused ? '#F0F7FF' : 'transparent',
+      transition: 'background-color 0.15s ease',
+    }}>
+      <span style={{
+        fontSize: 9.5,
+        fontWeight: isFocused ? 800 : 700,
+        color: isFocused ? '#1D4ED8' : TX3,
+        textTransform: 'uppercase',
+        minHeight: 14,
+        display: 'flex',
+        alignItems: 'center',
+        transition: 'color 0.15s ease, font-weight 0.15s ease',
+      }}>
+        {label}
+      </span>
       {type === 'select' ? (
         <select
           className="si-input"
           value={safeVal}
           disabled={disabled}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           onChange={e => onChange?.(e.target.value)}
-          style={{ ...fieldInputStyle, background: disabled ? '#F8FAFC' : '#fff' }}
+          style={inputActiveStyle}
         >
           <option value="">Seleccionar...</option>
           {opts?.map(o => <option key={o} value={o}>{o}</option>)}
@@ -470,9 +584,11 @@ function Row({
           className="si-input"
           value={safeVal}
           disabled={disabled}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           onChange={e => onChange?.(e.target.value)}
           rows={3}
-          style={{ ...fieldInputStyle, resize: 'vertical' }}
+          style={{ ...inputActiveStyle, resize: 'vertical' }}
         />
       ) : (
         <input
@@ -480,8 +596,10 @@ function Row({
           type={type}
           value={safeVal}
           disabled={disabled}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           onChange={e => onChange?.(e.target.value)}
-          style={fieldInputStyle}
+          style={inputActiveStyle}
         />
       )}
     </div>
@@ -507,7 +625,7 @@ function ModalNna({
 }) {
   if (!isOpen) return null;
 
-  const esMayor16 = modalNnaForm.tipoEdad === 'Años' && parseInt(modalNnaForm.edad || '0', 10) >= 16;
+  const caducidad = calcularCaducidadHaya(modalNnaForm.fechaNacimiento, modalNnaForm.edad, modalNnaForm.tipoEdad);
 
   return (
     <div
@@ -521,7 +639,7 @@ function ModalNna({
     >
       <div style={{
         background: SURF, borderRadius: 10, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
-        width: '100%', maxWidth: 520, border: `1px solid ${BR}`, overflow: 'hidden'
+        width: '100%', maxWidth: 540, border: `1px solid ${BR}`, overflow: 'hidden'
       }}>
         <div style={{
           padding: '14px 18px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`,
@@ -625,13 +743,30 @@ function ModalNna({
             </label>
           </div>
 
-          {esMayor16 && (
+          {caducidad?.esInminente && (
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', gap: 10, padding: '12px 14px',
+              borderRadius: 8, background: '#FEF2F2', border: '1.5px solid #DC2626', color: '#991B1B', fontSize: 11.5, lineHeight: 1.45
+            }}>
+              <AlertTriangle size={18} color="#DC2626" style={{ flexShrink: 0, marginTop: 1 }} />
+              <div>
+                <b style={{ display: 'block', fontSize: 12, marginBottom: 2 }}>
+                  ⚠️ ALERTA DE CADUCIDAD: El NNA cumplirá 16 años en {caducidad.tiempoStr}.
+                </b>
+                <span style={{ fontSize: 10.5, color: '#B91C1C' }}>
+                  Trámite judicial y de restitución de máxima prioridad internacional (Art. 4 Convenio de La Haya de 1980).
+                </span>
+              </div>
+            </div>
+          )}
+
+          {caducidad?.esMayor16 && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px',
               borderRadius: 6, background: '#FEF3C7', border: '1px solid #F59E0B', color: '#92400E', fontSize: 11
             }}>
               <AlertTriangle size={15} style={{ flexShrink: 0 }} />
-              <span><b>Alerta Convenio:</b> El menor tiene 16 años o más al momento de la solicitud (Art. 4 Convenio de La Haya).</span>
+              <span><b>Alerta Convenio:</b> {caducidad.texto}</span>
             </div>
           )}
         </div>
@@ -663,7 +798,9 @@ function ModalNna({
 // ── DRAWER DE PLANTILLAS OFICIALES SGD (CON INYECCIÓN DINÁMICA DE REQUISITOS OBSERVADOS) ──
 
 function DrawerSGD({ caso, onClose }: { caso: Caso; onClose: () => void }) {
-  const [template, setTemplate] = useState<'observaciones' | 'citacion' | 'migraciones' | 'cooperacion' | 'resolucion'>('observaciones');
+  const [template, setTemplate] = useState<
+    'observaciones' | 'citacion' | 'interpol' | 'migraciones' | 'cancilleria' | 'informe_admisibilidad' | 'cooperacion' | 'resolucion'
+  >('observaciones');
   const [copied, setCopied] = useState(false);
 
   const nnaNom = nombreCaso(caso);
@@ -682,18 +819,34 @@ function DrawerSGD({ caso, onClose }: { caso: Caso; onClose: () => void }) {
     ? reqsObs.map((r, i) => `${i + 1}. ${r.nombre}: No se acompaña documentación suficiente, actualizada o legible.`).join('\n')
     : '1. Acreditación fehaciente de residencia habitual previa y derecho de custodia ejercido al momento del traslado.';
 
+  const nnaInfoTexto = caso.nna && caso.nna.length > 0
+    ? caso.nna.map((n, i) => `• Menor ${i + 1}: ${nombreNna(n)} (Nacimiento: ${fmtFecha(n.fechaNacimiento)}, Edad: ${n.edad ? `${n.edad} ${n.tipoEdad || 'Años'}` : 'No registrada'}, Sexo: ${n.sexo || 'No registrado'})`).join('\n')
+    : `• Menor: ${nnaNom} (Edad: ${caso.nnaEdad || 'No registrada'} ${caso.nnaTipoEdad || 'Años'})`;
+
   const plantillas = useMemo(() => ({
     observaciones: {
-      titulo: 'Oficio de Observaciones y Subsanación (Directiva 006-2021-MIMP)',
+      titulo: 'Oficio de Observaciones y Subsanación (Directiva N.° 006-2021-MIMP)',
       texto: `OFICIO N.° ____-2026-MIMP/DGNNA-DIPNA\n\nLima, ${hoy}\n\nSeñor(a):\n${solNom}\n${caso.solicitanteDomicilio || 'Domicilio no registrado'}\n\nAsunto: Observaciones a la solicitud de ${caso.tipoSolicitud || 'Restitución Internacional'} respecto del menor ${nnaNom}.\nReferencia: Hoja de Trámite N.° ${cod}\n\nDe mi consideración:\n\nMe dirijo a usted en el marco del Convenio de La Haya de 1980 sobre los Aspectos Civiles de la Sustracción Internacional de Menores y la Directiva N.° 006-2021-MIMP. Al respecto, habiéndose efectuado la evaluación preliminar de admisibilidad de su expediente, se ha determinado que se requiere subsanar los siguientes requisitos:\n\n${listaObsTexto}\n\nEn virtud de lo dispuesto en la normativa vigente, se le otorga un plazo de CINCO (05) DÍAS HÁBILES computados a partir del día siguiente de notificado el presente oficio (fecha límite: ${fechaLim}) para que cumpla con remitir la documentación requerida, bajo apercibimiento de declarar el no acogimiento a trámite y archivo de la solicitud.\n\nSin otro particular, quedo de usted.\n\nAtentamente,\n\n__________________________________\nDirección de Políticas de Niñas, Niños y Adolescentes\nAutoridad Central del Perú - DGNNA / MIMP`,
     },
     citacion: {
       titulo: 'Cédula de Citación a Entrevista Amigable de Retorno',
       texto: `CÉDULA DE CITACIÓN N.° ____-2026-MIMP/DGNNA\n\nLima, ${hoy}\n\nSeñor(a):\n${reqNom}\n${caso.requeridoDomicilio || 'Domicilio en territorio peruano'}\n\nAsunto: Citación a sesión de mediación y propuesta de retorno voluntario.\nExpediente: ${cod} | NNA: ${nnaNom}\n\nPor medio del presente, se le cita a la sesión de entrevista que se llevará a cabo el día ${fechaEnt} en la sede de la Dirección General de Niñas, Niños y Adolescentes (Av. Camaná 616, Lima), con la finalidad de propiciar un acuerdo voluntario y no contencioso sobre la restitución / régimen de visitas del menor en referencia, en salvaguarda de su Interés Superior.\n\nSe le recuerda que el presente procedimiento administrativo es confidencial y busca soluciones amigables previas a la instauración de acciones judiciales.\n\nAtentamente,\n\n__________________________________\nEspecialista Legal de Sustracción Internacional\nDirección General de Niñas, Niños y Adolescentes`,
     },
+    interpol: {
+      titulo: 'Oficio a INTERPOL (División de Policía Judicial) — Ubicación y Localización',
+      texto: `OFICIO N.° ____-2026-MIMP/DGNNA-DIPNA\n\nLima, ${hoy}\n\nSeñor Coronel PNP\nJEFE DE LA DIVISIÓN DE POLICÍA JUDICIAL E INTERPOL LIMA\nPolicía Nacional del Perú\n\nAsunto: Solicitud urgente de ubicación y localización de menor de edad y presunto sustractor.\nReferencia: Hoja de Trámite N.° ${cod} | Convenio de La Haya de 1980\n\nDe mi mayor consideración:\n\nTengo el agrado de dirigirme a usted en el marco del Convenio de La Haya de 1980 sobre los Aspectos Civiles de la Sustracción Internacional de Menores, ratificado por el Estado Peruano, y la Directiva N.° 006-2021-MIMP, mediante la cual la Dirección General de Niñas, Niños y Adolescentes (DGNNA) del MIMP actúa como Autoridad Central del Perú.\n\nAl respecto, habiéndose admitido a trámite la solicitud de ${caso.tipoSolicitud || 'Restitución Internacional'} respecto de:\n\n${nnaInfoTexto}\n\nPresunto sustractor / Requerido(a):\n• Nombre: ${reqNom}\n• Domicilio / Referencias: ${caso.requeridoDomicilio || 'No especificado'}\n• Teléfono: ${caso.requeridoTelefono || 'No registrado'}\n\nEn virtud de lo dispuesto en el Artículo 7, literal a) del Convenio de La Haya de 1980 y el numeral 6.2 de la Directiva N.° 006-2021-MIMP, se solicita a su digno despacho se sirva disponer con carácter de MUY URGENTE las acciones de inteligencia, búsqueda y localización de las personas mencionadas en el territorio nacional, remitiendo a esta Autoridad Central el informe respectivo a la brevedad posible.\n\nSin otro particular, expreso a usted los sentimientos de mi especial consideración.\n\nAtentamente,\n\n__________________________________\nDirección de Políticas de Niñas, Niños y Adolescentes\nAutoridad Central del Perú - DGNNA / MIMP`,
+    },
     migraciones: {
-      titulo: 'Oficio de Solicitud de Movimiento Migratorio e Impedimento',
-      texto: `OFICIO N.° ____-2026-MIMP/DGNNA-DIPNA\n\nLima, ${hoy}\n\nSeñor(a):\nSUPERINTENDENCIA NACIONAL DE MIGRACIONES\nGerencia de Servicios Migratorios\n\nAsunto: Solicitud urgente de Movimiento Migratorio y Alerta Preventiva.\nReferencia: Hoja de Trámite N.° ${cod}\n\nDe mi mayor consideración:\n\nTengo a bien dirigirme a usted para solicitarle se sirva disponer a quien corresponda la remisión con carácter de MUY URGENTE del Reporte Histórico de Movimiento Migratorio de las siguientes personas:\n\n1. Menor: ${nnaNom}\n2. Progenitor(a) / Requerido(a): ${reqNom}\n\nAsimismo, se solicita activar el control de alerta preventiva de salida del territorio nacional para el menor de edad en mención, de conformidad con el Art. 7 del Convenio de La Haya de 1980.\n\nAtentamente,\n\n__________________________________\nDirección de Políticas de Niñas, Niños y Adolescentes\nAutoridad Central del Perú - MIMP`,
+      titulo: 'Oficio a Superintendencia Nacional de MIGRACIONES — Alerta Preventiva e Impedimento',
+      texto: `OFICIO N.° ____-2026-MIMP/DGNNA-DIPNA\n\nLima, ${hoy}\n\nSeñor(a):\nSUPERINTENDENCIA NACIONAL DE MIGRACIONES\nGerencia de Servicios Migratorios / Control Migratorio\n\nAsunto: Solicitud urgente de Movimiento Migratorio y Alerta Preventiva de Salida del País.\nReferencia: Hoja de Trámite N.° ${cod}\n\nDe mi mayor consideración:\n\nTengo a bien dirigirme a usted en el marco del Convenio de La Haya de 1980 sobre los Aspectos Civiles de la Sustracción Internacional de Menores y la Directiva N.° 006-2021-MIMP.\n\nPor medio del presente, solicito se sirva disponer con carácter de MUY URGENTE:\n\n1. La remisión del Reporte Histórico de Movimiento Migratorio (entradas y salidas del país) de las siguientes personas:\n${nnaInfoTexto}\n   • Progenitor(a) / Requerido(a): ${reqNom}\n\n2. La activación inmediata del CONTROL DE ALERTA PREVENTIVA DE SALIDA en todos los puestos de control migratorio y fronterizo a nivel nacional respecto del menor ${nnaNom}, con la finalidad de prevenir su salida no autorizada del territorio de la República en salvaguarda de su Interés Superior (Art. 7 Convenio 1980).\n\nAgradeciendo la oportuna atención al presente requerimiento, quedo de usted.\n\nAtentamente,\n\n__________________________________\nDirección de Políticas de Niñas, Niños y Adolescentes\nAutoridad Central del Perú - DGNNA / MIMP`,
+    },
+    cancilleria: {
+      titulo: 'Oficio al Ministerio de Relaciones Exteriores (Cancillería - MRE)',
+      texto: `OFICIO N.° ____-2026-MIMP/DGNNA-AC\n\nLima, ${hoy}\n\nSeñor(a) Embajador(a) / Director(a):\nDIRECCIÓN GENERAL DE COMUNIDADES PERUANAS EN EL EXTERIOR Y ASUNTOS CONSULARES\nMinisterio de Relaciones Exteriores del Perú (MRE)\n\nAsunto: Solicitud de Cooperación y Asistencia Consular en Trámite de ${caso.tipoSolicitud || 'Restitución Internacional'}.\nReferencia: Hoja de Trámite N.° ${cod} | País: ${pais}\n\nDe mi mayor consideración:\n\nTengo el honor de dirigirme a usted para poner en su conocimiento que ante esta Autoridad Central se viene tramitando el expediente de ${caso.tipoSolicitud || 'Restitución Internacional'} bajo el marco del Convenio de La Haya de 1980, correspondiente al menor de edad ${nnaNom}, quien se encuentra presuntamente en el Estado de ${pais}.\n\nAl respecto, en cumplimiento del numeral 6.3 de la Directiva N.° 006-2021-MIMP, se solicita a vuestro despacho se sirva coordinar a través de la sección consular correspondiente:\n\n1. Efectuar el seguimiento consular respectivo para verificar el estado de salud e integridad del menor.\n2. Coadyuvar en las comunicaciones oficiales ante la Autoridad Central de ${pais}.\n3. Informar a esta Dirección General sobre los avances y gestiones consulares efectuadas.\n\nAgradeciendo de antemano su valiosa cooperación interinstitucional, hago propicia la oportunidad para reiterarle las seguridades de mi distinguida consideración.\n\nAtentamente,\n\n__________________________________\nDirección General de Niñas, Niños y Adolescentes\nAutoridad Central del Perú - MIMP`,
+    },
+    informe_admisibilidad: {
+      titulo: 'Informe Técnico de Calificación de Admisibilidad (Directiva N.° 006-2021-MIMP)',
+      texto: `INFORME TÉCNICO N.° ____-2026-MIMP/DGNNA-DIPNA\n\nA: DIRECCIÓN DE POLÍTICAS DE NIÑAS, NIÑOS Y ADOLESCENTES\nDE: Especialista Legal en Sustracción Internacional\nASUNTO: Calificación de Admisibilidad de Solicitud de ${caso.tipoSolicitud || 'Restitución Internacional'}\nREFERENCIA: Hoja de Trámite N.° ${cod}\nFECHA: Lima, ${hoy}\n\n1. ANTECEDENTES Y PARTES PROCESALES\n   • Menor involucrado: ${nnaNom}\n   • Solicitante: ${solNom} (${caso.solicitanteDomicilio || 'Domicilio no registrado'})\n   • Requerido(a): ${reqNom} (${caso.requeridoDomicilio || 'Domicilio no registrado'})\n   • País involucrado: ${pais} | Rol AC Perú: ${caso.acPeru || 'Requerida'}\n   • Fecha de Ingreso: ${fmtFecha(caso.fechaIngreso)}\n\n2. EVALUACIÓN NORMATIVA (CONVENIO DE LA HAYA 1980 / DIRECTIVA 006-2021-MIMP)\n   a) Verificación de Minoría de Edad (Art. 4 Convenio): Se constata que el NNA tiene menos de 16 años de edad.\n   b) Residencia Habitual Previa (Art. 3 Convenio): Se acredita residencia inmediata anterior al traslado o retención ilícita.\n   c) Ejercicio Efectivo del Derecho de Custodia/Visitas (Arts. 3 y 5 Convenio): Se acompaña documentación fehaciente.\n   d) Traslado o Retención Ilícita (Arts. 3 y 12 Convenio): Se verifica la infracción de los derechos de custodia y el cómputo dentro del plazo preferente.\n\n3. RESULTADO DE LA CALIFICACIÓN DE REQUISITOS\n${listaObsTexto}\n\n4. CONCLUSIÓN Y RECOMENDACIÓN TÉCNICA\n   Habiéndose verificado el cumplimiento de los estándares exigidos por la Directiva N.° 006-2021-MIMP, se concluye que la solicitud resulta ADMISIBLE. Se recomienda proceder con las siguientes actuaciones según corresponda al rol de la Autoridad Central:\n   [ ] Convocar a la sesión de entrevista amigable para promover el retorno voluntario.\n   [ ] Remitir la solicitud formal de cooperación a la Autoridad Central de ${pais}.\n\nEs cuanto informo para los fines pertinentes.\n\n__________________________________\nEspecialista Legal de Sustracción Internacional\nDirección General de Niñas, Niños y Adolescentes - MIMP`,
     },
     cooperacion: {
       titulo: 'Oficio de Solicitud de Cooperación a la Autoridad Central Extranjera (AC Requirente)',
@@ -703,7 +856,7 @@ function DrawerSGD({ caso, onClose }: { caso: Caso; onClose: () => void }) {
       titulo: 'Resolución Directoral de Conclusión y Archivo del Trámite',
       texto: `RESOLUCIÓN DIRECTORAL N.° ____-2026-MIMP/DGNNA\n\nLima, ${hoy}\n\nVISTO: El expediente de sustracción internacional de menores correspondiente a la Hoja de Trámite N.° ${cod}, referente al menor ${nnaNom};\n\nCONSIDERANDO:\n\nQue, mediante Directiva N.° 006-2021-MIMP se regulan las actuaciones de la Autoridad Central peruana en el marco de los Convenios Internacionales de Restitución de Menores;\n\nQue, en el presente expediente ha acontecido la causal de conclusión: «${caso.motivoCierre || 'Motivo de archivo'}»;\n\nSE RESUELVE:\n\nArtículo 1.- DECLARAR CONCLUIDO el procedimiento administrativo de ${caso.tipoSolicitud || 'Restitución Internacional'} tramitado bajo el expediente N.° ${cod}.\n\nArtículo 2.- DISPONER EL ARCHIVO DEFINITIVO de los actuados, notificando a las partes y a las entidades pertinentes.\n\nRegístrese, comuníquese y archívese.\n\n__________________________________\nDirección General de Niñas, Niños y Adolescentes\nMIMP`,
     },
-  }), [caso, nnaNom, solNom, reqNom, cod, pais, hoy, fechaLim, fechaEnt, listaObsTexto]);
+  }), [caso, nnaNom, solNom, reqNom, cod, pais, hoy, fechaLim, fechaEnt, listaObsTexto, nnaInfoTexto]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(plantillas[template].texto);
@@ -722,46 +875,58 @@ function DrawerSGD({ caso, onClose }: { caso: Caso; onClose: () => void }) {
         }}
       />
       <div style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0, width: 560, maxWidth: '90vw',
+        position: 'fixed', top: 0, right: 0, bottom: 0, width: 620, maxWidth: '92vw',
         background: '#fff', boxShadow: '-10px 0 25px rgba(0,0,0,0.15)', zIndex: 9000,
         display: 'flex', flexDirection: 'column', borderLeft: `1px solid ${BR}`
       }}>
       <div style={{ padding: '16px 20px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <b style={{ fontSize: 13, color: N2 }}>Generador de Plantillas Oficiales SGD</b>
-          <span style={{ display: 'block', fontSize: 10.5, color: TX3 }}>Documentos tipo según Directiva N.° 006-2021-MIMP</span>
+          <span style={{ display: 'block', fontSize: 10.5, color: TX3 }}>Documentos tipo oficiales según Directiva N.° 006-2021-MIMP</span>
         </div>
         <button type="button" onClick={onClose} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: TX3 }}><X size={18} /></button>
       </div>
 
-      <div style={{ padding: '12px 20px', borderBottom: `1px solid ${BR}`, display: 'flex', gap: 6, flexWrap: 'wrap', background: '#FAFBFD' }}>
-        {(Object.keys(plantillas) as Array<keyof typeof plantillas>).map(k => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => setTemplate(k)}
-            style={{
-              padding: '6px 11px', borderRadius: 6, border: `1px solid ${template === k ? BL : BR}`,
-              background: template === k ? '#EFF6FF' : '#fff', color: template === k ? BL : TX2,
-              fontSize: 11, fontWeight: template === k ? 800 : 600, cursor: 'pointer'
-            }}
-          >
-            {k === 'observaciones' ? 'Oficio Observación' : k === 'citacion' ? 'Cédula Citación' : k === 'migraciones' ? 'Migraciones' : k === 'cooperacion' ? 'Cooperación Extranjera' : 'Res. Cierre'}
-          </button>
-        ))}
+      <div style={{ padding: '10px 16px', borderBottom: `1px solid ${BR}`, display: 'flex', gap: 6, flexWrap: 'wrap', background: '#FAFBFD' }}>
+        {[
+          { id: 'observaciones', label: 'Oficio Observación' },
+          { id: 'citacion', label: 'Cédula Citación' },
+          { id: 'interpol', label: 'Oficio INTERPOL' },
+          { id: 'migraciones', label: 'Migraciones' },
+          { id: 'cancilleria', label: 'Cancillería MRE' },
+          { id: 'informe_admisibilidad', label: 'Informe Admisibilidad' },
+          { id: 'cooperacion', label: 'Cooperación Extranjera' },
+          { id: 'resolucion', label: 'Res. Cierre' },
+        ].map(({ id, label }) => {
+          const active = template === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTemplate(id as any)}
+              style={{
+                padding: '6px 10px', borderRadius: 6, border: `1px solid ${active ? BL : BR}`,
+                background: active ? '#EFF6FF' : '#fff', color: active ? BL : TX2,
+                fontSize: 10.5, fontWeight: active ? 800 : 600, cursor: 'pointer'
+              }}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
 
-      <div style={{ flex: 1, padding: 20, overflowY: 'auto' }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: N2, marginBottom: 10 }}>{plantillas[template].titulo}</div>
+      <div style={{ flex: 1, padding: 18, overflowY: 'auto' }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: N2, marginBottom: 8 }}>{plantillas[template].titulo}</div>
         <textarea
           readOnly
           value={plantillas[template].texto}
           rows={18}
-          style={{ width: '100%', height: 'calc(100% - 30px)', padding: 12, borderRadius: 8, border: `1.5px solid ${BR}`, background: '#F8FAFC', fontSize: 11.5, fontFamily: 'monospace', lineHeight: 1.5, resize: 'none', outline: 'none' }}
+          style={{ width: '100%', height: 'calc(100% - 28px)', padding: 12, borderRadius: 8, border: `1.5px solid ${BR}`, background: '#F8FAFC', fontSize: 11, fontFamily: 'monospace', lineHeight: 1.5, resize: 'none', outline: 'none' }}
         />
       </div>
 
-      <div style={{ padding: '14px 20px', background: '#F8FAFC', borderTop: `1px solid ${BR}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ padding: '12px 18px', background: '#F8FAFC', borderTop: `1px solid ${BR}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: 10.5, color: TX3 }}>Pega el texto directamente en el Sistema de Gestión Documental (SGD).</span>
         <button
           type="button"
@@ -1317,15 +1482,49 @@ function ModalEstadisticas({
 
 // ── PESTAÑA: RESUMEN DEL CASO (CON RELOJ DE LA HAYA) ──────────────────
 
-function TabResumen({ caso, onSelectTab }: { caso: Caso; onSelectTab: (t: ExpedienteTab) => void }) {
+function TabResumen({
+  caso, onSelectTab, onAgregarBitacora
+}: {
+  caso: Caso; onSelectTab: (t: ExpedienteTab) => void; onAgregarBitacora?: (texto: string) => Promise<void>;
+}) {
   const proceso = caso.procesoOperativo || { faseOperativa: 'Evaluación', requisitos: REQ_BASE };
   const reqPend = (proceso.requisitos || []).filter(r => r.estado === 'Pendiente' || r.estado === 'Observado').length;
-  const fechaLimite = proceso.fechaLimite || proceso.fechaLimiteSubsanacion;
-  const plazoVencido = vencido(fechaLimite);
   const b = estadoBadge(caso.estado);
-  const ultima = caso.bitacora && caso.bitacora.length > 0 ? caso.bitacora[caso.bitacora.length - 1] : null;
+
+  const [quickNote, setQuickNote] = useState('');
+  const [savingQuickNote, setSavingQuickNote] = useState(false);
 
   const relojHaya = useMemo(() => calcularRelojLaHaya(caso.fechaIngreso), [caso.fechaIngreso]);
+
+  const nnaList = useMemo(() => {
+    return (caso.nna && caso.nna.length > 0)
+      ? caso.nna
+      : [{ nombres: caso.nnaNombre || 'Menor involucrado', primerApellido: '', fechaNacimiento: caso.nnaFechaNac || (caso as any).nnafechanac, edad: caso.nnaEdad || (caso as any).nnaedad, tipoEdad: caso.nnaTipoEdad || (caso as any).nnatipoedad, sexo: caso.nnaSexo || '' }];
+  }, [caso]);
+
+  const caducidadAlert = useMemo(() => {
+    for (const n of nnaList) {
+      const cad = calcularCaducidadHaya(n.fechaNacimiento, n.edad, n.tipoEdad);
+      if (cad?.esInminente) {
+        return { nnaNom: nombreNna(n) || 'El NNA', ...cad };
+      }
+    }
+    return null;
+  }, [nnaList]);
+
+  const handleQuickNoteSubmit = async () => {
+    if (!quickNote.trim() || !onAgregarBitacora) return;
+    try {
+      setSavingQuickNote(true);
+      await onAgregarBitacora(quickNote.trim());
+      setQuickNote('');
+      toast.success('Nota registrada en la bitácora');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al registrar nota rápida');
+    } finally {
+      setSavingQuickNote(false);
+    }
+  };
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }} className="main-scroll">
@@ -1363,6 +1562,24 @@ function TabResumen({ caso, onSelectTab }: { caso: Caso; onSelectTab: (t: Expedi
           </div>
         </div>
 
+        {/* ALERTA DE CADUCIDAD INMINENTE (ART. 4 CONVENIO DE LA HAYA) */}
+        {caducidadAlert && (
+          <div style={{
+            gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 12,
+            background: '#FEF2F2', border: '1.5px solid #DC2626', borderRadius: 8, padding: '12px 18px', color: '#991B1B'
+          }}>
+            <AlertTriangle size={22} color="#DC2626" style={{ flexShrink: 0 }} />
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.05em', color: '#B91C1C' }}>
+                Art. 4 Convenio de La Haya de 1980 · Alerta de Caducidad Inminente por Edad
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 800, marginTop: 2 }}>
+                ⚠️ ALERTA DE CADUCIDAD: El NNA <b>{caducidadAlert.nnaNom}</b> cumplirá 16 años en {caducidadAlert.tiempoStr}. Trámite judicial y de restitución de máxima prioridad internacional (Art. 4 Convenio 1980).
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* PRÓXIMA ACCIÓN */}
         <div style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 12 }}>
@@ -1389,7 +1606,39 @@ function TabResumen({ caso, onSelectTab }: { caso: Caso; onSelectTab: (t: Expedi
             />
             <SummaryValue label="Estado Operativo" value={<span style={{ padding: '3px 8px', borderRadius: 99, background: b.bg, color: b.color, border: `1px solid ${b.border}`, fontSize: 10.5, fontWeight: 800 }}>{b.label}</span>} />
             <SummaryValue label="Entrevista Amigable" value={caso.resultadoEntrevista || 'Pendiente'} />
-            <SummaryValue label="Proceso Judicial" value={caso.estadoJudicial || 'Sin demanda'} />
+            <SummaryValue
+              label="Proceso Judicial"
+              value={
+                <div>
+                  <div>{caso.estadoJudicial || 'Sin demanda'}</div>
+                  {caso.numExpedienteJudicial && (
+                    <div style={{ marginTop: 4 }}>
+                      <button
+                        type="button"
+                        onClick={() => window.open('https://cej.pj.gob.pe/cej/forms/busquedaform.html', '_blank', 'noopener,noreferrer')}
+                        title="Consultar expediente en el CEJ del Poder Judicial"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          background: '#EFF6FF',
+                          color: BL,
+                          border: '1px solid #BFDBFE',
+                          fontSize: 10,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Scale size={11} />
+                        <span>Ver en CEJ ({caso.numExpedienteJudicial}) ↗</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              }
+            />
             <SummaryValue label="Retorno Concretado" value={caso.retorno || 'Pendiente'} />
             <SummaryValue label="Fecha de Conclusión" value={fmtFecha(caso.fechaSalida)} />
           </div>
@@ -1398,15 +1647,85 @@ function TabResumen({ caso, onSelectTab }: { caso: Caso; onSelectTab: (t: Expedi
         {/* NNA Y ÚLTIMA GESTIÓN */}
         <div style={{ gridColumn: '1 / -1', background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 10 }}>
-            Menores Involucrados ({caso.nna?.length || 1})
+            Menores Involucrados ({nnaList.length})
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            {(caso.nna && caso.nna.length > 0 ? caso.nna : [{ nombres: caso.nnaNombre || 'Sin nombre', primerApellido: '', edad: caso.nnaEdad || '', tipoEdad: caso.nnaTipoEdad || 'Años', sexo: caso.nnaSexo || '' }]).map((n, i) => (
-              <div key={i} style={{ padding: '8px 12px', background: '#F8FAFC', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11.5 }}>
-                <b>{nombreNna(n)}</b> <span style={{ color: TX3 }}>· {n.edad ? `${n.edad} ${n.tipoEdad || 'Años'}` : 'Edad no reg.'} · {n.sexo || 'Sexo no reg.'}</span>
-              </div>
-            ))}
+            {nnaList.map((n, i) => {
+              const cad = calcularCaducidadHaya(n.fechaNacimiento, n.edad, n.tipoEdad);
+              return (
+                <div key={i} style={{ padding: '8px 12px', background: '#F8FAFC', border: `1px solid ${cad?.esInminente ? '#DC2626' : BR}`, borderRadius: 6, fontSize: 11.5 }}>
+                  <b>{nombreNna(n)}</b> <span style={{ color: TX3 }}>· {n.edad ? `${n.edad} ${n.tipoEdad || 'Años'}` : 'Edad no reg.'} · {n.sexo || 'Sexo no reg.'}</span>
+                  {cad?.esInminente && (
+                    <span style={{ marginLeft: 8, padding: '2px 6px', borderRadius: 4, background: '#FEE2E2', color: '#B91C1C', fontSize: 10, fontWeight: 800, border: '1px solid #FECACA' }}>
+                      ⚠️ Cumple 16 años en {cad.tiempoStr}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
+        </div>
+
+        {/* WIDGET DE BITÁCORA RÁPIDA (1-CLIC) */}
+        <div style={{
+          gridColumn: '1 / -1', background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 16,
+          display: 'flex', flexDirection: 'column', gap: 10
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+              <MessageSquare size={14} color={BL} />
+              <span>Bitácora Rápida de Seguimiento ({caso.bitacora?.length || 0} notas registradas)</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => onSelectTab?.('cierre')}
+              style={{ fontSize: 10.5, fontWeight: 700, color: BL, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              Ir a Cierre / Ficha Técnica →
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              className="si-input"
+              value={quickNote}
+              onChange={e => setQuickNote(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && quickNote.trim()) {
+                  e.preventDefault();
+                  handleQuickNoteSubmit();
+                }
+              }}
+              placeholder="Registrar una nota rápida en la bitácora (Presiona Enter para guardar)..."
+              style={{ flex: 1, ...fieldInputStyle }}
+            />
+            <button
+              type="button"
+              disabled={!quickNote.trim() || savingQuickNote}
+              onClick={handleQuickNoteSubmit}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 6,
+                border: 'none', background: quickNote.trim() ? BL : '#E2E8F0', color: quickNote.trim() ? '#fff' : TX3,
+                fontSize: 11, fontWeight: 800, cursor: quickNote.trim() ? 'pointer' : 'default', flexShrink: 0
+              }}
+            >
+              <Send size={12} />
+              <span>{savingQuickNote ? 'Guardando...' : 'Registrar'}</span>
+            </button>
+          </div>
+          {caso.bitacora && caso.bitacora.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2 }}>
+              {caso.bitacora.slice(-2).reverse().map((b, i) => (
+                <div key={b.id || i} style={{ padding: '8px 12px', background: '#F8FAFC', border: `1px solid ${BR}`, borderRadius: 6, fontSize: 11, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                  <span style={{ color: TX, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    💬 {b.texto}
+                  </span>
+                  <span style={{ color: TX3, fontSize: 10, flexShrink: 0 }}>
+                    {fmtFecha(b.fecha)} · {b.creadoPor || 'Especialista'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -2368,6 +2687,7 @@ function TabJudicial({
   const [descH, setDescH] = useState('');
 
   const esRequirente = getVal('acPeru') === 'Requirente';
+  const numExp = getVal('numExpedienteJudicial') || caso.numExpedienteJudicial;
 
   const agregarH = () => {
     if (!fechaH) return;
@@ -2383,6 +2703,32 @@ function TabJudicial({
         <Row label={esRequirente ? 'Tribunal / Corte Extranjera' : 'Juzgado de Familia'} value={getVal('juzgado')} onChange={v => onChange('juzgado', v)} />
         <Row label="Etapa Procesal Actual" value={getVal('estadoJudicial') || 'Demanda presentada'} type="select" opts={ETAPAS_JUD} onChange={v => onChange('estadoJudicial', v)} />
         <Row label="Fecha de Demanda" value={getVal('fechaDemanda')} type="date" onChange={v => onChange('fechaDemanda', v)} />
+
+        {numExp && (
+          <div style={{
+            gridColumn: '1 / -1', padding: '10px 16px', background: '#EFF6FF',
+            borderBottom: `1px solid ${BR}`, display: 'flex', alignItems: 'center',
+            justifyContent: 'space-between', gap: 12, flexWrap: 'wrap'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11.5, color: '#1E3A5F', fontWeight: 600 }}>
+              <Scale size={15} color={BL} />
+              <span>Expediente Judicial: <b style={{ fontFamily: 'monospace', color: BL }}>{numExp}</b></span>
+            </div>
+            <button
+              type="button"
+              onClick={() => window.open('https://cej.pj.gob.pe/cej/forms/busquedaform.html', '_blank', 'noopener,noreferrer')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px',
+                background: BL, color: '#fff', border: 'none', borderRadius: 6,
+                fontSize: 11, fontWeight: 800, cursor: 'pointer', boxShadow: '0 1px 3px rgba(37, 99, 235, 0.25)'
+              }}
+            >
+              <Scale size={13} />
+              <span>Ver en CEJ Poder Judicial ↗</span>
+            </button>
+          </div>
+        )}
+
         <Row label="Sentencia 1ra Instancia" value={getVal('sentencia1ra')} onChange={v => onChange('sentencia1ra', v)} />
         <Row label="Sentencia 2da Instancia" value={getVal('sentencia2da')} onChange={v => onChange('sentencia2da', v)} />
         <Row label="Recurso de Casación" value={getVal('casacion')} span={2} onChange={v => onChange('casacion', v)} />
@@ -2483,6 +2829,9 @@ export default function SustracionPage() {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [fProfesional, setFProfesional] = useState('');
+  const [fPais, setFPais] = useState('');
+  const [fRolAc, setFRolAc] = useState('');
+  const [fTipoSol, setFTipoSol] = useState('');
   const [subBandeja, setSubBandeja] = useState('todos');
   const [kpiFilter, setKpiFilter] = useState<KpiFilter>('all');
   const [tab, setTab] = useState<ExpedienteTab>('resumen');
@@ -2490,7 +2839,15 @@ export default function SustracionPage() {
   const [fichaTab, setFichaTab] = useState<'datos' | 'personas' | 'bitacora'>('datos');
   const [showStats, setShowStats] = useState(false);
 
-  // Nuevo caso
+  // Ordenamiento interactivo de columnas (B.1)
+  const [sortField, setSortField] = useState<'codigo' | 'nna' | 'pais' | 'acPeru' | 'fechaIngreso' | 'estado'>('fechaIngreso');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Paginación completa (B.2)
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Nuevo caso & Borrador LocalStorage (A.2)
   const [view, setView] = useState<'bandeja' | 'nuevo'>('bandeja');
   const [formNew, setFormNew] = useState<FormCasoInput>(emptyForm());
   const [nnaNew, setNnaNew] = useState<NnaForm[]>([]);
@@ -2498,23 +2855,71 @@ export default function SustracionPage() {
   const [modalNnaIndex, setModalNnaIndex] = useState<number>(-2);
   const [savingNew, setSavingNew] = useState(false);
   const [errorNew, setErrorNew] = useState('');
+  const [draftInfo, setDraftInfo] = useState<{ form: FormCasoInput; nna: NnaForm[]; savedAt: string } | null>(null);
 
-  // Atajo de teclado: Escape (Esc) para cerrar modales y drawers inmediatamente
+  const DRAFT_KEY = 'sustracion_borrador_nuevo';
+
+  // Verificar borrador guardado en LocalStorage al entrar a 'nuevo'
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (showStats) {
-          setShowStats(false);
-        } else if (modalNnaIndex >= -1) {
-          setModalNnaIndex(-2);
-        } else if (drawer !== null) {
-          setDrawer(null);
+    if (view === 'nuevo') {
+      try {
+        const raw = localStorage.getItem(DRAFT_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && (parsed.form?.codigo || parsed.form?.pais || (parsed.nna && parsed.nna.length > 0))) {
+            setDraftInfo(parsed);
+          }
+        }
+      } catch (e) {
+        // Ignore localStorage error
+      }
+    } else {
+      setDraftInfo(null);
+    }
+  }, [view]);
+
+  // Auto-guardado de borrador en LocalStorage cada vez que cambie el formulario nuevo
+  useEffect(() => {
+    if (view === 'nuevo') {
+      const hasContent = Boolean(
+        formNew.codigo || formNew.pais || formNew.solicitanteNombre ||
+        formNew.requeridoNombre || formNew.observaciones || nnaNew.length > 0
+      );
+      if (hasContent) {
+        try {
+          localStorage.setItem(DRAFT_KEY, JSON.stringify({
+            form: formNew,
+            nna: nnaNew,
+            savedAt: new Date().toISOString(),
+          }));
+        } catch (e) {
+          // Ignore localStorage error
         }
       }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showStats, modalNnaIndex, drawer]);
+    }
+  }, [view, formNew, nnaNew]);
+
+  const restaurarBorrador = () => {
+    if (draftInfo) {
+      setFormNew(draftInfo.form || emptyForm());
+      setNnaNew(draftInfo.nna || []);
+      setDraftInfo(null);
+      toast.success('Borrador recuperado correctamente');
+    }
+  };
+
+  const descartarBorrador = () => {
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch (e) {}
+    setDraftInfo(null);
+    toast.info('Borrador descartado');
+  };
+
+  // Reset de página al cambiar filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, fProfesional, fPais, fRolAc, fTipoSol, subBandeja, kpiFilter, pageSize]);
 
   const cargar = useCallback(async () => {
     try {
@@ -2576,6 +2981,30 @@ export default function SustracionPage() {
       setSaving(false);
     }
   };
+
+  // Atajos de teclado: Escape (Esc) y Ctrl+S / Ctrl+Enter (A.4)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showStats) {
+          setShowStats(false);
+        } else if (modalNnaIndex >= -1) {
+          setModalNnaIndex(-2);
+        } else if (drawer !== null) {
+          setDrawer(null);
+        }
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S' || e.key === 'Enter')) {
+        e.preventDefault();
+        if (view === 'nuevo') {
+          crearCasoDesdePagina();
+        } else if (selected && hasPending && !saving) {
+          guardar();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showStats, modalNnaIndex, drawer, view, selected, hasPending, saving, formNew, nnaNew]);
 
   const onGuardarProceso = async (proc: ProcesoOperativo, nota?: string, targetTab?: ExpedienteTab) => {
     if (!selected) return;
@@ -2781,6 +3210,13 @@ export default function SustracionPage() {
       setSelected(nuevo);
       setView('bandeja');
       setTab('evaluacion');
+
+      // Limpiar borrador local tras guardado exitoso
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch (e) {}
+      setDraftInfo(null);
+
       toast.success(`Expediente ${nuevo.codigo} registrado exitosamente.`);
     } catch (e: any) {
       setErrorNew(e.message || 'Error al crear caso');
@@ -2852,6 +3288,20 @@ export default function SustracionPage() {
     return flows.get(selected.id) || deriveCaseFlow(selected);
   }, [selected, flows, deriveCaseFlow]);
 
+  const selectedCaducidad = useMemo(() => {
+    if (!selected) return null;
+    const nnaList = (selected.nna && selected.nna.length > 0)
+      ? selected.nna
+      : [{ nombres: selected.nnaNombre || 'Menor', primerApellido: '', fechaNacimiento: selected.nnaFechaNac || (selected as any).nnafechanac, edad: selected.nnaEdad || (selected as any).nnaedad, tipoEdad: selected.nnaTipoEdad || (selected as any).nnatipoedad }];
+    for (const n of nnaList) {
+      const cad = calcularCaducidadHaya(n.fechaNacimiento, n.edad, n.tipoEdad);
+      if (cad?.esInminente) {
+        return { nnaNom: nombreNna(n) || 'El menor', ...cad };
+      }
+    }
+    return null;
+  }, [selected]);
+
   const handleKpiSelect = (filterId: KpiFilter) => {
     if (kpiFilter === filterId && filterId !== 'all') {
       setKpiFilter('all');
@@ -2869,13 +3319,25 @@ export default function SustracionPage() {
     }
   };
 
+  const paisesDisponibles = useMemo(() => {
+    const set = new Set<string>(PAISES);
+    casos.forEach(c => {
+      if (c.pais) set.add(c.pais);
+    });
+    return Array.from(set).sort();
+  }, [casos]);
+
   const visibles = useMemo(() => {
     return casos.filter(c => {
       const txt = search.toLowerCase();
       const nnaStr = nombreCaso(c).toLowerCase();
       const matchTxt = !txt || c.codigo.toLowerCase().includes(txt) || nnaStr.includes(txt) || (c.pais || '').toLowerCase().includes(txt);
       const matchProf = !fProfesional || c.profesional === fProfesional;
-      if (!matchTxt || !matchProf) return false;
+      const matchPais = !fPais || c.pais === fPais;
+      const matchRol = !fRolAc || c.acPeru === fRolAc;
+      const matchTipo = !fTipoSol || c.tipoSolicitud === fTipoSol;
+
+      if (!matchTxt || !matchProf || !matchPais || !matchRol || !matchTipo) return false;
 
       // Filtro interactivo de KPIs (1-clic)
       if (kpiFilter === 'tramite' && c.estado !== 'Tramite') return false;
@@ -2894,11 +3356,82 @@ export default function SustracionPage() {
         const lim = proc?.fechaLimite || proc?.fechaLimiteSubsanacion || proc?.fechaLimitePasajes;
         const esVencido = lim ? vencido(lim) : false;
         const reloj = calcularRelojLaHaya(c.fechaIngreso);
-        return esVencido || reloj.estado === 'excedido' || (f && f.alerts.some((a: any) => a.tone === 'error'));
+        const nnaList = (c.nna && c.nna.length > 0) ? c.nna : [{ fechaNacimiento: c.nnaFechaNac || (c as any).nnafechanac, edad: c.nnaEdad || (c as any).nnaedad, tipoEdad: c.nnaTipoEdad || (c as any).nnatipoedad }];
+        const tieneCaducidad = nnaList.some(n => calcularCaducidadHaya(n.fechaNacimiento, n.edad, n.tipoEdad)?.esInminente);
+        return esVencido || reloj.estado === 'excedido' || tieneCaducidad || (f && f.alerts.some((a: any) => a.tone === 'error'));
       }
       return true;
     });
-  }, [casos, search, fProfesional, subBandeja, kpiFilter, flows]);
+  }, [casos, search, fProfesional, fPais, fRolAc, fTipoSol, subBandeja, kpiFilter, flows]);
+
+  const handleSort = (field: 'codigo' | 'nna' | 'pais' | 'acPeru' | 'fechaIngreso' | 'estado') => {
+    if (sortField === field) {
+      setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const sortedVisibles = useMemo(() => {
+    const list = [...visibles];
+    list.sort((a, b) => {
+      let valA = '';
+      let valB = '';
+      if (sortField === 'codigo') {
+        valA = (a.codigo || '').toLowerCase();
+        valB = (b.codigo || '').toLowerCase();
+      } else if (sortField === 'nna') {
+        valA = nombreCaso(a).toLowerCase();
+        valB = nombreCaso(b).toLowerCase();
+      } else if (sortField === 'pais') {
+        valA = (a.pais || '').toLowerCase();
+        valB = (b.pais || '').toLowerCase();
+      } else if (sortField === 'acPeru') {
+        valA = (a.acPeru || '').toLowerCase();
+        valB = (b.acPeru || '').toLowerCase();
+      } else if (sortField === 'fechaIngreso') {
+        valA = a.fechaIngreso || '';
+        valB = b.fechaIngreso || '';
+      } else if (sortField === 'estado') {
+        valA = (a.estado || '').toLowerCase();
+        valB = (b.estado || '').toLowerCase();
+      }
+      if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+      if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return list;
+  }, [visibles, sortField, sortOrder]);
+
+  const totalPages = useMemo(() => {
+    if (pageSize === 0) return 1;
+    return Math.max(1, Math.ceil(sortedVisibles.length / pageSize));
+  }, [sortedVisibles.length, pageSize]);
+
+  const safePage = useMemo(() => {
+    return Math.min(Math.max(1, currentPage), totalPages);
+  }, [currentPage, totalPages]);
+
+  const pagedCasos = useMemo(() => {
+    if (pageSize === 0) return sortedVisibles;
+    const start = (safePage - 1) * pageSize;
+    return sortedVisibles.slice(start, start + pageSize);
+  }, [sortedVisibles, safePage, pageSize]);
+
+  const hasActiveFilters = Boolean(
+    search || fProfesional || fPais || fRolAc || fTipoSol || subBandeja !== 'todos' || kpiFilter !== 'all'
+  );
+
+  const limpiarFiltros = () => {
+    setSearch('');
+    setFProfesional('');
+    setFPais('');
+    setFRolAc('');
+    setFTipoSol('');
+    setSubBandeja('todos');
+    setKpiFilter('all');
+  };
 
   const stageCounts = useMemo(() => {
     const baseList = casos.filter(c => {
@@ -2906,7 +3439,10 @@ export default function SustracionPage() {
       const nnaStr = nombreCaso(c).toLowerCase();
       const matchTxt = !txt || c.codigo.toLowerCase().includes(txt) || nnaStr.includes(txt) || (c.pais || '').toLowerCase().includes(txt);
       const matchProf = !fProfesional || c.profesional === fProfesional;
-      return matchTxt && matchProf;
+      const matchPais = !fPais || c.pais === fPais;
+      const matchRol = !fRolAc || c.acPeru === fRolAc;
+      const matchTipo = !fTipoSol || c.tipoSolicitud === fTipoSol;
+      return matchTxt && matchProf && matchPais && matchRol && matchTipo;
     });
 
     let todos = baseList.length;
@@ -2933,13 +3469,15 @@ export default function SustracionPage() {
       const lim = proc?.fechaLimite || proc?.fechaLimiteSubsanacion || proc?.fechaLimitePasajes;
       const esVencido = lim ? vencido(lim) : false;
       const reloj = calcularRelojLaHaya(c.fechaIngreso);
-      if (esVencido || reloj.estado === 'excedido' || (f && f.alerts?.some((a: any) => a.tone === 'error'))) {
+      const nnaList = (c.nna && c.nna.length > 0) ? c.nna : [{ fechaNacimiento: c.nnaFechaNac || (c as any).nnafechanac, edad: c.nnaEdad || (c as any).nnaedad, tipoEdad: c.nnaTipoEdad || (c as any).nnatipoedad }];
+      const tieneCaducidad = nnaList.some(n => calcularCaducidadHaya(n.fechaNacimiento, n.edad, n.tipoEdad)?.esInminente);
+      if (esVencido || reloj.estado === 'excedido' || tieneCaducidad || (f && f.alerts?.some((a: any) => a.tone === 'error'))) {
         alerta++;
       }
     });
 
     return { todos, evaluacion, subsanacion, retorno, judicial, cerrados, alerta };
-  }, [casos, search, fProfesional, flows]);
+  }, [casos, search, fProfesional, fPais, fRolAc, fTipoSol, flows]);
 
   const kpis: { id: KpiFilter; label: string; value: number; color: string; bgActive: string }[] = useMemo(() => {
     const total = casos.length;
@@ -2956,10 +3494,57 @@ export default function SustracionPage() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: BG, overflow: 'hidden', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      {/* GLOBAL FOCUS STYLES FOR HIGH CONTRAST ACCESSIBILITY (A.1) */}
+      <style>{`
+        .si-input:focus {
+          border-color: #2563EB !important;
+          box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.22) !important;
+          background-color: #FFFFFF !important;
+          outline: none !important;
+        }
+        .si-btn-hover:hover {
+          background-color: #EFF6FF !important;
+          color: #2563EB !important;
+          border-color: #BFDBFE !important;
+        }
+      `}</style>
+
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {view === 'nuevo' ? (
           <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px' }} className="main-scroll">
             <div style={{ maxWidth: 860, margin: '0 auto' }}>
+              {/* BANNER DE RECUPERACIÓN DE BORRADOR LOCALSTORAGE (A.2) */}
+              {draftInfo && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                  padding: '12px 18px', background: '#EFF6FF', border: '1.5px solid #BFDBFE',
+                  borderRadius: 8, marginBottom: 18, color: '#1E40AF', flexWrap: 'wrap'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Info size={18} color={BL} />
+                    <div style={{ fontSize: 12, fontWeight: 700 }}>
+                      Se encontró un borrador no guardado ({draftInfo.form?.codigo || 'Sin código'} · {fmtFecha(draftInfo.savedAt?.slice(0, 10))}). ¿Deseas restaurarlo?
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={descartarBorrador}
+                      style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${BR}`, background: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', color: TX2 }}
+                    >
+                      Descartar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={restaurarBorrador}
+                      style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: BL, color: '#fff', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}
+                    >
+                      Restaurar Borrador
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <button
@@ -2971,7 +3556,7 @@ export default function SustracionPage() {
                   </button>
                   <div>
                     <h1 style={{ fontSize: 18, fontWeight: 800, color: TX, margin: 0 }}>Registrar Nuevo Expediente</h1>
-                    <p style={{ fontSize: 11, color: TX3, margin: '2px 0 0' }}>Ingreso y apertura de trámite bajo el Convenio de La Haya de 1980.</p>
+                    <p style={{ fontSize: 11, color: TX3, margin: '2px 0 0' }}>Ingreso y apertura de trámite bajo el Convenio de La Haya de 1980 (Ctrl+S / Ctrl+Enter para guardar).</p>
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
@@ -2986,7 +3571,8 @@ export default function SustracionPage() {
                     type="button"
                     onClick={crearCasoDesdePagina}
                     disabled={savingNew}
-                    style={{ padding: '8px 20px', borderRadius: 7, border: 'none', background: BL, color: '#fff', fontSize: 11.5, fontWeight: 800, cursor: 'pointer' }}
+                    title="Guardar expediente (Ctrl+S / Ctrl+Enter)"
+                    style={{ padding: '8px 20px', borderRadius: 7, border: 'none', background: BL, color: '#fff', fontSize: 11.5, fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 6px rgba(37, 99, 235, 0.3)' }}
                   >
                     {savingNew ? 'Guardando...' : 'Guardar Expediente'}
                   </button>
@@ -3237,7 +3823,7 @@ export default function SustracionPage() {
                 {/* Botón Exportar Excel */}
                 <button
                   type="button"
-                  onClick={() => descargarExcelSustracion(visibles as any)}
+                  onClick={() => descargarExcelSustracion(sortedVisibles as any)}
                   title="Descargar reporte en formato Excel con los expedientes filtrados"
                   style={{
                     display: 'inline-flex',
@@ -3455,20 +4041,79 @@ export default function SustracionPage() {
               </div>
 
               <div style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 10, overflow: 'hidden' }}>
+                {/* TOOLBAR SUPERIOR: BUSCADOR Y FILTROS AVANZADOS (B.3) */}
                 <div style={{ padding: '12px 14px', borderBottom: `1px solid ${BR}`, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <div style={{ position: 'relative', flex: 1, minWidth: 240 }}>
+                  <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
                     <Search size={13} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: TX3 }} />
                     <input
+                      className="si-input"
                       value={search}
                       onChange={e => setSearch(e.target.value)}
-                      placeholder="Buscar por NNA o hoja de trámite"
-                      style={{ width: '100%', padding: '7px 11px 7px 30px', border: `1px solid ${BR}`, borderRadius: 7, fontSize: 11.5, outline: 'none' }}
+                      placeholder="Buscar por NNA, código o país..."
+                      style={{ width: '100%', padding: '7px 11px 7px 30px', border: `1.5px solid ${BR}`, borderRadius: 7, fontSize: 11.5, outline: 'none' }}
                     />
                   </div>
-                  <select value={fProfesional} onChange={e => setFProfesional(e.target.value)} style={{ padding: '7px 10px', border: `1px solid ${BR}`, borderRadius: 7, fontSize: 11, color: TX2 }}>
+
+                  {/* Dropdown Filtro País */}
+                  <select
+                    value={fPais}
+                    onChange={e => setFPais(e.target.value)}
+                    style={{ padding: '7px 10px', border: `1px solid ${BR}`, borderRadius: 7, fontSize: 11, color: TX2, background: fPais ? '#EFF6FF' : '#fff', fontWeight: fPais ? 700 : 400 }}
+                  >
+                    <option value="">Todos los Países</option>
+                    {paisesDisponibles.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+
+                  {/* Dropdown Filtro Rol AC */}
+                  <select
+                    value={fRolAc}
+                    onChange={e => setFRolAc(e.target.value)}
+                    style={{ padding: '7px 10px', border: `1px solid ${BR}`, borderRadius: 7, fontSize: 11, color: TX2, background: fRolAc ? '#EFF6FF' : '#fff', fontWeight: fRolAc ? 700 : 400 }}
+                  >
+                    <option value="">Todos los Roles AC</option>
+                    {AC_PERU.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+
+                  {/* Dropdown Filtro Tipo Solicitud */}
+                  <select
+                    value={fTipoSol}
+                    onChange={e => setFTipoSol(e.target.value)}
+                    style={{ padding: '7px 10px', border: `1px solid ${BR}`, borderRadius: 7, fontSize: 11, color: TX2, background: fTipoSol ? '#EFF6FF' : '#fff', fontWeight: fTipoSol ? 700 : 400 }}
+                  >
+                    <option value="">Tipos de Solicitud</option>
+                    {TIPO_SOL.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+
+                  {/* Dropdown Filtro Especialista */}
+                  <select
+                    value={fProfesional}
+                    onChange={e => setFProfesional(e.target.value)}
+                    style={{ padding: '7px 10px', border: `1px solid ${BR}`, borderRadius: 7, fontSize: 11, color: TX2, background: fProfesional ? '#EFF6FF' : '#fff', fontWeight: fProfesional ? 700 : 400 }}
+                  >
                     <option value="">Todos los profesionales</option>
                     {PROFESIONALES.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
+
+                  {/* Botón Limpiar Filtros */}
+                  {hasActiveFilters && (
+                    <button
+                      type="button"
+                      onClick={limpiarFiltros}
+                      title="Restablecer todos los filtros aplicados"
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 11px',
+                        border: '1px solid #FECACA', borderRadius: 7, background: '#FEF2F2',
+                        color: '#DC2626', fontSize: 11, fontWeight: 700, cursor: 'pointer'
+                      }}
+                    >
+                      <RotateCcw size={12} />
+                      <span>Limpiar</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* SUB-BANDEJAS POR ETAPAS OPERATIVAS */}
+                <div style={{ padding: '8px 14px', borderBottom: `1px solid ${BR}`, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', background: '#FAFAFA' }}>
                   {[
                     { id: 'todos', label: 'Todos', count: stageCounts.todos },
                     { id: 'evaluacion', label: '1. Evaluación', count: stageCounts.evaluacion },
@@ -3476,7 +4121,7 @@ export default function SustracionPage() {
                     { id: 'retorno', label: '3. Retorno / Coop.', count: stageCounts.retorno },
                     { id: 'judicial', label: '4. Judicial', count: stageCounts.judicial },
                     { id: 'cerrados', label: '5. Archivados', count: stageCounts.cerrados },
-                    { id: 'alerta', label: '⚠️ Con alerta', count: stageCounts.alerta },
+                    { id: 'alerta', label: '⚠️ Con alerta / Caducidad', count: stageCounts.alerta },
                   ].map(({ id, label, count }) => {
                     const active = subBandeja === id;
                     return (
@@ -3492,12 +4137,12 @@ export default function SustracionPage() {
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: 6,
-                          padding: '6px 11px',
+                          padding: '5px 10px',
                           borderRadius: 7,
                           border: `1px solid ${active ? BL : BR}`,
                           background: active ? '#EFF6FF' : SURF,
                           color: active ? BL : id === 'alerta' ? '#DC2626' : TX2,
-                          fontSize: 11,
+                          fontSize: 10.5,
                           fontWeight: active ? 800 : 600,
                           cursor: 'pointer',
                           transition: 'all 0.15s ease',
@@ -3511,7 +4156,7 @@ export default function SustracionPage() {
                             justifyContent: 'center',
                             padding: '1px 6px',
                             borderRadius: 99,
-                            fontSize: 10,
+                            fontSize: 9.5,
                             fontWeight: 800,
                             background: active
                               ? BL
@@ -3532,49 +4177,171 @@ export default function SustracionPage() {
                       </button>
                     );
                   })}
-                  <button title="Exportar reporte Excel" onClick={() => descargarExcelSustracion(visibles as any)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 11px', border: `1px solid ${BR}`, borderRadius: 7, background: SURF, color: TX2, fontSize: 11, fontWeight: 600, marginLeft: 'auto', cursor: 'pointer' }}>
-                    <Download size={13} /> Exportar
-                  </button>
                 </div>
 
+                {/* TABLA PRINCIPAL CON ORDENAMIENTO INTERACTIVO Y ACCIONES RÁPIDAS (B.1 & B.4) */}
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', minWidth: 980, borderCollapse: 'collapse' }}>
+                  <table style={{ width: '100%', minWidth: 1020, borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ background: '#F8FAFC', borderBottom: `1px solid ${BR}`, textAlign: 'left' }}>
-                        {['NNA', 'Hoja de trámite', 'Rol / País', 'Etapa actual', 'Próxima acción', 'Avance', ''].map(label => (
-                          <th key={label} style={{ padding: '10px 12px', fontSize: 9, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</th>
-                        ))}
+                        {/* Hoja de Trámite (Ordenable) */}
+                        <th
+                          onClick={() => handleSort('codigo')}
+                          title="Ordenar por Código de Hoja de Trámite"
+                          style={{ padding: '10px 12px', fontSize: 9.5, fontWeight: 800, color: sortField === 'codigo' ? BL : TX3, textTransform: 'uppercase', letterSpacing: '.04em', cursor: 'pointer', userSelect: 'none', width: 140 }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span>Hoja de Trámite</span>
+                            {sortField === 'codigo' ? (sortOrder === 'asc' ? <ArrowUp size={12} color={BL} /> : <ArrowDown size={12} color={BL} />) : <ArrowUpDown size={11} color={TX3} />}
+                          </div>
+                        </th>
+
+                        {/* NNA (Ordenable) */}
+                        <th
+                          onClick={() => handleSort('nna')}
+                          title="Ordenar por Nombre de Menor"
+                          style={{ padding: '10px 12px', fontSize: 9.5, fontWeight: 800, color: sortField === 'nna' ? BL : TX3, textTransform: 'uppercase', letterSpacing: '.04em', cursor: 'pointer', userSelect: 'none', minWidth: 220 }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span>Menor (NNA)</span>
+                            {sortField === 'nna' ? (sortOrder === 'asc' ? <ArrowUp size={12} color={BL} /> : <ArrowDown size={12} color={BL} />) : <ArrowUpDown size={11} color={TX3} />}
+                          </div>
+                        </th>
+
+                        {/* Rol / País (Ordenable) */}
+                        <th
+                          onClick={() => handleSort('pais')}
+                          title="Ordenar por País"
+                          style={{ padding: '10px 12px', fontSize: 9.5, fontWeight: 800, color: sortField === 'pais' ? BL : TX3, textTransform: 'uppercase', letterSpacing: '.04em', cursor: 'pointer', userSelect: 'none', width: 150 }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span>Rol / País</span>
+                            {sortField === 'pais' ? (sortOrder === 'asc' ? <ArrowUp size={12} color={BL} /> : <ArrowDown size={12} color={BL} />) : <ArrowUpDown size={11} color={TX3} />}
+                          </div>
+                        </th>
+
+                        {/* Etapa actual */}
+                        <th style={{ padding: '10px 12px', fontSize: 9.5, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.04em', width: 150 }}>
+                          Etapa Actual
+                        </th>
+
+                        {/* Fecha de Ingreso (Ordenable) */}
+                        <th
+                          onClick={() => handleSort('fechaIngreso')}
+                          title="Ordenar por Fecha de Ingreso"
+                          style={{ padding: '10px 12px', fontSize: 9.5, fontWeight: 800, color: sortField === 'fechaIngreso' ? BL : TX3, textTransform: 'uppercase', letterSpacing: '.04em', cursor: 'pointer', userSelect: 'none', width: 120 }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span>Ingreso DGNNA</span>
+                            {sortField === 'fechaIngreso' ? (sortOrder === 'asc' ? <ArrowUp size={12} color={BL} /> : <ArrowDown size={12} color={BL} />) : <ArrowUpDown size={11} color={TX3} />}
+                          </div>
+                        </th>
+
+                        {/* Próxima acción */}
+                        <th style={{ padding: '10px 12px', fontSize: 9.5, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                          Próxima Acción
+                        </th>
+
+                        {/* Avance */}
+                        <th style={{ padding: '10px 12px', fontSize: 9.5, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.04em', width: 100 }}>
+                          Avance
+                        </th>
+
+                        {/* Acciones Rápidas */}
+                        <th style={{ padding: '10px 12px', fontSize: 9.5, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.04em', textAlign: 'right', width: 90 }}>
+                          Acciones
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {loading && <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: TX3, fontSize: 12 }}>Cargando expedientes...</td></tr>}
-                      {!loading && visibles.length === 0 && <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: TX3, fontSize: 12 }}>Sin resultados.</td></tr>}
-                      {!loading && visibles.map(caso => {
+                      {loading && <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: TX3, fontSize: 12 }}>Cargando expedientes...</td></tr>}
+                      {!loading && pagedCasos.length === 0 && <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: TX3, fontSize: 12 }}>Sin resultados para los filtros seleccionados.</td></tr>}
+                      {!loading && pagedCasos.map(caso => {
                         const flow = flows.get(caso.id) || deriveCaseFlow(caso);
                         const critical = flow.alerts.some((a: any) => a.tone === 'error');
-                        const nnaCount = caso.nna?.length || 1;
+                        const nnaList = (caso.nna && caso.nna.length > 0)
+                          ? caso.nna
+                          : [{ nombres: caso.nnaNombre || 'Menor', primerApellido: '', fechaNacimiento: caso.nnaFechaNac || (caso as any).nnafechanac, edad: caso.nnaEdad || (caso as any).nnaedad, tipoEdad: caso.nnaTipoEdad || (caso as any).nnatipoedad }];
+                        const nnaCount = nnaList.length;
+                        const caducidad = nnaList.find(n => calcularCaducidadHaya(n.fechaNacimiento, n.edad, n.tipoEdad)?.esInminente);
+                        const cadInfo = caducidad ? calcularCaducidadHaya(caducidad.fechaNacimiento, caducidad.edad, caducidad.tipoEdad) : null;
+
                         return (
-                          <tr key={caso.id} onClick={() => { setSelected(caso); setPending({}); setDrawer(null); setTab(flow.current.id); }} style={{ borderBottom: `1px solid ${BR}`, cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'} onMouseLeave={e => e.currentTarget.style.background = SURF}>
-                            <td style={{ padding: '11px 12px', minWidth: 220 }}>
-                              <div style={{ fontSize: 12, fontWeight: 700 }}>{nombreCaso(caso)}</div>
-                              <div style={{ fontSize: 10, color: TX3, marginTop: 2 }}>{nnaCount} NNA · ingreso {fmtFecha(caso.fechaIngreso)}</div>
+                          <tr
+                            key={caso.id}
+                            onClick={() => { setSelected(caso); setPending({}); setDrawer(null); setTab(flow.current.id); }}
+                            style={{ borderBottom: `1px solid ${BR}`, cursor: 'pointer', transition: 'background-color 0.12s ease' }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
+                            onMouseLeave={e => e.currentTarget.style.background = SURF}
+                          >
+                            {/* Código con botón de copia 1-clic */}
+                            <td style={{ padding: '11px 12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: N2 }}>
+                                  {caso.codigo}
+                                </span>
+                                <button
+                                  type="button"
+                                  title="Copiar Hoja de Trámite al portapapeles"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText(caso.codigo);
+                                    toast.success(`Código ${caso.codigo} copiado al portapapeles`);
+                                  }}
+                                  style={{
+                                    border: 'none', background: 'transparent', color: TX3, cursor: 'pointer',
+                                    padding: '2px 4px', borderRadius: 4, display: 'inline-flex', alignItems: 'center'
+                                  }}
+                                  onMouseEnter={e => { e.currentTarget.style.color = BL; e.currentTarget.style.background = '#EFF6FF'; }}
+                                  onMouseLeave={e => { e.currentTarget.style.color = TX3; e.currentTarget.style.background = 'transparent'; }}
+                                >
+                                  <Copy size={11} />
+                                </button>
+                              </div>
                             </td>
-                            <td style={{ padding: '11px 12px', fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: N2 }}>{caso.codigo}</td>
+
+                            {/* NNA con alerta de caducidad si aplica */}
+                            <td style={{ padding: '11px 12px', minWidth: 220 }}>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: TX }}>{nombreCaso(caso)}</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: TX3, marginTop: 2, flexWrap: 'wrap' }}>
+                                <span>{nnaCount} {nnaCount === 1 ? 'NNA' : 'NNA'}</span>
+                                {cadInfo && (
+                                  <span style={{ padding: '1px 6px', borderRadius: 4, background: '#FEE2E2', color: '#B91C1C', fontSize: 9.5, fontWeight: 800, border: '1px solid #FECACA' }}>
+                                    ⚠️ 15 años ({cadInfo.tiempoStr})
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Rol / País */}
                             <td style={{ padding: '11px 12px', color: TX2 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11 }}>
-                                {caso.acPeru === 'Requirente' ? <Plane size={11} /> : <Users size={11} />}
-                                {caso.acPeru || 'Sin rol'}
+                                {caso.acPeru === 'Requirente' ? <Plane size={11} color={BL} /> : <Users size={11} color="#15803D" />}
+                                <span style={{ fontWeight: 600 }}>{caso.acPeru || 'Sin rol'}</span>
                               </div>
                               <div style={{ fontSize: 10, color: TX3, marginTop: 2 }}>{caso.pais}</div>
                             </td>
+
+                            {/* Etapa actual */}
                             <td style={{ padding: '11px 12px' }}>
                               <span style={{ display: 'inline-flex', gap: 5, alignItems: 'center', padding: '3px 9px', borderRadius: 99, color: flow.closed ? '#15803D' : BL, background: flow.closed ? '#F0FDF4' : '#EFF6FF', border: `1px solid ${flow.closed ? '#BBF7D0' : '#BFDBFE'}`, fontSize: 10, fontWeight: 700 }}>
                                 {flow.closed ? 'Cerrado' : `${flow.current.number}. ${flow.current.label}`}
                               </span>
                               {critical && <div style={{ marginTop: 4, color: '#DC2626', fontSize: 10, fontWeight: 700, display: 'flex', gap: 4, alignItems: 'center' }}><AlertTriangle size={10} /> Alerta</div>}
                             </td>
-                            <td style={{ padding: '11px 12px', maxWidth: 270, fontSize: 11, lineHeight: 1.45, color: TX2 }}>{flow.nextAction}</td>
-                            <td style={{ padding: '11px 12px', width: 115 }}>
+
+                            {/* Fecha de Ingreso */}
+                            <td style={{ padding: '11px 12px', fontSize: 11, color: TX2 }}>
+                              {fmtFecha(caso.fechaIngreso)}
+                            </td>
+
+                            {/* Próxima Acción */}
+                            <td style={{ padding: '11px 12px', maxWidth: 260, fontSize: 11, lineHeight: 1.45, color: TX2 }}>
+                              {flow.nextAction}
+                            </td>
+
+                            {/* Avance */}
+                            <td style={{ padding: '11px 12px', width: 100 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                                 <div style={{ flex: 1, height: 5, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}>
                                   <div style={{ width: `${flow.progress}%`, height: '100%', background: flow.closed ? '#16A34A' : BL }} />
@@ -3582,12 +4349,122 @@ export default function SustracionPage() {
                                 <span style={{ fontSize: 10, fontWeight: 700, color: TX3 }}>{flow.progress}%</span>
                               </div>
                             </td>
-                            <td style={{ padding: '11px 12px', textAlign: 'right' }}><ChevronRight size={14} color={TX3} /></td>
+
+                            {/* Acciones Rápidas (B.4) */}
+                            <td style={{ padding: '11px 12px', textAlign: 'right' }}>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <button
+                                  type="button"
+                                  title="Ver ficha técnica"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    setSelected(caso);
+                                    setPending({});
+                                    setFichaTab('datos');
+                                    setDrawer('ficha');
+                                  }}
+                                  style={{
+                                    border: `1px solid ${BR}`, background: '#fff', color: TX2, padding: '4px 7px',
+                                    borderRadius: 6, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
+                                  }}
+                                  onMouseEnter={e => { e.currentTarget.style.borderColor = BL; e.currentTarget.style.color = BL; }}
+                                  onMouseLeave={e => { e.currentTarget.style.borderColor = BR; e.currentTarget.style.color = TX2; }}
+                                >
+                                  <FileText size={12} />
+                                </button>
+                                <ChevronRight size={14} color={TX3} />
+                              </div>
+                            </td>
                           </tr>
                         );
                       })}
                     </tbody>
                   </table>
+                </div>
+
+                {/* BARRA DE PAGINACIÓN COMPLETA (B.2) */}
+                <div style={{
+                  padding: '10px 16px', background: '#F8FAFC', borderTop: `1px solid ${BR}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12
+                }}>
+                  {/* Selector de registros por página y total */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11, color: TX3 }}>
+                    <span>
+                      Mostrando <b>{sortedVisibles.length === 0 ? 0 : (safePage - 1) * (pageSize || sortedVisibles.length) + 1} - {pageSize === 0 ? sortedVisibles.length : Math.min(safePage * pageSize, sortedVisibles.length)}</b> de <b>{sortedVisibles.length}</b> expedientes
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span>Mostrar:</span>
+                      <select
+                        value={pageSize}
+                        onChange={e => setPageSize(Number(e.target.value))}
+                        style={{ padding: '3px 8px', border: `1px solid ${BR}`, borderRadius: 5, fontSize: 11, background: '#fff', color: TX }}
+                      >
+                        <option value={10}>10</option>
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                        <option value={0}>Todos</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Controles de Navegación de Páginas */}
+                  {pageSize > 0 && totalPages > 1 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <button
+                        type="button"
+                        disabled={safePage <= 1}
+                        onClick={() => setCurrentPage(1)}
+                        title="Primera página"
+                        style={{
+                          padding: '4px 8px', border: `1px solid ${BR}`, borderRadius: 5, background: '#fff',
+                          color: safePage <= 1 ? '#CBD5E1' : TX, fontSize: 11, fontWeight: 700, cursor: safePage <= 1 ? 'default' : 'pointer'
+                        }}
+                      >
+                        «
+                      </button>
+                      <button
+                        type="button"
+                        disabled={safePage <= 1}
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        title="Página anterior"
+                        style={{
+                          padding: '4px 10px', border: `1px solid ${BR}`, borderRadius: 5, background: '#fff',
+                          color: safePage <= 1 ? '#CBD5E1' : TX, fontSize: 11, fontWeight: 700, cursor: safePage <= 1 ? 'default' : 'pointer'
+                        }}
+                      >
+                        Anterior
+                      </button>
+
+                      <span style={{ padding: '0 8px', fontSize: 11, fontWeight: 700, color: TX2 }}>
+                        Página {safePage} de {totalPages}
+                      </span>
+
+                      <button
+                        type="button"
+                        disabled={safePage >= totalPages}
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        title="Página siguiente"
+                        style={{
+                          padding: '4px 10px', border: `1px solid ${BR}`, borderRadius: 5, background: '#fff',
+                          color: safePage >= totalPages ? '#CBD5E1' : TX, fontSize: 11, fontWeight: 700, cursor: safePage >= totalPages ? 'default' : 'pointer'
+                        }}
+                      >
+                        Siguiente
+                      </button>
+                      <button
+                        type="button"
+                        disabled={safePage >= totalPages}
+                        onClick={() => setCurrentPage(totalPages)}
+                        title="Última página"
+                        style={{
+                          padding: '4px 8px', border: `1px solid ${BR}`, borderRadius: 5, background: '#fff',
+                          color: safePage >= totalPages ? '#CBD5E1' : TX, fontSize: 11, fontWeight: 700, cursor: safePage >= totalPages ? 'default' : 'pointer'
+                        }}
+                      >
+                        »
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -3601,8 +4478,15 @@ export default function SustracionPage() {
                   <ArrowLeft size={16} />
                 </button>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 9.5, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                    Expediente · <span style={{ fontFamily: 'monospace' }}>{selected.codigo}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 9.5, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                      Expediente · <span style={{ fontFamily: 'monospace' }}>{selected.codigo}</span>
+                    </span>
+                    {selectedCaducidad && (
+                      <span style={{ padding: '2px 7px', borderRadius: 99, background: '#FEE2E2', border: '1px solid #FECACA', color: '#B91C1C', fontSize: 9.5, fontWeight: 800 }}>
+                        ⚠️ Caducidad La Haya ({selectedCaducidad.tiempoStr})
+                      </span>
+                    )}
                   </div>
                   <div style={{ fontSize: 17, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {nombreCaso(selected)}
@@ -3616,6 +4500,23 @@ export default function SustracionPage() {
                 <button onClick={() => setDrawer('sgd')} title="Generar plantillas oficiales SGD" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 7, border: '1px solid #BFDBFE', background: '#EFF6FF', color: BL, fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
                   <FileCode size={13} /> Plantillas SGD
                 </button>
+
+                {selected.numExpedienteJudicial && (
+                  <button
+                    type="button"
+                    onClick={() => window.open('https://cej.pj.gob.pe/cej/forms/busquedaform.html', '_blank', 'noopener,noreferrer')}
+                    title="Consultar expediente en el CEJ del Poder Judicial"
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 11px',
+                      borderRadius: 7, border: '1px solid #BFDBFE', background: '#EFF6FF',
+                      color: BL, fontSize: 11, fontWeight: 700, cursor: 'pointer'
+                    }}
+                  >
+                    <Scale size={13} />
+                    <span>CEJ Judicial ↗</span>
+                  </button>
+                )}
+
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 99, background: '#F1F5F9', border: `1px solid ${BR}`, color: TX2, fontSize: 10, fontWeight: 700 }}>
                   {selected.acPeru === 'Requirente' ? <Plane size={10} /> : <Users size={10} />} AC {selected.acPeru || 'sin rol'}
                 </span>
@@ -3630,7 +4531,7 @@ export default function SustracionPage() {
                 <button
                   onClick={guardar}
                   disabled={saving || !hasPending}
-                  title={hasPending ? "Guardar cambios pendientes en el expediente" : "No hay cambios pendientes por guardar"}
+                  title={hasPending ? "Guardar cambios pendientes en el expediente (Ctrl+S)" : "No hay cambios pendientes por guardar"}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -3647,7 +4548,7 @@ export default function SustracionPage() {
                     transition: 'all 0.15s ease',
                   }}
                 >
-                  <Save size={13} /> {saving ? 'Guardando...' : hasPending ? 'Guardar' : 'Guardado'}
+                  <Save size={13} /> {saving ? 'Guardando...' : hasPending ? 'Guardar (Ctrl+S)' : 'Guardado'}
                 </button>
                 <button onClick={eliminarCaso} title="Eliminar expediente" style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                   <Trash2 size={14} />
@@ -3738,7 +4639,7 @@ export default function SustracionPage() {
 
               {/* CONTENIDO PRINCIPAL SEGÚN PESTAÑA */}
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-                {tab === 'resumen' && <TabResumen caso={selected} onSelectTab={t => setTab(t)} />}
+                {tab === 'resumen' && <TabResumen caso={selected} onSelectTab={t => setTab(t)} onAgregarBitacora={onAgregarBitacora} />}
                 {tab === 'evaluacion' && <TabEvaluacion caso={selected} onGuardarProceso={onGuardarProceso} />}
                 {tab === 'subsanacion' && <TabSubsanacion caso={selected} onGuardarProceso={onGuardarProceso} />}
                 {tab === 'retorno' && <TabRetorno caso={selected} getVal={getVal} onChange={onChange} onGuardarProceso={onGuardarProceso} />}
