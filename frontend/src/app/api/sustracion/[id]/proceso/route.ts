@@ -28,3 +28,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     return proxyToBackend(`/api/sustracion/${id}`, { method: 'PUT', body: '{}' })
   }
 }
+
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  return proxyToBackend(`/api/sustracion/${id}`)
+}

@@ -61,6 +61,23 @@ def obtener(id: str, service: SustracionService = Depends(get_service)):
         raise HTTPException(status_code=404, detail=str(e))
 
 
+@router.put("/{id}/proceso", response_model=CasoSustracionOut)
+@router.put("/{id}/proceso-operativo", response_model=CasoSustracionOut)
+def actualizar_proceso(
+    id: str,
+    body: ProcesoOperativoUpdate,
+    service: SustracionService = Depends(get_service),
+    usuario: str = Depends(get_usuario),
+):
+    try:
+        datos = body.model_dump(exclude_unset=True)
+        return _caso_out(service.actualizar_proceso(id, datos, usuario=usuario))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.put("/{id}", response_model=CasoSustracionOut)
 def actualizar(id: str, body: CasoSustracionUpdate, service: SustracionService = Depends(get_service)):
     try:
@@ -78,22 +95,6 @@ def eliminar(id: str, service: SustracionService = Depends(get_service)):
         return {"success": True}
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
-
-
-@router.put("/{id}/proceso-operativo", response_model=CasoSustracionOut)
-def actualizar_proceso(
-    id: str,
-    body: ProcesoOperativoUpdate,
-    service: SustracionService = Depends(get_service),
-    usuario: str = Depends(get_usuario),
-):
-    try:
-        datos = body.model_dump(exclude_unset=True)
-        return _caso_out(service.actualizar_proceso(id, datos, usuario=usuario))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/{id}/nna", response_model=NnaOut, status_code=201)
 def agregar_nna(id: str, body: NnaCreate, service: SustracionService = Depends(get_service), usuario: str = Depends(get_usuario)):

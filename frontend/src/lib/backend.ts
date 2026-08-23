@@ -34,7 +34,7 @@ export async function callBackend(
     headers['Authorization'] = `Bearer ${token}`
   }
 
-  const baseUrl = path.startsWith('/api/sustracion')
+  const baseUrl = path.startsWith('/api/sustracion') && process.env.USE_SUSTRACCION_MICROSERVICE === 'true'
     ? SUSTRACCION_SERVICE_URL
     : BACKEND_URL
 

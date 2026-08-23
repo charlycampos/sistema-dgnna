@@ -1167,7 +1167,9 @@ function ModalEstadisticas({
             <div
               style={{
                 background: '#F8FAFC',
-                border: `1px solid ${BR}`,
+                borderTop: `1px solid ${BR}`,
+                borderRight: `1px solid ${BR}`,
+                borderBottom: `1px solid ${BR}`,
                 borderLeft: `4px solid ${N2}`,
                 borderRadius: 8,
                 padding: '12px 14px',
@@ -1186,7 +1188,9 @@ function ModalEstadisticas({
             <div
               style={{
                 background: '#EFF6FF',
-                border: '1px solid #BFDBFE',
+                borderTop: '1px solid #BFDBFE',
+                borderRight: '1px solid #BFDBFE',
+                borderBottom: '1px solid #BFDBFE',
                 borderLeft: `4px solid ${BL}`,
                 borderRadius: 8,
                 padding: '12px 14px',
@@ -1207,7 +1211,9 @@ function ModalEstadisticas({
             <div
               style={{
                 background: '#F0FDF4',
-                border: '1px solid #BBF7D0',
+                borderTop: '1px solid #BBF7D0',
+                borderRight: '1px solid #BBF7D0',
+                borderBottom: '1px solid #BBF7D0',
                 borderLeft: '4px solid #16A34A',
                 borderRadius: 8,
                 padding: '12px 14px',
@@ -1228,7 +1234,9 @@ function ModalEstadisticas({
             <div
               style={{
                 background: '#F5F3FF',
-                border: '1px solid #DDD6FE',
+                borderTop: '1px solid #DDD6FE',
+                borderRight: '1px solid #DDD6FE',
+                borderBottom: '1px solid #DDD6FE',
                 borderLeft: '4px solid #7C3AED',
                 borderRadius: 8,
                 padding: '12px 14px',
@@ -1811,20 +1819,27 @@ function TabPersonas({
         </table>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
-        <Sec title="Parte Solicitante" />
-        <Row label="Nombres y Apellidos" value={getVal('solicitanteNombre')} span={2} onChange={v => onChange('solicitanteNombre', v)} />
-        <Row label="Sexo" value={getVal('solicitanteSexo')} type="select" opts={SEXOS} onChange={v => onChange('solicitanteSexo', v)} />
-        <Row label="Teléfono de Contacto" value={getVal('solicitanteTelefono')} onChange={v => onChange('solicitanteTelefono', v)} />
-        <Row label="Correo Electrónico" value={getVal('solicitanteCorreo')} span={2} onChange={v => onChange('solicitanteCorreo', v)} />
-        <Row label="Domicilio" value={getVal('solicitanteDomicilio')} span={2} onChange={v => onChange('solicitanteDomicilio', v)} />
+      {/* ── PARTE SOLICITANTE Y REQUERIDA LADO A LADO ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
+        {/* Columna Izquierda: Parte Solicitante */}
+        <div style={{ borderRight: `1px solid ${BR}`, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', alignContent: 'start' }}>
+          <Sec title="Parte Solicitante" />
+          <Row label="Nombres y Apellidos" value={getVal('solicitanteNombre')} span={2} onChange={v => onChange('solicitanteNombre', v)} />
+          <Row label="Sexo" value={getVal('solicitanteSexo')} type="select" opts={SEXOS} span={1} onChange={v => onChange('solicitanteSexo', v)} />
+          <Row label="Teléfono de Contacto" value={getVal('solicitanteTelefono')} span={1} onChange={v => onChange('solicitanteTelefono', v)} />
+          <Row label="Correo Electrónico" value={getVal('solicitanteCorreo')} span={2} onChange={v => onChange('solicitanteCorreo', v)} />
+          <Row label="Domicilio" value={getVal('solicitanteDomicilio')} span={2} onChange={v => onChange('solicitanteDomicilio', v)} />
+        </div>
 
-        <Sec title={esRequirente ? 'Parte Requerida (En el Exterior)' : 'Parte Requerida / Presunto Sustractor'} />
-        <Row label="Nombres y Apellidos" value={getVal('requeridoNombre')} span={2} onChange={v => onChange('requeridoNombre', v)} />
-        <Row label="Sexo" value={getVal('requeridoSexo')} type="select" opts={SEXOS} onChange={v => onChange('requeridoSexo', v)} />
-        <Row label="Teléfono de Contacto" value={getVal('requeridoTelefono')} onChange={v => onChange('requeridoTelefono', v)} />
-        <Row label="Correo Electrónico" value={getVal('requeridoCorreo')} span={2} onChange={v => onChange('requeridoCorreo', v)} />
-        <Row label={esRequirente ? 'Domicilio en el Exterior' : 'Domicilio en el Perú'} value={getVal('requeridoDomicilio')} span={2} onChange={v => onChange('requeridoDomicilio', v)} />
+        {/* Columna Derecha: Parte Requerida */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', alignContent: 'start' }}>
+          <Sec title={esRequirente ? 'Parte Requerida (En el Exterior)' : 'Parte Requerida / Presunto Sustractor'} />
+          <Row label="Nombres y Apellidos" value={getVal('requeridoNombre')} span={2} onChange={v => onChange('requeridoNombre', v)} />
+          <Row label="Sexo" value={getVal('requeridoSexo')} type="select" opts={SEXOS} span={1} onChange={v => onChange('requeridoSexo', v)} />
+          <Row label="Teléfono de Contacto" value={getVal('requeridoTelefono')} span={1} onChange={v => onChange('requeridoTelefono', v)} />
+          <Row label="Correo Electrónico" value={getVal('requeridoCorreo')} span={2} onChange={v => onChange('requeridoCorreo', v)} />
+          <Row label={esRequirente ? 'Domicilio en el Exterior' : 'Domicilio en el Perú'} value={getVal('requeridoDomicilio')} span={2} onChange={v => onChange('requeridoDomicilio', v)} />
+        </div>
       </div>
     </div>
   );
@@ -2927,7 +2942,18 @@ export default function SustracionPage() {
       const res = await fetch('/api/sustracion');
       if (!res.ok) throw new Error('Error al cargar casos de sustracción');
       const data = await res.json();
-      setCasos(Array.isArray(data) ? data : []);
+      const casosList = Array.isArray(data) ? data : [];
+      const merged = casosList.map((c: Caso) => {
+        try {
+          const raw = localStorage.getItem(`proc_sustracion_${c.id}`);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            return { ...c, procesoOperativo: parsed };
+          }
+        } catch {}
+        return c;
+      });
+      setCasos(merged);
     } catch (e: any) {
       toast.error(e.message || 'Error al conectar con la base de datos');
     } finally {
@@ -3041,30 +3067,44 @@ export default function SustracionPage() {
         fechaRetornoEfectivo: proc.fechaRetornoEfectivo,
       };
 
-      const res = await fetch(`/api/sustracion/${selected.id}/proceso`, {
+      const res = await fetch(`/api/sustracion/${selected.id}/proceso-operativo`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Error al actualizar el proceso operativo');
-      const updatedProc = await res.json();
+
+      const procToStore: ProcesoOperativo = {
+        ...proc,
+        ...payload,
+        casoId: selected.id,
+        updatedAt: new Date().toISOString(),
+      };
+      try {
+        localStorage.setItem(`proc_sustracion_${selected.id}`, JSON.stringify(procToStore));
+      } catch (e) {}
 
       if (nota) {
         await fetch(`/api/sustracion/${selected.id}/bitacora`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fecha: todayStr(), texto: nota, creadoPor: me?.nombre || (me as any)?.username || 'Usuario' }),
-        });
+        }).catch(() => null);
       }
 
-      await cargar();
-      const resUpdated = await fetch(`/api/sustracion/${selected.id}`);
-      if (resUpdated.ok) {
-        const fullUpdated = await resUpdated.json();
-        setSelected(fullUpdated);
-      } else {
-        setSelected(prev => (prev ? { ...prev, procesoOperativo: updatedProc } : null));
-      }
+      const etapaCalculada = payload.faseOperativa === 'Judicial' ? 'Judicial' : (payload.faseOperativa === 'Cierre' ? 'Cierre' : 'Administrativo');
+
+      setSelected(prev => (prev ? {
+        ...prev,
+        etapa: etapaCalculada,
+        procesoOperativo: procToStore,
+      } : null));
+
+      setCasos(prev => prev.map(c => (c.id === selected.id ? {
+        ...c,
+        etapa: etapaCalculada,
+        procesoOperativo: procToStore,
+      } : c)));
 
       toast.success('Proceso operativo actualizado con éxito');
       if (targetTab) setTab(targetTab);
@@ -3656,23 +3696,33 @@ export default function SustracionPage() {
                   )}
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
-                  <Sec title="3. Parte Solicitante" />
-                  <Row label="Nombres y Apellidos" value={formNew.solicitanteNombre || ''} span={2} onChange={v => setFormNew(p => ({ ...p, solicitanteNombre: v }))} />
-                  <Row label="Sexo" value={formNew.solicitanteSexo || ''} type="select" opts={SEXOS} onChange={v => setFormNew(p => ({ ...p, solicitanteSexo: v }))} />
-                  <Row label="Teléfono de Contacto" value={formNew.solicitanteTelefono || ''} onChange={v => setFormNew(p => ({ ...p, solicitanteTelefono: v }))} />
-                  <Row label="Correo Electrónico" value={formNew.solicitanteCorreo || ''} span={2} onChange={v => setFormNew(p => ({ ...p, solicitanteCorreo: v }))} />
-                  <Row label="Domicilio" value={formNew.solicitanteDomicilio || ''} span={2} onChange={v => setFormNew(p => ({ ...p, solicitanteDomicilio: v }))} />
+                {/* ── BLOQUES 3 Y 4: LADO A LADO (PARTE SOLICITANTE | PARTE REQUERIDA) ── */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
+                  {/* Columna Izquierda: 3. Parte Solicitante */}
+                  <div style={{ borderRight: `1px solid ${BR}`, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', alignContent: 'start' }}>
+                    <Sec title="3. Parte Solicitante" />
+                    <Row label="Nombres y Apellidos" value={formNew.solicitanteNombre || ''} span={2} onChange={v => setFormNew(p => ({ ...p, solicitanteNombre: v }))} />
+                    <Row label="Sexo" value={formNew.solicitanteSexo || ''} type="select" opts={SEXOS} span={1} onChange={v => setFormNew(p => ({ ...p, solicitanteSexo: v }))} />
+                    <Row label="Teléfono de Contacto" value={formNew.solicitanteTelefono || ''} span={1} onChange={v => setFormNew(p => ({ ...p, solicitanteTelefono: v }))} />
+                    <Row label="Correo Electrónico" value={formNew.solicitanteCorreo || ''} span={2} onChange={v => setFormNew(p => ({ ...p, solicitanteCorreo: v }))} />
+                    <Row label="Domicilio" value={formNew.solicitanteDomicilio || ''} span={2} onChange={v => setFormNew(p => ({ ...p, solicitanteDomicilio: v }))} />
+                  </div>
 
-                  <Sec title={formNew.acPeru === 'Requirente' ? '4. Parte Requerida (En el Exterior)' : '4. Parte Requerida / Presunto Sustractor'} />
-                  <Row label="Nombres y Apellidos" value={formNew.requeridoNombre || ''} span={2} onChange={v => setFormNew(p => ({ ...p, requeridoNombre: v }))} />
-                  <Row label="Sexo" value={formNew.requeridoSexo || ''} type="select" opts={SEXOS} onChange={v => setFormNew(p => ({ ...p, requeridoSexo: v }))} />
-                  <Row label="Teléfono de Contacto" value={formNew.requeridoTelefono || ''} onChange={v => setFormNew(p => ({ ...p, requeridoTelefono: v }))} />
-                  <Row label="Correo Electrónico" value={formNew.requeridoCorreo || ''} span={2} onChange={v => setFormNew(p => ({ ...p, requeridoCorreo: v }))} />
-                  <Row label={formNew.acPeru === 'Requirente' ? 'Domicilio en el Exterior' : 'Domicilio en el Perú'} value={formNew.requeridoDomicilio || ''} span={2} onChange={v => setFormNew(p => ({ ...p, requeridoDomicilio: v }))} />
+                  {/* Columna Derecha: 4. Parte Requerida / Presunto Sustractor */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', alignContent: 'start' }}>
+                    <Sec title={formNew.acPeru === 'Requirente' ? '4. Parte Requerida (En el Exterior)' : '4. Parte Requerida / Presunto Sustractor'} />
+                    <Row label="Nombres y Apellidos" value={formNew.requeridoNombre || ''} span={2} onChange={v => setFormNew(p => ({ ...p, requeridoNombre: v }))} />
+                    <Row label="Sexo" value={formNew.requeridoSexo || ''} type="select" opts={SEXOS} span={1} onChange={v => setFormNew(p => ({ ...p, requeridoSexo: v }))} />
+                    <Row label="Teléfono de Contacto" value={formNew.requeridoTelefono || ''} span={1} onChange={v => setFormNew(p => ({ ...p, requeridoTelefono: v }))} />
+                    <Row label="Correo Electrónico" value={formNew.requeridoCorreo || ''} span={2} onChange={v => setFormNew(p => ({ ...p, requeridoCorreo: v }))} />
+                    <Row label={formNew.acPeru === 'Requirente' ? 'Domicilio en el Exterior' : 'Domicilio en el Perú'} value={formNew.requeridoDomicilio || ''} span={2} onChange={v => setFormNew(p => ({ ...p, requeridoDomicilio: v }))} />
+                  </div>
+                </div>
 
+                {/* ── BLOQUE 5: OBSERVACIONES INICIALES (ANCHO COMPLETO) ── */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr' }}>
                   <Sec title="5. Observaciones Iniciales" />
-                  <Row label="Observaciones del Expediente" value={formNew.observaciones || ''} type="textarea" span={4} onChange={v => setFormNew(p => ({ ...p, observaciones: v }))} />
+                  <Row label="Observaciones del Expediente" value={formNew.observaciones || ''} type="textarea" span={1} onChange={v => setFormNew(p => ({ ...p, observaciones: v }))} />
                 </div>
               </div>
             </div>
@@ -4011,7 +4061,9 @@ export default function SustracionPage() {
                       title={`Filtrar por ${item.label} (1-clic)`}
                       style={{
                         background: isSelected ? item.bgActive : SURF,
-                        border: isSelected ? `2px solid ${item.color}` : `1px solid ${BR}`,
+                        borderTop: isSelected ? `2px solid ${item.color}` : `1px solid ${BR}`,
+                        borderRight: isSelected ? `2px solid ${item.color}` : `1px solid ${BR}`,
+                        borderBottom: isSelected ? `2px solid ${item.color}` : `1px solid ${BR}`,
                         borderLeft: `4px solid ${item.color}`,
                         borderRadius: 8,
                         padding: '12px 15px',
@@ -4269,7 +4321,20 @@ export default function SustracionPage() {
                         return (
                           <tr
                             key={caso.id}
-                            onClick={() => { setSelected(caso); setPending({}); setDrawer(null); setTab(flow.current.id); }}
+                            onClick={() => {
+                              const procStored = (() => {
+                                try {
+                                  const raw = localStorage.getItem(`proc_sustracion_${caso.id}`);
+                                  return raw ? JSON.parse(raw) : null;
+                                } catch { return null; }
+                              })();
+                              const fullCaso = { ...caso, procesoOperativo: procStored || caso.procesoOperativo };
+                              const caseFlow = deriveCaseFlow(fullCaso);
+                              setSelected(fullCaso);
+                              setPending({});
+                              setDrawer(null);
+                              setTab(caseFlow.current.id);
+                            }}
                             style={{ borderBottom: `1px solid ${BR}`, cursor: 'pointer', transition: 'background-color 0.12s ease' }}
                             onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
                             onMouseLeave={e => e.currentTarget.style.background = SURF}

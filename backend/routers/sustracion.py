@@ -99,6 +99,51 @@ def obtener_caso(
     return caso
 
 
+@router.put("/{id}/proceso", response_model=CasoSustracionOut)
+@router.put("/{id}/proceso-operativo", response_model=CasoSustracionOut)
+def actualizar_proceso_operativo(
+    id: str,
+    body: dict,
+    db: Session = Depends(get_db),
+    _: dict = Depends(get_current_user),
+):
+    try:
+        caso = db.query(CasoSustracion).filter(CasoSustracion.id == id).first()
+        if not caso:
+            raise HTTPException(status_code=404, detail="Caso no encontrado")
+
+        # Mapear campos relevantes del proceso operativo al modelo de base de datos
+        if "faseOperativa" in body:
+            fase = body["faseOperativa"]
+            if "judicial" in fase.lower():
+                caso.etapa = "Judicial"
+            elif "cierre" in fase.lower():
+                caso.etapa = "Cierre"
+            else:
+                caso.etapa = "Administrativo"
+
+        if "fechaEntrevista" in body and body["fechaEntrevista"]:
+            caso.fechaEntrevista = body["fechaEntrevista"]
+        if "resultadoEntrevista" in body and body["resultadoEntrevista"]:
+            caso.resultadoEntrevista = body["resultadoEntrevista"]
+
+        from datetime import datetime
+        caso.updatedAt = datetime.utcnow()
+        db.commit()
+
+        return db.query(CasoSustracion).options(
+            selectinload(CasoSustracion.bitacora),
+            selectinload(CasoSustracion.historialJudicial),
+        ).filter(CasoSustracion.id == id).first()
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.put("/{id}", response_model=CasoSustracionOut)
 def actualizar_caso(
     id: str,
@@ -142,50 +187,6 @@ def actualizar_caso(
             selectinload(CasoSustracion.historialJudicial),
         ).filter(CasoSustracion.id == id).first()
 
-    except HTTPException:
-        db.rollback()
-        raise
-    except Exception as e:
-        db.rollback()
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.put("/{id}/proceso-operativo", response_model=CasoSustracionOut)
-def actualizar_proceso_operativo(
-    id: str,
-    body: dict,
-    db: Session = Depends(get_db),
-    _: dict = Depends(get_current_user),
-):
-    try:
-        caso = db.query(CasoSustracion).filter(CasoSustracion.id == id).first()
-        if not caso:
-            raise HTTPException(status_code=404, detail="Caso no encontrado")
-
-        # Mapear campos relevantes del proceso operativo al modelo de base de datos
-        if "faseOperativa" in body:
-            fase = body["faseOperativa"]
-            if "judicial" in fase.lower():
-                caso.etapa = "Judicial"
-            elif "cierre" in fase.lower():
-                caso.etapa = "Cierre"
-            else:
-                caso.etapa = "Administrativo"
-
-        if "fechaEntrevista" in body and body["fechaEntrevista"]:
-            caso.fechaEntrevista = body["fechaEntrevista"]
-        if "resultadoEntrevista" in body and body["resultadoEntrevista"]:
-            caso.resultadoEntrevista = body["resultadoEntrevista"]
-
-        from datetime import datetime
-        caso.updatedAt = datetime.utcnow()
-        db.commit()
-
-        return db.query(CasoSustracion).options(
-            selectinload(CasoSustracion.bitacora),
-            selectinload(CasoSustracion.historialJudicial),
-        ).filter(CasoSustracion.id == id).first()
     except HTTPException:
         db.rollback()
         raise
