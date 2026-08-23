@@ -2506,6 +2506,10 @@ function TabRetorno({
     onGuardarProceso(payload, nota, targetTab);
   };
 
+  const resEntrevista = getVal('resultadoEntrevista') || proc.resultadoEntrevista || 'Pendiente';
+  const esAcepta = resEntrevista === 'Acepta retorno voluntario';
+  const esRechaza = resEntrevista === 'Rechaza retorno' || resEntrevista === 'No asiste';
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }} className="main-scroll">
       <div style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, overflow: 'hidden' }}>
@@ -2517,7 +2521,7 @@ function TabRetorno({
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            {proc.fechaLimitePasajes && (() => {
+            {esAcepta && proc.fechaLimitePasajes && (() => {
               const sla = calcularSLA(proc.fechaLimitePasajes);
               return (
                 <span style={{ padding: '4px 10px', borderRadius: 99, background: sla.bg, color: sla.color, border: `1.5px solid ${sla.border}`, fontSize: 10.5, fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -2530,17 +2534,17 @@ function TabRetorno({
               onClick={ejecutarGuardadoRetorno}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', border: 'none', borderRadius: 6,
-                background: (getVal('resultadoEntrevista') === 'Acepta retorno voluntario' || proc.estadoRetornoVoluntario === 'Acuerdo alcanzado') ? '#16A34A' : (getVal('resultadoEntrevista') === 'Rechaza retorno' || getVal('resultadoEntrevista') === 'No asiste' || proc.estadoRetornoVoluntario === 'Sin acuerdo') ? '#2563EB' : BL,
+                background: esAcepta ? '#16A34A' : (esRechaza ? '#2563EB' : BL),
                 color: '#fff', fontSize: 11, fontWeight: 800, cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
               }}
             >
-              {(getVal('resultadoEntrevista') === 'Acepta retorno voluntario' || proc.estadoRetornoVoluntario === 'Acuerdo alcanzado') ? (
+              {esAcepta ? (
                 proc.fechaRetornoEfectivo ? (
                   <><span>Retorno Concretado: Pasar a Cierre</span> <ChevronRight size={13} /></>
                 ) : (
                   <span>Guardar Acuerdo y Activar Plazo Pasajes</span>
                 )
-              ) : (getVal('resultadoEntrevista') === 'Rechaza retorno' || getVal('resultadoEntrevista') === 'No asiste' || proc.estadoRetornoVoluntario === 'Sin acuerdo') ? (
+              ) : esRechaza ? (
                 <><span>Agotar Vía Amigable e Iniciar Vía Judicial</span> <ChevronRight size={13} /></>
               ) : (
                 <span>Guardar Gestión de Retorno</span>
@@ -2548,6 +2552,21 @@ function TabRetorno({
             </button>
           </div>
         </div>
+
+        {/* Banners informativos de estado */}
+        {esRechaza && (
+          <div style={{ margin: '12px 14px 0', padding: '10px 14px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 8, color: '#991B1B', fontSize: 11 }}>
+            <AlertCircle size={15} color="#DC2626" style={{ flexShrink: 0 }} />
+            <span><b>Vía Amigable Agotada:</b> El requerido rechazó el retorno o no asistió. Las casillas de acuerdo y pasajes han sido desactivadas. Presiona el botón azul <b>«Agotar Vía Amigable e Iniciar Vía Judicial»</b> para derivar el caso al Juzgado de Familia.</span>
+          </div>
+        )}
+
+        {esAcepta && (
+          <div style={{ margin: '12px 14px 0', padding: '10px 14px', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 8, color: '#166534', fontSize: 11 }}>
+            <CheckCircle size={15} color="#16A34A" style={{ flexShrink: 0 }} />
+            <span><b>Acuerdo Alcanzado:</b> Ingresa la <b>Fecha del Acuerdo</b> para activar automáticamente el cómputo del plazo legal de 1 mes para pasajes aéreos.</span>
+          </div>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12, padding: 14 }}>
           <label style={fieldLabelStyle}>
@@ -2561,9 +2580,10 @@ function TabRetorno({
             </select>
           </label>
           <label style={fieldLabelStyle}>
-            FECHA DEL ACUERDO
+            FECHA DEL ACUERDO {esAcepta && <span style={{ color: '#16A34A', fontWeight: 800 }}>*</span>}
             <input
               type="date"
+              disabled={esRechaza}
               value={proc.fechaAcuerdo || ''}
               onChange={e => {
                 const val = e.target.value;
@@ -2573,27 +2593,73 @@ function TabRetorno({
                   fechaLimitePasajes: val ? sumarMes(val) : '',
                 }));
               }}
-              style={fieldInputStyle}
+              style={{
+                ...fieldInputStyle,
+                background: esRechaza ? '#F1F5F9' : (esAcepta && !proc.fechaAcuerdo ? '#F0FDF4' : '#fff'),
+                color: esRechaza ? '#94A3B8' : TX,
+                cursor: esRechaza ? 'not-allowed' : 'text',
+                border: esAcepta && !proc.fechaAcuerdo ? '1.5px solid #16A34A' : `1px solid ${BR}`
+              }}
             />
           </label>
           <label style={fieldLabelStyle}>
             FECHA LÍMITE PASAJES (1 MES LEGAL)
-            <input type="date" value={proc.fechaLimitePasajes || ''} readOnly style={{ ...fieldInputStyle, background: '#EFF6FF', fontWeight: 800, color: BL }} />
+            <input
+              type="date"
+              value={proc.fechaLimitePasajes || ''}
+              readOnly
+              disabled={esRechaza || !proc.fechaAcuerdo}
+              style={{
+                ...fieldInputStyle,
+                background: esRechaza ? '#F1F5F9' : (proc.fechaLimitePasajes ? '#EFF6FF' : '#F8FAFC'),
+                color: esRechaza ? '#94A3B8' : (proc.fechaLimitePasajes ? BL : TX3),
+                fontWeight: proc.fechaLimitePasajes ? 800 : 400,
+                cursor: 'not-allowed'
+              }}
+            />
           </label>
           <label style={fieldLabelStyle}>
             ¿PASAJES Y AUTORIZACIONES RECIBIDOS?
-            <select value={proc.pasajesRecibidos || 'No'} onChange={e => set('pasajesRecibidos')(e.target.value)} style={fieldInputStyle}>
+            <select
+              disabled={esRechaza || !proc.fechaAcuerdo}
+              value={proc.pasajesRecibidos || 'No'}
+              onChange={e => set('pasajesRecibidos')(e.target.value)}
+              style={{
+                ...fieldInputStyle,
+                background: (esRechaza || !proc.fechaAcuerdo) ? '#F1F5F9' : '#fff',
+                color: (esRechaza || !proc.fechaAcuerdo) ? '#94A3B8' : TX,
+                cursor: (esRechaza || !proc.fechaAcuerdo) ? 'not-allowed' : 'pointer'
+              }}
+            >
               <option value="No">No</option>
               <option value="Sí">Sí</option>
             </select>
           </label>
           <label style={fieldLabelStyle}>
             FECHA DE RETORNO EFECTIVO
-            <input type="date" value={proc.fechaRetornoEfectivo || ''} onChange={e => set('fechaRetornoEfectivo')(e.target.value)} style={{ ...fieldInputStyle, background: proc.fechaRetornoEfectivo ? '#DCFCE7' : '#fff', fontWeight: proc.fechaRetornoEfectivo ? 800 : 400 }} />
+            <input
+              type="date"
+              disabled={esRechaza || proc.pasajesRecibidos !== 'Sí'}
+              value={proc.fechaRetornoEfectivo || ''}
+              onChange={e => set('fechaRetornoEfectivo')(e.target.value)}
+              style={{
+                ...fieldInputStyle,
+                background: (esRechaza || proc.pasajesRecibidos !== 'Sí') ? '#F1F5F9' : (proc.fechaRetornoEfectivo ? '#DCFCE7' : '#fff'),
+                color: (esRechaza || proc.pasajesRecibidos !== 'Sí') ? '#94A3B8' : TX,
+                fontWeight: proc.fechaRetornoEfectivo ? 800 : 400,
+                cursor: (esRechaza || proc.pasajesRecibidos !== 'Sí') ? 'not-allowed' : 'text'
+              }}
+            />
           </label>
           <label style={{ gridColumn: '1 / -1', ...fieldLabelStyle }}>
             COMPROMISOS Y DETALLE DEL ACUERDO
-            <textarea rows={3} value={proc.compromisosRetorno || ''} onChange={e => set('compromisosRetorno')(e.target.value)} style={{ ...fieldInputStyle, resize: 'vertical' }} />
+            <textarea
+              rows={3}
+              value={proc.compromisosRetorno || ''}
+              onChange={e => set('compromisosRetorno')(e.target.value)}
+              placeholder={esRechaza ? 'Vía amigable sin acuerdo. Puedes registrar los motivos manifestados por el requerido antes de interponer la demanda judicial...' : 'Detalla los compromisos de custodia, itinerario de vuelos o acuerdos de entrega...'}
+              style={{ ...fieldInputStyle, resize: 'vertical' }}
+            />
           </label>
         </div>
       </div>
@@ -4561,6 +4627,14 @@ export default function SustracionPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
                 <button onClick={() => { setFichaTab('datos'); setDrawer('ficha'); }} title="Abrir ficha integral del expediente" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 7, border: `1px solid ${BR}`, background: SURF, color: TX2, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
                   <FileText size={13} /> Ficha
+                </button>
+                <button onClick={() => { setFichaTab('bitacora'); setDrawer('ficha'); }} title="Abrir bitácora y notas de seguimiento del expediente" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 7, border: `1px solid ${BR}`, background: SURF, color: TX2, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                  <MessageSquare size={13} color={BL} /> Bitácora
+                  {selected.bitacora && selected.bitacora.length > 0 && (
+                    <span style={{ background: BL, color: '#fff', fontSize: 9.5, fontWeight: 800, padding: '1px 6px', borderRadius: 99, marginLeft: 2 }}>
+                      {selected.bitacora.length}
+                    </span>
+                  )}
                 </button>
                 <button onClick={() => setDrawer('sgd')} title="Generar plantillas oficiales SGD" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 7, border: '1px solid #BFDBFE', background: '#EFF6FF', color: BL, fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
                   <FileCode size={13} /> Plantillas SGD
