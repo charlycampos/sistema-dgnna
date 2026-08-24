@@ -39,7 +39,7 @@ class CasoSustracionModel(Base):
     requeridoCorreo       = Column("requeridocorreo",       String(200),  nullable=True)
     requeridoDomicilio    = Column("requeridodomicilio",    String(500),  nullable=True)
     profesional           = Column("profesional",           String(100),  nullable=True)
-    estado                = Column("estado",                String(20),   default="Tramite")
+    estado                = Column("estado",                String(20),   default="Pendiente")
     fechaEntrevista       = Column("fechaentrevista",       String(10),   nullable=True)
     resultadoEntrevista   = Column("resultadoentrevista",   String(40),   nullable=True)
     estadoJudicial        = Column("estadojudicial",        String(100),  nullable=True)

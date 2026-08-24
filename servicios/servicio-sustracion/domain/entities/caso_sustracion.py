@@ -104,7 +104,7 @@ class CasoSustracion:
     requeridoDomicilio: Optional[str] = None
     # Gestión
     profesional:         Optional[str] = None
-    estado:              str = "Tramite"
+    estado:              str = "Pendiente"
     fechaEntrevista:     Optional[str] = None
     resultadoEntrevista: Optional[str] = None
     # Judicial

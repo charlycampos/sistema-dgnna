@@ -31,7 +31,7 @@ CASOS_5 = [
         "requeridoCorreo": "lucia.alarcon@email.com",
         "requeridoDomicilio": "Av. Arequipa 1234, Lima",
         "profesional": "EMMA",
-        "estado": "Tramite",
+        "estado": "Pendiente",
         "estadoJudicial": "Sin demanda",
         "observaciones": "Ruta 1 Directiva: Solicitud remitida por Ministerio de Justicia de España. En fase de Evaluación Inicial con 2 requisitos pendientes de revisión.",
         "bitacora": [

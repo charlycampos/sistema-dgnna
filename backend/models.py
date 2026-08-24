@@ -183,7 +183,7 @@ class CasoSustracion(Base):
     requeridoDomicilio   = Column("requeridodomicilio", String(500), nullable=True)
     # ── Gestión y seguimiento ─────────────────────────────────────────
     profesional          = Column("profesional", String(100), nullable=True)   # EMMA | JANNY | CECILIA
-    estado               = Column("estado", String(20), default="Tramite") # Tramite | Pendiente | Archivado
+    estado               = Column("estado", String(20), default="Pendiente") # Tramite | Pendiente | Archivado
     fechaEntrevista      = Column("fechaentrevista", String(10), nullable=True)    # YYYY-MM-DD
     resultadoEntrevista  = Column("resultadoentrevista", String(20), nullable=True)    # Favorable | Desfavorable | Pendiente | No aplica
     # ── Proceso judicial ─────────────────────────────────────────────

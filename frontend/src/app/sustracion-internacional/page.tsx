@@ -131,7 +131,19 @@ const MOTIVOS_CIERRE = [
   'Desistimiento del solicitante','Sentencia infundada - Art. 13 A','Sentencia infundada - Art. 13 B',
   'Sentencia infundada - Art. 20','AC rechaza solicitud - Art. 27','Otro',
 ];
-const ETAPAS_JUD = ['Sin demanda','Demanda presentada','En audiencia','Sentencia 1ra instancia','Sentencia 2da instancia','Casación','Ejecución de sentencia','Archivado'];
+const ETAPAS_JUD = [
+  'Sin demanda',
+  'Demanda presentada',
+  'Demanda admitida / Traslado',
+  'Medida cautelar / Impedimento de salida',
+  'En audiencia / Escucha del NNA',
+  'Sentencia 1ra instancia',
+  'Apelación interpuesta',
+  'Sentencia 2da instancia',
+  'Casación',
+  'Ejecución de sentencia',
+  'Archivado'
+];
 const REQ_BASE: RequisitoProceso[] = [
   { id: 'r1', nombre: '1. Solicitud formal de restitución o régimen de visitas identificada', estado: 'Pendiente' },
   { id: 'r2', nombre: '2. Identidad y datos del NNA acreditados', estado: 'Pendiente' },
@@ -156,7 +168,7 @@ const BASE_LEGAL_REQUISITOS: Record<string, {
   r2: {
     articuloHaya: 'Arts. 4 y 8.a Convenio de La Haya (1980)',
     numeralDirectiva: 'Num. 6.1.1 Directiva N.° 006-2021-MIMP',
-    descripcionLegal: 'Acreditación de identidad, fecha de nacimiento y minoría de edad (menor de 16 años cumplidos al momento de los hechos).',
+    descripcionLegal: 'Acreditación de identidad, fecha de nacimiento y minoría de edad (NNA menor de 16 años cumplidos al momento de los hechos).',
   },
   r3: {
     articuloHaya: 'Arts. 3 y 4 Convenio de La Haya (1980)',
@@ -171,7 +183,7 @@ const BASE_LEGAL_REQUISITOS: Record<string, {
   r5: {
     articuloHaya: 'Arts. 3 y 12 Convenio de La Haya (1980)',
     numeralDirectiva: 'Num. 6.1.4 Directiva N.° 006-2021-MIMP',
-    descripcionLegal: 'Identificación de la ilicitud del traslado/retención y verificación del cómputo del plazo preferente (menor a 1 año).',
+    descripcionLegal: 'Identificación de la ilicitud del traslado/retención y verificación del cómputo del plazo preferente (inferior a 1 año).',
   },
   r6: {
     articuloHaya: 'Arts. 8.c y 8.d Convenio de La Haya (1980)',
@@ -425,8 +437,8 @@ function calcularCaducidadHaya(fechaNacimientoIso?: string | null, edadNum?: str
           esInminente: false,
           diasRestantes: 0,
           tiempoStr: '0 días',
-          texto: 'El menor ha alcanzado los 16 años de edad. Conforme al Art. 4 del Convenio de La Haya de 1980, el Convenio deja de ser aplicable.',
-          badge: 'Menor ≥ 16 años (Art. 4 Haya)',
+          texto: 'El NNA ha alcanzado los 16 años de edad. Conforme al Art. 4 del Convenio de La Haya de 1980, el Convenio deja de ser aplicable.',
+          badge: 'NNA ≥ 16 años (Art. 4 Haya)',
           urgente: false,
         };
       }
@@ -462,8 +474,8 @@ function calcularCaducidadHaya(fechaNacimientoIso?: string | null, edadNum?: str
         esInminente: false,
         diasRestantes: 0,
         tiempoStr: '0 días',
-        texto: 'El menor tiene 16 años o más (Inaplicable según Art. 4 Convenio de La Haya 1980).',
-        badge: 'Menor ≥ 16 años (Art. 4 Haya)',
+        texto: 'El NNA tiene 16 años o más (Inaplicable según Art. 4 Convenio de La Haya 1980).',
+        badge: 'NNA ≥ 16 años (Art. 4 Haya)',
         urgente: false,
       };
     }
@@ -495,7 +507,7 @@ function emptyForm(): FormCasoInput {
     fechaIngreso: todayStr(), fechaSalida: '',
     solicitanteNombre: '', solicitanteSexo: '', solicitanteTelefono: '', solicitanteCorreo: '', solicitanteDomicilio: '',
     requeridoNombre: '', requeridoSexo: '', requeridoTelefono: '', requeridoCorreo: '', requeridoDomicilio: '',
-    profesional: '', estado: 'Tramite',
+    profesional: '', estado: 'Pendiente',
     fechaEntrevista: '', resultadoEntrevista: '', estadoJudicial: '',
     fechaDemanda: '', numExpedienteJudicial: '', juzgado: '',
     sentencia1ra: '', sentencia2da: '', casacion: '', motivoCierre: '',
@@ -646,7 +658,7 @@ function ModalNna({
           display: 'flex', alignItems: 'center', justifyContent: 'space-between'
         }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.04em' }}>
-            {modalNnaIndex >= 0 ? 'Editar Menor Involucrado' : 'Agregar Menor Involucrado (NNA)'}
+            {modalNnaIndex >= 0 ? 'Editar NNA Involucrado' : 'Agregar NNA Involucrado (Niña, Niño o Adolescente)'}
           </div>
           <button type="button" onClick={onClose} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: TX3 }}>
             <X size={16} />
@@ -787,7 +799,7 @@ function ModalNna({
             onClick={onSave}
             style={{ padding: '7px 16px', borderRadius: 6, border: 'none', background: BL, color: '#fff', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}
           >
-            {modalNnaIndex >= 0 ? 'Actualizar Menor' : 'Guardar Menor'}
+            {modalNnaIndex >= 0 ? 'Actualizar NNA' : 'Guardar NNA'}
           </button>
         </div>
       </div>
@@ -820,41 +832,41 @@ function DrawerSGD({ caso, onClose }: { caso: Caso; onClose: () => void }) {
     : '1. Acreditación fehaciente de residencia habitual previa y derecho de custodia ejercido al momento del traslado.';
 
   const nnaInfoTexto = caso.nna && caso.nna.length > 0
-    ? caso.nna.map((n, i) => `• Menor ${i + 1}: ${nombreNna(n)} (Nacimiento: ${fmtFecha(n.fechaNacimiento)}, Edad: ${n.edad ? `${n.edad} ${n.tipoEdad || 'Años'}` : 'No registrada'}, Sexo: ${n.sexo || 'No registrado'})`).join('\n')
-    : `• Menor: ${nnaNom} (Edad: ${caso.nnaEdad || 'No registrada'} ${caso.nnaTipoEdad || 'Años'})`;
+    ? caso.nna.map((n, i) => `• NNA ${i + 1}: ${nombreNna(n)} (Nacimiento: ${fmtFecha(n.fechaNacimiento)}, Edad: ${n.edad ? `${n.edad} ${n.tipoEdad || 'Años'}` : 'No registrada'}, Sexo: ${n.sexo || 'No registrado'})`).join('\n')
+    : `• NNA: ${nnaNom} (Edad: ${caso.nnaEdad || 'No registrada'} ${caso.nnaTipoEdad || 'Años'})`;
 
   const plantillas = useMemo(() => ({
     observaciones: {
       titulo: 'Oficio de Observaciones y Subsanación (Directiva N.° 006-2021-MIMP)',
-      texto: `OFICIO N.° ____-2026-MIMP/DGNNA-DIPNA\n\nLima, ${hoy}\n\nSeñor(a):\n${solNom}\n${caso.solicitanteDomicilio || 'Domicilio no registrado'}\n\nAsunto: Observaciones a la solicitud de ${caso.tipoSolicitud || 'Restitución Internacional'} respecto del menor ${nnaNom}.\nReferencia: Hoja de Trámite N.° ${cod}\n\nDe mi consideración:\n\nMe dirijo a usted en el marco del Convenio de La Haya de 1980 sobre los Aspectos Civiles de la Sustracción Internacional de Menores y la Directiva N.° 006-2021-MIMP. Al respecto, habiéndose efectuado la evaluación preliminar de admisibilidad de su expediente, se ha determinado que se requiere subsanar los siguientes requisitos:\n\n${listaObsTexto}\n\nEn virtud de lo dispuesto en la normativa vigente, se le otorga un plazo de CINCO (05) DÍAS HÁBILES computados a partir del día siguiente de notificado el presente oficio (fecha límite: ${fechaLim}) para que cumpla con remitir la documentación requerida, bajo apercibimiento de declarar el no acogimiento a trámite y archivo de la solicitud.\n\nSin otro particular, quedo de usted.\n\nAtentamente,\n\n__________________________________\nDirección de Políticas de Niñas, Niños y Adolescentes\nAutoridad Central del Perú - DGNNA / MIMP`,
+      texto: `OFICIO N.° ____-2026-MIMP/DGNNA-DIPNA\n\nLima, ${hoy}\n\nSeñor(a):\n${solNom}\n${caso.solicitanteDomicilio || 'Domicilio no registrado'}\n\nAsunto: Observaciones a la solicitud de ${caso.tipoSolicitud || 'Restitución Internacional'} respecto del NNA ${nnaNom}.\nReferencia: Hoja de Trámite N.° ${cod}\n\nDe mi consideración:\n\nMe dirijo a usted en el marco del Convenio de La Haya de 1980 sobre los Aspectos Civiles de la Sustracción Internacional de Menores y la Directiva N.° 006-2021-MIMP. Al respecto, habiéndose efectuado la evaluación preliminar de admisibilidad de su expediente, se ha determinado que se requiere subsanar los siguientes requisitos:\n\n${listaObsTexto}\n\nEn virtud de lo dispuesto en la normativa vigente, se le otorga un plazo de CINCO (05) DÍAS HÁBILES computados a partir del día siguiente de notificado el presente oficio (fecha límite: ${fechaLim}) para que cumpla con remitir la documentación requerida, bajo apercibimiento de declarar el no acogimiento a trámite y archivo de la solicitud.\n\nSin otro particular, quedo de usted.\n\nAtentamente,\n\n__________________________________\nDirección de Políticas de Niñas, Niños y Adolescentes\nAutoridad Central del Perú - DGNNA / MIMP`,
     },
     citacion: {
       titulo: 'Cédula de Citación a Entrevista Amigable de Retorno',
-      texto: `CÉDULA DE CITACIÓN N.° ____-2026-MIMP/DGNNA\n\nLima, ${hoy}\n\nSeñor(a):\n${reqNom}\n${caso.requeridoDomicilio || 'Domicilio en territorio peruano'}\n\nAsunto: Citación a sesión de mediación y propuesta de retorno voluntario.\nExpediente: ${cod} | NNA: ${nnaNom}\n\nPor medio del presente, se le cita a la sesión de entrevista que se llevará a cabo el día ${fechaEnt} en la sede de la Dirección General de Niñas, Niños y Adolescentes (Av. Camaná 616, Lima), con la finalidad de propiciar un acuerdo voluntario y no contencioso sobre la restitución / régimen de visitas del menor en referencia, en salvaguarda de su Interés Superior.\n\nSe le recuerda que el presente procedimiento administrativo es confidencial y busca soluciones amigables previas a la instauración de acciones judiciales.\n\nAtentamente,\n\n__________________________________\nEspecialista Legal de Sustracción Internacional\nDirección General de Niñas, Niños y Adolescentes`,
+      texto: `CÉDULA DE CITACIÓN N.° ____-2026-MIMP/DGNNA\n\nLima, ${hoy}\n\nSeñor(a):\n${reqNom}\n${caso.requeridoDomicilio || 'Domicilio en territorio peruano'}\n\nAsunto: Citación a sesión de mediación y propuesta de retorno voluntario.\nExpediente: ${cod} | NNA: ${nnaNom}\n\nPor medio del presente, se le cita a la sesión de entrevista que se llevará a cabo el día ${fechaEnt} en la sede de la Dirección General de Niñas, Niños y Adolescentes (Av. Camaná 616, Lima), con la finalidad de propiciar un acuerdo voluntario y no contencioso sobre la restitución / régimen de visitas del NNA en referencia, en salvaguarda de su Interés Superior.\n\nSe le recuerda que el presente procedimiento administrativo es confidencial y busca soluciones amigables previas a la instauración de acciones judiciales.\n\nAtentamente,\n\n__________________________________\nEspecialista Legal de Sustracción Internacional\nDirección General de Niñas, Niños y Adolescentes`,
     },
     interpol: {
       titulo: 'Oficio a INTERPOL (División de Policía Judicial) — Ubicación y Localización',
-      texto: `OFICIO N.° ____-2026-MIMP/DGNNA-DIPNA\n\nLima, ${hoy}\n\nSeñor Coronel PNP\nJEFE DE LA DIVISIÓN DE POLICÍA JUDICIAL E INTERPOL LIMA\nPolicía Nacional del Perú\n\nAsunto: Solicitud urgente de ubicación y localización de menor de edad y presunto sustractor.\nReferencia: Hoja de Trámite N.° ${cod} | Convenio de La Haya de 1980\n\nDe mi mayor consideración:\n\nTengo el agrado de dirigirme a usted en el marco del Convenio de La Haya de 1980 sobre los Aspectos Civiles de la Sustracción Internacional de Menores, ratificado por el Estado Peruano, y la Directiva N.° 006-2021-MIMP, mediante la cual la Dirección General de Niñas, Niños y Adolescentes (DGNNA) del MIMP actúa como Autoridad Central del Perú.\n\nAl respecto, habiéndose admitido a trámite la solicitud de ${caso.tipoSolicitud || 'Restitución Internacional'} respecto de:\n\n${nnaInfoTexto}\n\nPresunto sustractor / Requerido(a):\n• Nombre: ${reqNom}\n• Domicilio / Referencias: ${caso.requeridoDomicilio || 'No especificado'}\n• Teléfono: ${caso.requeridoTelefono || 'No registrado'}\n\nEn virtud de lo dispuesto en el Artículo 7, literal a) del Convenio de La Haya de 1980 y el numeral 6.2 de la Directiva N.° 006-2021-MIMP, se solicita a su digno despacho se sirva disponer con carácter de MUY URGENTE las acciones de inteligencia, búsqueda y localización de las personas mencionadas en el territorio nacional, remitiendo a esta Autoridad Central el informe respectivo a la brevedad posible.\n\nSin otro particular, expreso a usted los sentimientos de mi especial consideración.\n\nAtentamente,\n\n__________________________________\nDirección de Políticas de Niñas, Niños y Adolescentes\nAutoridad Central del Perú - DGNNA / MIMP`,
+      texto: `OFICIO N.° ____-2026-MIMP/DGNNA-DIPNA\n\nLima, ${hoy}\n\nSeñor Coronel PNP\nJEFE DE LA DIVISIÓN DE POLICÍA JUDICIAL E INTERPOL LIMA\nPolicía Nacional del Perú\n\nAsunto: Solicitud urgente de ubicación y localización de NNA y presunto sustractor.\nReferencia: Hoja de Trámite N.° ${cod} | Convenio de La Haya de 1980\n\nDe mi mayor consideración:\n\nTengo el agrado de dirigirme a usted en el marco del Convenio de La Haya de 1980 sobre los Aspectos Civiles de la Sustracción Internacional de Menores, ratificado por el Estado Peruano, y la Directiva N.° 006-2021-MIMP, mediante la cual la Dirección General de Niñas, Niños y Adolescentes (DGNNA) del MIMP actúa como Autoridad Central del Perú.\n\nAl respecto, habiéndose admitido a trámite la solicitud de ${caso.tipoSolicitud || 'Restitución Internacional'} respecto de:\n\n${nnaInfoTexto}\n\nPresunto sustractor / Requerido(a):\n• Nombre: ${reqNom}\n• Domicilio / Referencias: ${caso.requeridoDomicilio || 'No especificado'}\n• Teléfono: ${caso.requeridoTelefono || 'No registrado'}\n\nEn virtud de lo dispuesto en el Artículo 7, literal a) del Convenio de La Haya de 1980 y el numeral 6.2 de la Directiva N.° 006-2021-MIMP, se solicita a su digno despacho se sirva disponer con carácter de MUY URGENTE las acciones de inteligencia, búsqueda y localización de las personas mencionadas en el territorio nacional, remitiendo a esta Autoridad Central el informe respectivo a la brevedad posible.\n\nSin otro particular, expreso a usted los sentimientos de mi especial consideración.\n\nAtentamente,\n\n__________________________________\nDirección de Políticas de Niñas, Niños y Adolescentes\nAutoridad Central del Perú - DGNNA / MIMP`,
     },
     migraciones: {
       titulo: 'Oficio a Superintendencia Nacional de MIGRACIONES — Alerta Preventiva e Impedimento',
-      texto: `OFICIO N.° ____-2026-MIMP/DGNNA-DIPNA\n\nLima, ${hoy}\n\nSeñor(a):\nSUPERINTENDENCIA NACIONAL DE MIGRACIONES\nGerencia de Servicios Migratorios / Control Migratorio\n\nAsunto: Solicitud urgente de Movimiento Migratorio y Alerta Preventiva de Salida del País.\nReferencia: Hoja de Trámite N.° ${cod}\n\nDe mi mayor consideración:\n\nTengo a bien dirigirme a usted en el marco del Convenio de La Haya de 1980 sobre los Aspectos Civiles de la Sustracción Internacional de Menores y la Directiva N.° 006-2021-MIMP.\n\nPor medio del presente, solicito se sirva disponer con carácter de MUY URGENTE:\n\n1. La remisión del Reporte Histórico de Movimiento Migratorio (entradas y salidas del país) de las siguientes personas:\n${nnaInfoTexto}\n   • Progenitor(a) / Requerido(a): ${reqNom}\n\n2. La activación inmediata del CONTROL DE ALERTA PREVENTIVA DE SALIDA en todos los puestos de control migratorio y fronterizo a nivel nacional respecto del menor ${nnaNom}, con la finalidad de prevenir su salida no autorizada del territorio de la República en salvaguarda de su Interés Superior (Art. 7 Convenio 1980).\n\nAgradeciendo la oportuna atención al presente requerimiento, quedo de usted.\n\nAtentamente,\n\n__________________________________\nDirección de Políticas de Niñas, Niños y Adolescentes\nAutoridad Central del Perú - DGNNA / MIMP`,
+      texto: `OFICIO N.° ____-2026-MIMP/DGNNA-DIPNA\n\nLima, ${hoy}\n\nSeñor(a):\nSUPERINTENDENCIA NACIONAL DE MIGRACIONES\nGerencia de Servicios Migratorios / Control Migratorio\n\nAsunto: Solicitud urgente de Movimiento Migratorio y Alerta Preventiva de Salida del País.\nReferencia: Hoja de Trámite N.° ${cod}\n\nDe mi mayor consideración:\n\nTengo a bien dirigirme a usted en el marco del Convenio de La Haya de 1980 sobre los Aspectos Civiles de la Sustracción Internacional de Menores y la Directiva N.° 006-2021-MIMP.\n\nPor medio del presente, solicito se sirva disponer con carácter de MUY URGENTE:\n\n1. La remisión del Reporte Histórico de Movimiento Migratorio (entradas y salidas del país) de las siguientes personas:\n${nnaInfoTexto}\n   • Progenitor(a) / Requerido(a): ${reqNom}\n\n2. La activación inmediata del CONTROL DE ALERTA PREVENTIVA DE SALIDA en todos los puestos de control migratorio y fronterizo a nivel nacional respecto del NNA ${nnaNom}, con la finalidad de prevenir su salida no autorizada del territorio de la República en salvaguarda de su Interés Superior (Art. 7 Convenio 1980).\n\nAgradeciendo la oportuna atención al presente requerimiento, quedo de usted.\n\nAtentamente,\n\n__________________________________\nDirección de Políticas de Niñas, Niños y Adolescentes\nAutoridad Central del Perú - DGNNA / MIMP`,
     },
     cancilleria: {
       titulo: 'Oficio al Ministerio de Relaciones Exteriores (Cancillería - MRE)',
-      texto: `OFICIO N.° ____-2026-MIMP/DGNNA-AC\n\nLima, ${hoy}\n\nSeñor(a) Embajador(a) / Director(a):\nDIRECCIÓN GENERAL DE COMUNIDADES PERUANAS EN EL EXTERIOR Y ASUNTOS CONSULARES\nMinisterio de Relaciones Exteriores del Perú (MRE)\n\nAsunto: Solicitud de Cooperación y Asistencia Consular en Trámite de ${caso.tipoSolicitud || 'Restitución Internacional'}.\nReferencia: Hoja de Trámite N.° ${cod} | País: ${pais}\n\nDe mi mayor consideración:\n\nTengo el honor de dirigirme a usted para poner en su conocimiento que ante esta Autoridad Central se viene tramitando el expediente de ${caso.tipoSolicitud || 'Restitución Internacional'} bajo el marco del Convenio de La Haya de 1980, correspondiente al menor de edad ${nnaNom}, quien se encuentra presuntamente en el Estado de ${pais}.\n\nAl respecto, en cumplimiento del numeral 6.3 de la Directiva N.° 006-2021-MIMP, se solicita a vuestro despacho se sirva coordinar a través de la sección consular correspondiente:\n\n1. Efectuar el seguimiento consular respectivo para verificar el estado de salud e integridad del menor.\n2. Coadyuvar en las comunicaciones oficiales ante la Autoridad Central de ${pais}.\n3. Informar a esta Dirección General sobre los avances y gestiones consulares efectuadas.\n\nAgradeciendo de antemano su valiosa cooperación interinstitucional, hago propicia la oportunidad para reiterarle las seguridades de mi distinguida consideración.\n\nAtentamente,\n\n__________________________________\nDirección General de Niñas, Niños y Adolescentes\nAutoridad Central del Perú - MIMP`,
+      texto: `OFICIO N.° ____-2026-MIMP/DGNNA-AC\n\nLima, ${hoy}\n\nSeñor(a) Embajador(a) / Director(a):\nDIRECCIÓN GENERAL DE COMUNIDADES PERUANAS EN EL EXTERIOR Y ASUNTOS CONSULARES\nMinisterio de Relaciones Exteriores del Perú (MRE)\n\nAsunto: Solicitud de Cooperación y Asistencia Consular en Trámite de ${caso.tipoSolicitud || 'Restitución Internacional'}.\nReferencia: Hoja de Trámite N.° ${cod} | País: ${pais}\n\nDe mi mayor consideración:\n\nTengo el honor de dirigirme a usted para poner en su conocimiento que ante esta Autoridad Central se viene tramitando el expediente de ${caso.tipoSolicitud || 'Restitución Internacional'} bajo el marco del Convenio de La Haya de 1980, correspondiente al NNA ${nnaNom}, quien se encuentra presuntamente en el Estado de ${pais}.\n\nAl respecto, en cumplimiento del numeral 6.3 de la Directiva N.° 006-2021-MIMP, se solicita a vuestro despacho se sirva coordinar a través de la sección consular correspondiente:\n\n1. Efectuar el seguimiento consular respectivo para verificar el estado de salud e integridad del NNA.\n2. Coadyuvar en las comunicaciones oficiales ante la Autoridad Central de ${pais}.\n3. Informar a esta Dirección General sobre los avances y gestiones consulares efectuadas.\n\nAgradeciendo de antemano su valiosa cooperación interinstitucional, hago propicia la oportunidad para reiterarle las seguridades de mi distinguida consideración.\n\nAtentamente,\n\n__________________________________\nDirección General de Niñas, Niños y Adolescentes\nAutoridad Central del Perú - MIMP`,
     },
     informe_admisibilidad: {
       titulo: 'Informe Técnico de Calificación de Admisibilidad (Directiva N.° 006-2021-MIMP)',
-      texto: `INFORME TÉCNICO N.° ____-2026-MIMP/DGNNA-DIPNA\n\nA: DIRECCIÓN DE POLÍTICAS DE NIÑAS, NIÑOS Y ADOLESCENTES\nDE: Especialista Legal en Sustracción Internacional\nASUNTO: Calificación de Admisibilidad de Solicitud de ${caso.tipoSolicitud || 'Restitución Internacional'}\nREFERENCIA: Hoja de Trámite N.° ${cod}\nFECHA: Lima, ${hoy}\n\n1. ANTECEDENTES Y PARTES PROCESALES\n   • Menor involucrado: ${nnaNom}\n   • Solicitante: ${solNom} (${caso.solicitanteDomicilio || 'Domicilio no registrado'})\n   • Requerido(a): ${reqNom} (${caso.requeridoDomicilio || 'Domicilio no registrado'})\n   • País involucrado: ${pais} | Rol AC Perú: ${caso.acPeru || 'Requerida'}\n   • Fecha de Ingreso: ${fmtFecha(caso.fechaIngreso)}\n\n2. EVALUACIÓN NORMATIVA (CONVENIO DE LA HAYA 1980 / DIRECTIVA 006-2021-MIMP)\n   a) Verificación de Minoría de Edad (Art. 4 Convenio): Se constata que el NNA tiene menos de 16 años de edad.\n   b) Residencia Habitual Previa (Art. 3 Convenio): Se acredita residencia inmediata anterior al traslado o retención ilícita.\n   c) Ejercicio Efectivo del Derecho de Custodia/Visitas (Arts. 3 y 5 Convenio): Se acompaña documentación fehaciente.\n   d) Traslado o Retención Ilícita (Arts. 3 y 12 Convenio): Se verifica la infracción de los derechos de custodia y el cómputo dentro del plazo preferente.\n\n3. RESULTADO DE LA CALIFICACIÓN DE REQUISITOS\n${listaObsTexto}\n\n4. CONCLUSIÓN Y RECOMENDACIÓN TÉCNICA\n   Habiéndose verificado el cumplimiento de los estándares exigidos por la Directiva N.° 006-2021-MIMP, se concluye que la solicitud resulta ADMISIBLE. Se recomienda proceder con las siguientes actuaciones según corresponda al rol de la Autoridad Central:\n   [ ] Convocar a la sesión de entrevista amigable para promover el retorno voluntario.\n   [ ] Remitir la solicitud formal de cooperación a la Autoridad Central de ${pais}.\n\nEs cuanto informo para los fines pertinentes.\n\n__________________________________\nEspecialista Legal de Sustracción Internacional\nDirección General de Niñas, Niños y Adolescentes - MIMP`,
+      texto: `INFORME TÉCNICO N.° ____-2026-MIMP/DGNNA-DIPNA\n\nA: DIRECCIÓN DE POLÍTICAS DE NIÑAS, NIÑOS Y ADOLESCENTES\nDE: Especialista Legal en Sustracción Internacional\nASUNTO: Calificación de Admisibilidad de Solicitud de ${caso.tipoSolicitud || 'Restitución Internacional'}\nREFERENCIA: Hoja de Trámite N.° ${cod}\nFECHA: Lima, ${hoy}\n\n1. ANTECEDENTES Y PARTES PROCESALES\n   • NNA involucrado: ${nnaNom}\n   • Solicitante: ${solNom} (${caso.solicitanteDomicilio || 'Domicilio no registrado'})\n   • Requerido(a): ${reqNom} (${caso.requeridoDomicilio || 'Domicilio no registrado'})\n   • País involucrado: ${pais} | Rol AC Perú: ${caso.acPeru || 'Requerida'}\n   • Fecha de Ingreso: ${fmtFecha(caso.fechaIngreso)}\n\n2. EVALUACIÓN NORMATIVA (CONVENIO DE LA HAYA 1980 / DIRECTIVA 006-2021-MIMP)\n   a) Verificación de Minoría de Edad (Art. 4 Convenio): Se constata que el NNA tiene menos de 16 años de edad.\n   b) Residencia Habitual Previa (Art. 3 Convenio): Se acredita residencia inmediata anterior al traslado o retención ilícita.\n   c) Ejercicio Efectivo del Derecho de Custodia/Visitas (Arts. 3 y 5 Convenio): Se acompaña documentación fehaciente.\n   d) Traslado o Retención Ilícita (Arts. 3 y 12 Convenio): Se verifica la infracción de los derechos de custodia y el cómputo dentro del plazo preferente.\n\n3. RESULTADO DE LA CALIFICACIÓN DE REQUISITOS\n${listaObsTexto}\n\n4. CONCLUSIÓN Y RECOMENDACIÓN TÉCNICA\n   Habiéndose verificado el cumplimiento de los estándares exigidos por la Directiva N.° 006-2021-MIMP, se concluye que la solicitud resulta ADMISIBLE. Se recomienda proceder con las siguientes actuaciones según corresponda al rol de la Autoridad Central:\n   [ ] Convocar a la sesión de entrevista amigable para promover el retorno voluntario.\n   [ ] Remitir la solicitud formal de cooperación a la Autoridad Central de ${pais}.\n\nEs cuanto informo para los fines pertinentes.\n\n__________________________________\nEspecialista Legal de Sustracción Internacional\nDirección General de Niñas, Niños y Adolescentes - MIMP`,
     },
     cooperacion: {
       titulo: 'Oficio de Solicitud de Cooperación a la Autoridad Central Extranjera (AC Requirente)',
-      texto: `OFICIO N.° ____-2026-MIMP/DGNNA-AC\n\nLima, ${hoy}\n\nTo / A:\nCENTRAL AUTHORITY OF ${pais.toUpperCase()}\nDepartment of International Child Protection\n\nSubject: Request for International Child Return / Access under 1980 Hague Convention\nCase Ref.: ${cod} | Child: ${nnaNom}\n\nDear Central Authority,\n\nThe Ministry of Women and Vulnerable Populations of Peru (MIMP), acting as Central Authority under the 1980 Hague Convention, hereby transmits the application for the prompt return of the child ${nnaNom}, who was wrongfully removed to / retained in your country.\n\nWe kindly request your valuable assistance in locating the child, preventing further harm, and initiating the appropriate voluntary return or judicial proceedings in accordance with Articles 7, 8, and 9 of the Convention.\n\nPlease find attached the complete dossier and official translations.\n\nSincerely yours,\n\n__________________________________\nCentral Authority of Peru\nDirectorate General for Children and Adolescents (DGNNA - MIMP)`,
+      texto: `OFICIO N.° ____-2026-MIMP/DGNNA-AC\n\nLima, ${hoy}\n\nTo / A:\nCENTRAL AUTHORITY OF ${pais.toUpperCase()}\nDepartment of International Child Protection\n\nSubject: Request for International Child Return / Access under 1980 Hague Convention\nCase Ref.: ${cod} | Child / NNA: ${nnaNom}\n\nDear Central Authority,\n\nThe Ministry of Women and Vulnerable Populations of Peru (MIMP), acting as Central Authority under the 1980 Hague Convention, hereby transmits the application for the prompt return of the child (NNA) ${nnaNom}, who was wrongfully removed to / retained in your country.\n\nWe kindly request your valuable assistance in locating the child, preventing further harm, and initiating the appropriate voluntary return or judicial proceedings in accordance with Articles 7, 8, and 9 of the Convention.\n\nPlease find attached the complete dossier and official translations.\n\nSincerely yours,\n\n__________________________________\nCentral Authority of Peru\nDirectorate General for Children and Adolescents (DGNNA - MIMP)`,
     },
     resolucion: {
       titulo: 'Resolución Directoral de Conclusión y Archivo del Trámite',
-      texto: `RESOLUCIÓN DIRECTORAL N.° ____-2026-MIMP/DGNNA\n\nLima, ${hoy}\n\nVISTO: El expediente de sustracción internacional de menores correspondiente a la Hoja de Trámite N.° ${cod}, referente al menor ${nnaNom};\n\nCONSIDERANDO:\n\nQue, mediante Directiva N.° 006-2021-MIMP se regulan las actuaciones de la Autoridad Central peruana en el marco de los Convenios Internacionales de Restitución de Menores;\n\nQue, en el presente expediente ha acontecido la causal de conclusión: «${caso.motivoCierre || 'Motivo de archivo'}»;\n\nSE RESUELVE:\n\nArtículo 1.- DECLARAR CONCLUIDO el procedimiento administrativo de ${caso.tipoSolicitud || 'Restitución Internacional'} tramitado bajo el expediente N.° ${cod}.\n\nArtículo 2.- DISPONER EL ARCHIVO DEFINITIVO de los actuados, notificando a las partes y a las entidades pertinentes.\n\nRegístrese, comuníquese y archívese.\n\n__________________________________\nDirección General de Niñas, Niños y Adolescentes\nMIMP`,
+      texto: `RESOLUCIÓN DIRECTORAL N.° ____-2026-MIMP/DGNNA\n\nLima, ${hoy}\n\nVISTO: El expediente de sustracción internacional correspondiente a la Hoja de Trámite N.° ${cod}, referente al NNA ${nnaNom};\n\nCONSIDERANDO:\n\nQue, mediante Directiva N.° 006-2021-MIMP se regulan las actuaciones de la Autoridad Central peruana en el marco de los Convenios Internacionales de Restitución de Menores;\n\nQue, en el presente expediente ha acontecido la causal de conclusión: «${caso.motivoCierre || 'Motivo de archivo'}»;\n\nSE RESUELVE:\n\nArtículo 1.- DECLARAR CONCLUIDO el procedimiento administrativo de ${caso.tipoSolicitud || 'Restitución Internacional'} tramitado bajo el expediente N.° ${cod}.\n\nArtículo 2.- DISPONER EL ARCHIVO DEFINITIVO de los actuados, notificando a las partes y a las entidades pertinentes.\n\nRegístrese, comuníquese y archívese.\n\n__________________________________\nDirección General de Niñas, Niños y Adolescentes\nMIMP`,
     },
   }), [caso, nnaNom, solNom, reqNom, cod, pais, hoy, fechaLim, fechaEnt, listaObsTexto, nnaInfoTexto]);
 
@@ -958,6 +970,12 @@ function ModalEstadisticas({
   casos: Caso[];
   flows: Map<string, any>;
 }) {
+  const [filtroPeriodo, setFiltroPeriodo] = useState<'todo' | '2026' | '2025' | 'mes' | 'custom'>('todo');
+  const [filtroDesde, setFiltroDesde] = useState('');
+  const [filtroHasta, setFiltroHasta] = useState('');
+  const [filtroRegistrador, setFiltroRegistrador] = useState('');
+  const [filtroTipo, setFiltroTipo] = useState('');
+
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -967,29 +985,77 @@ function ModalEstadisticas({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  const stats = useMemo(() => {
-    const total = casos.length;
-    const tramite = casos.filter(c => c.estado === 'Tramite').length;
-    const pendientes = casos.filter(c => c.estado === 'Pendiente').length;
-    const archivados = casos.filter(c => c.estado === 'Archivado').length;
+  const registradoresSustracion = useMemo(() => {
+    return ['Emma Victoria Olaya Anicama', 'Janny Ruth Felix-Diaz Silva'];
+  }, []);
 
-    // Retornos Concretados
-    const retornos = casos.filter(c => {
+  const casosFiltrados = useMemo(() => {
+    return casos.filter(c => {
+      const fIngreso = (c.fechaIngreso || '').substring(0, 10);
+      const now = new Date();
+      const currentYear = now.getFullYear().toString();
+
+      if (filtroPeriodo === '2026') {
+        if (!fIngreso.startsWith('2026')) return false;
+      } else if (filtroPeriodo === '2025') {
+        if (!fIngreso.startsWith('2025')) return false;
+      } else if (filtroPeriodo === 'mes') {
+        const currentMonthPrefix = `${currentYear}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        if (!fIngreso.startsWith(currentMonthPrefix)) return false;
+      } else if (filtroPeriodo === 'custom') {
+        if (filtroDesde && fIngreso < filtroDesde) return false;
+        if (filtroHasta && fIngreso > filtroHasta) return false;
+      }
+
+      if (filtroRegistrador) {
+        const prof = (c.profesional || '').toLowerCase();
+        const q = filtroRegistrador.toLowerCase();
+        const firstName = q.split(' ')[0];
+        const match = prof === q || (firstName && prof.includes(firstName)) || (prof && q.includes(prof));
+        if (!match) return false;
+      }
+
+      if (filtroTipo && c.tipoSolicitud !== filtroTipo) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [casos, filtroPeriodo, filtroDesde, filtroHasta, filtroRegistrador, filtroTipo]);
+
+  const stats = useMemo(() => {
+    const total = casosFiltrados.length;
+    let tramite = 0;
+    let pendientes = 0;
+    let archivados = 0;
+
+    casosFiltrados.forEach(c => {
+      const f = flows.get(c.id);
+      const est = f?.computedStatus || c.estado || 'Pendiente';
+      if (est === 'Archivado') archivados++;
+      else if (est === 'Pendiente') pendientes++;
+      else tramite++;
+    });
+
+    const retornos = casosFiltrados.filter(c => {
       const retDirecto = (c.retorno || '').toUpperCase() === 'SI';
       const retProc = c.procesoOperativo?.estadoRetornoVoluntario === 'Retorno concretado' || Boolean(c.procesoOperativo?.fechaRetornoEfectivo);
       const retCierre = (c.motivoCierre || '').toLowerCase().includes('retorno');
       return retDirecto || retProc || retCierre;
     }).length;
 
-    // Distribución Rol AC Perú
-    const requerida = casos.filter(c => (c.acPeru || 'Requerida') === 'Requerida').length;
-    const requirente = casos.filter(c => c.acPeru === 'Requirente').length;
+    const requerida = casosFiltrados.filter(c => (c.acPeru || 'Requerida') === 'Requerida').length;
+    const requirente = casosFiltrados.filter(c => c.acPeru === 'Requirente').length;
     const pctRequerida = total > 0 ? Math.round((requerida / total) * 100) : 0;
     const pctRequirente = total > 0 ? Math.round((requirente / total) * 100) : 0;
 
-    // Top Países Involucrados
+    const restitucion = casosFiltrados.filter(c => (c.tipoSolicitud || 'Restitución') === 'Restitución').length;
+    const visitas = casosFiltrados.filter(c => c.tipoSolicitud === 'Régimen de Visitas').length;
+    const pctRestitucion = total > 0 ? Math.round((restitucion / total) * 100) : 0;
+    const pctVisitas = total > 0 ? Math.round((visitas / total) * 100) : 0;
+
     const paisesCount: Record<string, number> = {};
-    casos.forEach(c => {
+    casosFiltrados.forEach(c => {
       const p = c.pais?.trim() || 'No especificado';
       paisesCount[p] = (paisesCount[p] || 0) + 1;
     });
@@ -998,27 +1064,32 @@ function ModalEstadisticas({
       .slice(0, 6);
     const maxPaisCount = topPaises.length > 0 ? Math.max(...topPaises.map(p => p[1])) : 1;
 
-    // Reloj de La Haya (Art. 11 - Meta Resolutiva de 6 Semanas / 42 días)
-    const activos = casos.filter(c => c.estado !== 'Archivado');
+    const activos = casosFiltrados.filter(c => {
+      const f = flows.get(c.id);
+      return (f?.computedStatus || c.estado) !== 'Archivado';
+    });
     let dentroPlazo = 0;
     let fueraPlazo = 0;
+    let totalDias = 0;
     activos.forEach(c => {
       const d = diasDesde(c.fechaIngreso);
+      totalDias += d;
       if (d <= 42) dentroPlazo++;
       else fueraPlazo++;
     });
     const tasaCumplimiento = activos.length > 0 ? Math.round((dentroPlazo / activos.length) * 100) : 100;
+    const promedioSemanas = activos.length > 0 ? (totalDias / activos.length / 7).toFixed(1) : '0.0';
 
-    // Distribución por Fase Operativa
     let fEvaluacion = 0;
     let fSubsanacion = 0;
     let fRetorno = 0;
     let fJudicial = 0;
     let fCierre = archivados;
 
-    casos.forEach(c => {
-      if (c.estado !== 'Archivado') {
-        const f = flows.get(c.id);
+    casosFiltrados.forEach(c => {
+      const f = flows.get(c.id);
+      const isArchived = (f?.computedStatus || c.estado) === 'Archivado';
+      if (!isArchived) {
         const stageId = f?.current?.id;
         if (stageId === 'evaluacion') fEvaluacion++;
         else if (stageId === 'subsanacion') fSubsanacion++;
@@ -1041,12 +1112,17 @@ function ModalEstadisticas({
       requirente,
       pctRequerida,
       pctRequirente,
+      restitucion,
+      visitas,
+      pctRestitucion,
+      pctVisitas,
       topPaises,
       maxPaisCount,
       activosCount: activos.length,
       dentroPlazo,
       fueraPlazo,
       tasaCumplimiento,
+      promedioSemanas,
       fases: [
         { id: 'evaluacion', label: '1. Evaluación Inicial', count: fEvaluacion, pct: pctFase(fEvaluacion), color: BL, bg: '#EFF6FF', border: '#BFDBFE', desc: 'Control de admisibilidad formal y verificación de los 8 requisitos del Convenio' },
         { id: 'subsanacion', label: '2. Subsanación', count: fSubsanacion, pct: pctFase(fSubsanacion), color: '#D97706', bg: '#FFFBEB', border: '#FDE68A', desc: 'Requerimientos documentales con plazo de 5 días hábiles a la parte solicitante' },
@@ -1055,7 +1131,17 @@ function ModalEstadisticas({
         { id: 'cierre', label: '5. Cierre y Archivo', count: fCierre, pct: pctFase(fCierre), color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0', desc: 'Resolución de conclusión definitiva conforme a causales de la Directiva N.° 006-2021' },
       ],
     };
-  }, [casos, flows]);
+  }, [casosFiltrados, flows]);
+
+  const hayFiltrosActivos = filtroPeriodo !== 'todo' || Boolean(filtroDesde) || Boolean(filtroHasta) || Boolean(filtroRegistrador) || Boolean(filtroTipo);
+
+  const resetFiltros = () => {
+    setFiltroPeriodo('todo');
+    setFiltroDesde('');
+    setFiltroHasta('');
+    setFiltroRegistrador('');
+    setFiltroTipo('');
+  };
 
   if (!isOpen) return null;
 
@@ -1082,15 +1168,14 @@ function ModalEstadisticas({
           borderRadius: 12,
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)',
           width: '100%',
-          maxWidth: 920,
-          maxHeight: '90vh',
+          maxWidth: 960,
+          maxHeight: '92vh',
           display: 'flex',
           flexDirection: 'column',
           border: `1px solid ${BR}`,
           overflow: 'hidden',
         }}
       >
-        {/* Modal Header */}
         <div
           style={{
             padding: '16px 22px',
@@ -1160,9 +1245,132 @@ function ModalEstadisticas({
           </button>
         </div>
 
-        {/* Modal Scrollable Body */}
+        <div style={{
+          padding: '10px 22px',
+          background: '#FFFFFF',
+          borderBottom: `1px solid ${BR}`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          flexWrap: 'wrap',
+          fontSize: 11
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <Calendar size={13} color={BL} />
+            <span style={{ fontWeight: 700, color: TX2 }}>Período:</span>
+            <select
+              value={filtroPeriodo}
+              onChange={e => setFiltroPeriodo(e.target.value as any)}
+              style={{
+                padding: '5px 9px',
+                border: `1px solid ${filtroPeriodo !== 'todo' ? BL : BR}`,
+                borderRadius: 6,
+                fontSize: 11,
+                fontWeight: filtroPeriodo !== 'todo' ? 700 : 400,
+                background: filtroPeriodo !== 'todo' ? '#EFF6FF' : '#fff',
+                color: TX
+              }}
+            >
+              <option value="todo">Todo el Histórico</option>
+              <option value="2026">Año 2026</option>
+              <option value="2025">Año 2025</option>
+              <option value="mes">Mes Actual</option>
+              <option value="custom">Rango Personalizado...</option>
+            </select>
+          </div>
+
+          {filtroPeriodo === 'custom' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#F8FAFC', padding: '4px 8px', borderRadius: 6, border: `1px solid ${BR}` }}>
+              <span style={{ fontSize: 10, color: TX3, fontWeight: 700 }}>Desde:</span>
+              <input
+                type="date"
+                value={filtroDesde}
+                onChange={e => setFiltroDesde(e.target.value)}
+                style={{ border: 'none', background: 'transparent', fontSize: 11, color: TX, outline: 'none' }}
+              />
+              <span style={{ fontSize: 10, color: TX3, fontWeight: 700 }}>Hasta:</span>
+              <input
+                type="date"
+                value={filtroHasta}
+                onChange={e => setFiltroHasta(e.target.value)}
+                style={{ border: 'none', background: 'transparent', fontSize: 11, color: TX, outline: 'none' }}
+              />
+            </div>
+          )}
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <Users size={13} color={BL} />
+            <span style={{ fontWeight: 700, color: TX2 }}>Registradora:</span>
+            <select
+              value={filtroRegistrador}
+              onChange={e => setFiltroRegistrador(e.target.value)}
+              style={{
+                padding: '5px 9px',
+                border: `1px solid ${filtroRegistrador ? BL : BR}`,
+                borderRadius: 6,
+                fontSize: 11,
+                fontWeight: filtroRegistrador ? 700 : 400,
+                background: filtroRegistrador ? '#EFF6FF' : '#fff',
+                color: TX
+              }}
+            >
+              <option value="">Todas las registradoras</option>
+              {registradoresSustracion.map(r => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ fontWeight: 700, color: TX2 }}>Tipo:</span>
+            <select
+              value={filtroTipo}
+              onChange={e => setFiltroTipo(e.target.value)}
+              style={{
+                padding: '5px 9px',
+                border: `1px solid ${filtroTipo ? BL : BR}`,
+                borderRadius: 6,
+                fontSize: 11,
+                fontWeight: filtroTipo ? 700 : 400,
+                background: filtroTipo ? '#EFF6FF' : '#fff',
+                color: TX
+              }}
+            >
+              <option value="">Todos los tipos</option>
+              <option value="Restitución">Restitución</option>
+              <option value="Régimen de Visitas">Régimen de Visitas</option>
+            </select>
+          </div>
+
+          {hayFiltrosActivos && (
+            <button
+              type="button"
+              onClick={resetFiltros}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '5px 9px',
+                border: '1px solid #FECACA',
+                background: '#FEF2F2',
+                color: '#DC2626',
+                borderRadius: 6,
+                fontSize: 10.5,
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              <RotateCcw size={11} />
+              <span>Limpiar filtros</span>
+            </button>
+          )}
+
+          <div style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: TX3 }}>
+            Mostrando <b>{stats.total}</b> expedientes
+          </div>
+        </div>
+
         <div style={{ padding: '20px 22px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 18 }} className="main-scroll">
-          {/* KPI CARDS GLOBALES */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
             <div
               style={{
@@ -1182,7 +1390,7 @@ function ModalEstadisticas({
                 <Globe size={14} color={N2} />
               </div>
               <div style={{ fontSize: 24, fontWeight: 800, color: N2, marginTop: 4 }}>{stats.total}</div>
-              <div style={{ fontSize: 10, color: TX3, marginTop: 2 }}>100% de la carga procesal</div>
+              <div style={{ fontSize: 10, color: TX3, marginTop: 2 }}>Carga procesal analizada</div>
             </div>
 
             <div
@@ -1255,9 +1463,7 @@ function ModalEstadisticas({
             </div>
           </div>
 
-          {/* FILA 2: ROL AC PERÚ & RELOJ DE LA HAYA */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
-            {/* ROL AC PERÚ */}
             <div style={{ background: '#FFFFFF', border: `1px solid ${BR}`, borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
@@ -1267,11 +1473,10 @@ function ModalEstadisticas({
                 <Users size={16} color={N2} />
               </div>
 
-              {/* Bar 1: Requerida */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, marginBottom: 4 }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: TX }}>
-                    <Users size={12} color={BL} /> AC Requerida (Menor en Perú)
+                    <Users size={12} color={BL} /> AC Requerida (NNA en Perú)
                   </span>
                   <span style={{ color: BL, fontWeight: 800 }}>{stats.requerida} ({stats.pctRequerida}%)</span>
                 </div>
@@ -1283,11 +1488,10 @@ function ModalEstadisticas({
                 </div>
               </div>
 
-              {/* Bar 2: Requirente */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700, marginBottom: 4 }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: TX }}>
-                    <Plane size={12} color="#6366F1" /> AC Requirente (Menor en Exterior)
+                    <Plane size={12} color="#6366F1" /> AC Requirente (NNA en Exterior)
                   </span>
                   <span style={{ color: '#6366F1', fontWeight: 800 }}>{stats.requirente} ({stats.pctRequirente}%)</span>
                 </div>
@@ -1298,9 +1502,24 @@ function ModalEstadisticas({
                   Solicitud formulada por progenitor en Perú para restitución desde el país extranjero.
                 </div>
               </div>
+
+              <div style={{ borderTop: `1px solid ${BR}`, paddingTop: 10, marginTop: 4 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: TX2, marginBottom: 6 }}>
+                  Tipo de Solicitud (Convenio de La Haya):
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ flex: 1, background: '#F8FAFC', border: `1px solid ${BR}`, borderRadius: 6, padding: '6px 10px' }}>
+                    <div style={{ fontSize: 10, color: TX3, fontWeight: 700 }}>Restitución (Art. 12)</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: BL }}>{stats.restitucion} <span style={{ fontSize: 10, fontWeight: 700 }}>({stats.pctRestitucion}%)</span></div>
+                  </div>
+                  <div style={{ flex: 1, background: '#F8FAFC', border: `1px solid ${BR}`, borderRadius: 6, padding: '6px 10px' }}>
+                    <div style={{ fontSize: 10, color: TX3, fontWeight: 700 }}>Régimen de Visitas (Art. 21)</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: '#7C3AED' }}>{stats.visitas} <span style={{ fontSize: 10, fontWeight: 700 }}>({stats.pctVisitas}%)</span></div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* RELOJ DE LA HAYA (ART. 11) */}
             <div style={{ background: '#FFFFFF', border: `1px solid ${BR}`, borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div>
@@ -1324,7 +1543,6 @@ function ModalEstadisticas({
                 </div>
               </div>
 
-              {/* Progress bar dual */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, fontWeight: 700, color: TX3, marginBottom: 4 }}>
                   <span style={{ color: '#16A34A' }}>≤ 6 Semanas ({stats.dentroPlazo})</span>
@@ -1335,12 +1553,19 @@ function ModalEstadisticas({
                   <div style={{ width: `${100 - stats.tasaCumplimiento}%`, height: '100%', background: '#DC2626', transition: 'width 0.4s ease' }} />
                 </div>
               </div>
+
+              <div style={{ background: '#F8FAFC', border: `1px solid ${BR}`, borderRadius: 6, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontSize: 11, color: TX2 }}>
+                  ⏱️ <b>Tiempo promedio de tramitación activa:</b>
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: Number(stats.promedioSemanas) <= 6 ? '#16A34A' : '#DC2626' }}>
+                  {stats.promedioSemanas} semanas
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* FILA 3: TOP PAÍSES & DISTRIBUCIÓN POR FASE OPERATIVA */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 14 }}>
-            {/* TOP PAÍSES */}
             <div style={{ background: '#FFFFFF', border: `1px solid ${BR}`, borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
                 <div>
@@ -1352,7 +1577,7 @@ function ModalEstadisticas({
 
               {stats.topPaises.length === 0 ? (
                 <div style={{ padding: '20px 0', textAlign: 'center', color: TX3, fontSize: 11 }}>
-                  No se registran países en los expedientes.
+                  No se registran países en los expedientes para los filtros seleccionados.
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
@@ -1384,7 +1609,6 @@ function ModalEstadisticas({
               )}
             </div>
 
-            {/* DISTRIBUCIÓN POR FASE OPERATIVA */}
             <div style={{ background: '#FFFFFF', border: `1px solid ${BR}`, borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
                 <div>
@@ -1416,7 +1640,6 @@ function ModalEstadisticas({
           </div>
         </div>
 
-        {/* Modal Footer */}
         <div
           style={{
             padding: '12px 22px',
@@ -1430,13 +1653,13 @@ function ModalEstadisticas({
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: TX3 }}>
             <Info size={13} color={BL} />
-            <span>Datos procesados en tiempo real según registros del módulo.</span>
+            <span>Datos procesados en tiempo real según los filtros de período seleccionados.</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
               type="button"
-              onClick={() => descargarExcelSustracion(casos as any)}
+              onClick={() => descargarExcelSustracion(casosFiltrados as any)}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -1462,7 +1685,7 @@ function ModalEstadisticas({
               }}
             >
               <Download size={13} />
-              <span>Exportar Reporte</span>
+              <span>Exportar Reporte Filtrado ({stats.total})</span>
             </button>
 
             <button
@@ -1507,7 +1730,7 @@ function TabResumen({
   const nnaList = useMemo(() => {
     return (caso.nna && caso.nna.length > 0)
       ? caso.nna
-      : [{ nombres: caso.nnaNombre || 'Menor involucrado', primerApellido: '', fechaNacimiento: caso.nnaFechaNac || (caso as any).nnafechanac, edad: caso.nnaEdad || (caso as any).nnaedad, tipoEdad: caso.nnaTipoEdad || (caso as any).nnatipoedad, sexo: caso.nnaSexo || '' }];
+      : [{ nombres: caso.nnaNombre || 'NNA involucrado', primerApellido: '', fechaNacimiento: caso.nnaFechaNac || (caso as any).nnafechanac, edad: caso.nnaEdad || (caso as any).nnaedad, tipoEdad: caso.nnaTipoEdad || (caso as any).nnatipoedad, sexo: caso.nnaSexo || '' }];
   }, [caso]);
 
   const caducidadAlert = useMemo(() => {
@@ -1534,9 +1757,151 @@ function TabResumen({
     }
   };
 
+  // Cálculo de los 5 Estados Procesales para el Timeline
+  const timelineStates = useMemo(() => {
+    const obsReqs = (proceso.requisitos || []).filter(r => r.estado === 'Observado').length;
+    const isAdmisible = proceso.evaluacionResultado === 'Conforme' || (proceso.requisitos && proceso.requisitos.length > 0 && obsReqs === 0 && proceso.evaluacionResultado !== 'Pendiente');
+    const isObservado = obsReqs > 0 || proceso.evaluacionResultado === 'Observada';
+    
+    // 1. Admisibilidad
+    const st1 = {
+      label: isObservado ? 'OBSERVADO' : (isAdmisible ? 'ADMISIBLE' : 'ADMISIBILIDAD'),
+      color: isObservado ? '#D97706' : (isAdmisible ? '#16A34A' : BL),
+      bg: isObservado ? '#FEF3C7' : (isAdmisible ? '#DCFCE7' : '#EFF6FF'),
+      icon: isObservado ? '⚠️' : (isAdmisible ? '✓' : '1'),
+      done: isAdmisible || isObservado,
+      active: proceso.faseOperativa === 'Evaluación' || (!proceso.faseOperativa && caso.etapa === 'Administrativo'),
+      tab: 'evaluacion' as ExpedienteTab,
+    };
+
+    // 2. Subsanación
+    const isSubsanado = proceso.resultadoSubsanacion === 'Subsanó' || (isObservado && (proceso.faseOperativa === 'Retorno voluntario' || proceso.faseOperativa === 'Judicial' || proceso.faseOperativa === 'Cierre'));
+    const isEnSubsanacion = proceso.faseOperativa === 'Subsanación';
+    const isNoSubsanado = proceso.resultadoSubsanacion === 'No subsanó';
+    const st2 = {
+      label: isSubsanado ? 'SUBSANADO' : (isNoSubsanado ? 'NO SUBSANÓ' : 'SUBSANACIÓN'),
+      color: isSubsanado ? '#16A34A' : (isNoSubsanado ? '#DC2626' : (isEnSubsanacion ? BL : '#94A3B8')),
+      bg: isSubsanado ? '#DCFCE7' : (isNoSubsanado ? '#FEE2E2' : (isEnSubsanacion ? '#EFF6FF' : '#F1F5F9')),
+      icon: isSubsanado ? '✓' : (isNoSubsanado ? '✕' : (isEnSubsanacion ? '◉' : '2')),
+      done: isSubsanado || isNoSubsanado || (!isObservado && isAdmisible),
+      active: isEnSubsanacion,
+      tab: 'subsanacion' as ExpedienteTab,
+    };
+
+    // 3. Vía Amigable / Retorno
+    const resEnt = caso.resultadoEntrevista || proceso.resultadoEntrevista || '';
+    const isAcuerdo = resEnt === 'Acepta retorno voluntario' || proceso.estadoRetornoVoluntario === 'Acuerdo alcanzado';
+    const isRechaza = resEnt === 'Rechaza retorno' || resEnt === 'No asiste' || proceso.estadoRetornoVoluntario === 'Sin acuerdo';
+    const isEnRetorno = proceso.faseOperativa === 'Retorno voluntario';
+    const st3 = {
+      label: isAcuerdo ? 'ACUERDO FIRMADO' : (isRechaza ? 'VÍA AGOTADA' : 'VÍA AMIGABLE'),
+      color: isAcuerdo ? '#16A34A' : (isRechaza ? '#DC2626' : (isEnRetorno ? BL : '#94A3B8')),
+      bg: isAcuerdo ? '#DCFCE7' : (isRechaza ? '#FEE2E2' : (isEnRetorno ? '#EFF6FF' : '#F1F5F9')),
+      icon: isAcuerdo ? '✓' : (isRechaza ? '✕' : (isEnRetorno ? '◉' : '3')),
+      done: isAcuerdo || isRechaza,
+      active: isEnRetorno,
+      tab: (caso.acPeru === 'Requirente' ? 'internacional' : 'retorno') as ExpedienteTab,
+    };
+
+    // 4. En Demanda Judicial
+    const isJudicial = caso.etapa === 'Judicial' || proceso.faseOperativa === 'Judicial' || Boolean(caso.numExpedienteJudicial) || (caso.historialJudicial && caso.historialJudicial.length > 0);
+    const isSentencia = Boolean(caso.sentencia1ra);
+    const st4 = {
+      label: isSentencia ? 'SENTENCIA PJ' : (isJudicial ? 'EN DEMANDA' : 'VÍA JUDICIAL'),
+      color: isSentencia ? '#16A34A' : (isJudicial ? BL : '#94A3B8'),
+      bg: isSentencia ? '#DCFCE7' : (isJudicial ? '#EFF6FF' : '#F1F5F9'),
+      icon: isSentencia ? '✓' : (isJudicial ? '⚖️' : '4'),
+      done: isSentencia,
+      active: isJudicial && !isSentencia,
+      tab: 'judicial' as ExpedienteTab,
+    };
+
+    // 5. Archivo / Cierre
+    const isCerrado = caso.estado === 'Archivado' || Boolean(caso.fechaSalida) || proceso.faseOperativa === 'Cierre';
+    const isRetornoEfectivo = Boolean(proceso.fechaRetornoEfectivo) || proceso.estadoRetornoVoluntario === 'Retorno concretado';
+    const st5 = {
+      label: isRetornoEfectivo ? 'RETORNO CONCRETADO' : (isCerrado ? 'ARCHIVADO' : 'ARCHIVO'),
+      color: isRetornoEfectivo ? '#16A34A' : (isCerrado ? '#475569' : '#94A3B8'),
+      bg: isRetornoEfectivo ? '#DCFCE7' : (isCerrado ? '#F1F5F9' : '#F8FAFC'),
+      icon: isRetornoEfectivo ? '✓' : (isCerrado ? '🏁' : '5'),
+      done: isCerrado || isRetornoEfectivo,
+      active: isCerrado,
+      tab: 'cierre' as ExpedienteTab,
+    };
+
+    return [st1, st2, st3, st4, st5];
+  }, [caso, proceso]);
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }} className="main-scroll">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
+        {/* TIMELINE DE ESTADOS PROCESALES */}
+        <div style={{
+          gridColumn: '1 / -1',
+          background: SURF,
+          border: `1px solid ${BR}`,
+          borderRadius: 8,
+          padding: '16px 24px 14px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
+            <div style={{
+              position: 'absolute',
+              top: 15,
+              left: 45,
+              right: 45,
+              height: 3,
+              background: '#E2E8F0',
+              zIndex: 0,
+            }} />
+
+            {timelineStates.map((st, idx) => (
+              <div
+                key={idx}
+                onClick={() => onSelectTab(st.tab)}
+                title={`Ir a ${st.label} (1-clic)`}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 8,
+                  position: 'relative',
+                  zIndex: 1,
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                }}
+              >
+                <div style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  background: st.active ? st.color : (st.done ? st.color : '#FFFFFF'),
+                  color: st.active || st.done ? '#FFFFFF' : '#94A3B8',
+                  border: `2.5px solid ${st.color}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 12,
+                  fontWeight: 800,
+                  boxShadow: st.active ? `0 0 0 4px ${st.bg}` : '0 1px 3px rgba(0,0,0,0.06)',
+                  transition: 'all 0.15s ease',
+                }}>
+                  {st.icon}
+                </div>
+
+                <span style={{
+                  fontSize: 10.5,
+                  fontWeight: st.active ? 800 : 700,
+                  color: st.active ? st.color : (st.done ? TX : TX3),
+                  letterSpacing: '.03em',
+                  textTransform: 'uppercase',
+                }}>
+                  {st.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* BANNER RELOJ DE LA HAYA (6 SEMANAS / ART. 11) */}
         <div style={{
           gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
@@ -1595,7 +1960,7 @@ function TabResumen({
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
             <SummaryValue label="Hoja de Trámite" value={<span style={{ fontFamily: 'monospace', color: N2 }}>{caso.codigo}</span>} />
-            <SummaryValue label="Rol AC Perú" value={caso.acPeru === 'Requirente' ? 'Requirente (Menor en Exterior)' : 'Requerida (Menor en Perú)'} />
+            <SummaryValue label="Rol AC Perú" value={caso.acPeru === 'Requirente' ? 'Requirente (NNA en Exterior)' : 'Requerida (NNA en Perú)'} />
             <SummaryValue label="País Contraparte" value={caso.pais} />
             <SummaryValue label="Tipo Solicitud" value={caso.tipoSolicitud} />
             <SummaryValue label="Fecha de Ingreso" value={fmtFecha(caso.fechaIngreso)} />
@@ -1655,7 +2020,7 @@ function TabResumen({
         {/* NNA Y ÚLTIMA GESTIÓN */}
         <div style={{ gridColumn: '1 / -1', background: SURF, border: `1px solid ${BR}`, borderRadius: 8, padding: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: N2, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 10 }}>
-            Menores Involucrados ({nnaList.length})
+            NNA Involucrados ({nnaList.length})
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             {nnaList.map((n, i) => {
@@ -2758,10 +3123,11 @@ function TabInternacional({
 // ── PESTAÑA: PROCESO JUDICIAL ─────────────────────────────────────────
 
 function TabJudicial({
-  caso, getVal, onChange, onGuardarHistorialJudicial
+  caso, getVal, onChange, onGuardarHistorialJudicial, onEliminarHistorialJudicial
 }: {
   caso: Caso; getVal: (f: keyof Caso) => string; onChange: (f: keyof Caso, v: any) => void;
   onGuardarHistorialJudicial: (etapa: string, fecha: string, desc: string) => void;
+  onEliminarHistorialJudicial?: (entradaId: string) => void;
 }) {
   const [nuevaEtapa, setNuevaEtapa] = useState('Demanda presentada');
   const [fechaH, setFechaH] = useState(todayStr());
@@ -2770,10 +3136,34 @@ function TabJudicial({
   const esRequirente = getVal('acPeru') === 'Requirente';
   const numExp = getVal('numExpedienteJudicial') || caso.numExpedienteJudicial;
 
+  const historial = useMemo(() => {
+    const list = caso.historialJudicial || [];
+    return [...list].sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  }, [caso.historialJudicial]);
+
   const agregarH = () => {
     if (!fechaH) return;
     onGuardarHistorialJudicial(nuevaEtapa, fechaH, descH);
     setDescH('');
+  };
+
+  const getBadgeStyle = (etapa: string) => {
+    if (etapa.includes('Sentencia') || etapa.includes('Ejecución')) {
+      return { bg: '#DCFCE7', color: '#166534', border: '#BBF7D0', dotBg: '#16A34A' };
+    }
+    if (etapa.includes('Medida cautelar') || etapa.includes('Impedimento')) {
+      return { bg: '#F3E8FF', color: '#6B21A8', border: '#E9D5FF', dotBg: '#9333EA' };
+    }
+    if (etapa.includes('audiencia') || etapa.includes('Escucha')) {
+      return { bg: '#FEF3C7', color: '#92400E', border: '#FDE68A', dotBg: '#D97706' };
+    }
+    if (etapa.includes('Apelación') || etapa.includes('Casación')) {
+      return { bg: '#FEE2E2', color: '#991B1B', border: '#FECACA', dotBg: '#DC2626' };
+    }
+    if (etapa.includes('Archivado')) {
+      return { bg: '#F1F5F9', color: '#475569', border: '#CBD5E1', dotBg: '#64748B' };
+    }
+    return { bg: '#EFF6FF', color: BL, border: '#BFDBFE', dotBg: BL };
   };
 
   return (
@@ -2815,12 +3205,14 @@ function TabJudicial({
         <Row label="Recurso de Casación" value={getVal('casacion')} span={2} onChange={v => onChange('casacion', v)} />
       </div>
 
-      <div style={{ padding: 16 }}>
+      <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* FORMULARIO DE REGISTRO DE ACTUACIÓN */}
         <div style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, overflow: 'hidden' }}>
-          <div style={{ padding: '12px 14px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, fontSize: 11, fontWeight: 800, color: N2 }}>
-            REGISTRAR ACTUACIÓN JUDICIAL EN LÍNEA DE TIEMPO
+          <div style={{ padding: '12px 14px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, fontSize: 11, fontWeight: 800, color: N2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>REGISTRAR ACTUACIÓN JUDICIAL EN LÍNEA DE TIEMPO</span>
+            <span style={{ fontSize: 10, color: TX3, fontWeight: 600 }}>Registra resoluciones, audiencias y diligencias del PJ</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: 10, padding: 14, alignItems: 'flex-end' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 2fr auto', gap: 10, padding: 14, alignItems: 'flex-end' }}>
             <label style={fieldLabelStyle}>
               ETAPA
               <select value={nuevaEtapa} onChange={e => setNuevaEtapa(e.target.value)} style={fieldInputStyle}>
@@ -2833,15 +3225,146 @@ function TabJudicial({
             </label>
             <label style={fieldLabelStyle}>
               DESCRIPCIÓN / RESOLUCIÓN
-              <input value={descH} onChange={e => setDescH(e.target.value)} placeholder="Ej. Notificación de audiencia..." style={fieldInputStyle} />
+              <input value={descH} onChange={e => setDescH(e.target.value)} placeholder="Ej. Notificación de audiencia, Resolución N.° 02..." style={fieldInputStyle} />
             </label>
             <button
               type="button"
               onClick={agregarH}
-              style={{ padding: '8px 14px', borderRadius: 6, border: 'none', background: BL, color: '#fff', fontSize: 11, fontWeight: 800, cursor: 'pointer', height: 35 }}
+              style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: BL, color: '#fff', fontSize: 11, fontWeight: 800, cursor: 'pointer', height: 35, display: 'inline-flex', alignItems: 'center', gap: 5 }}
             >
-              Agregar
+              <Plus size={13} />
+              <span>Agregar</span>
             </button>
+          </div>
+        </div>
+
+        {/* LÍNEA DE TIEMPO VERTICAL DE ACTUACIONES */}
+        <div style={{ background: SURF, border: `1px solid ${BR}`, borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ padding: '12px 14px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Scale size={14} color={BL} />
+              <b style={{ fontSize: 11, color: N2 }}>LÍNEA DE TIEMPO DE ACTUACIONES JUDICIALES</b>
+            </div>
+            <span style={{ fontSize: 10, fontWeight: 800, background: '#EFF6FF', color: BL, border: '1px solid #BFDBFE', padding: '2px 8px', borderRadius: 99 }}>
+              {historial.length} {historial.length === 1 ? 'actuación' : 'actuaciones'}
+            </span>
+          </div>
+
+          <div style={{ padding: '16px 20px' }}>
+            {historial.length === 0 ? (
+              <div style={{ padding: '30px 20px', textAlign: 'center', color: TX3, fontSize: 11 }}>
+                <Clock size={28} color="#CBD5E1" style={{ margin: '0 auto 8px', display: 'block' }} />
+                <span>Aún no se han registrado actuaciones judiciales en este caso.</span>
+                <span style={{ display: 'block', fontSize: 10, marginTop: 4, color: '#94A3B8' }}>Usa el formulario superior para registrar la primera resolución o diligencia del Juzgado.</span>
+              </div>
+            ) : (
+              <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {/* Línea vertical continua de conexión */}
+                <div style={{
+                  position: 'absolute',
+                  top: 14,
+                  bottom: 14,
+                  left: 108,
+                  width: 2,
+                  background: '#E2E8F0',
+                  zIndex: 0
+                }} />
+
+                {historial.map((h, idx) => {
+                  const bStyle = getBadgeStyle(h.etapa);
+                  return (
+                    <div key={h.id || idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 16, position: 'relative', zIndex: 1 }}>
+                      {/* Fecha a la izquierda */}
+                      <div style={{ width: 95, flexShrink: 0, textAlign: 'right', paddingTop: 2 }}>
+                        <span style={{ display: 'block', fontSize: 11, fontWeight: 800, color: TX }}>
+                          {fmtFecha(h.fecha)}
+                        </span>
+                        {h.creadoPor && (
+                          <span style={{ display: 'block', fontSize: 9.5, color: TX3, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={h.creadoPor}>
+                            👤 {h.creadoPor.split(' ')[0]}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Nodo circular */}
+                      <div style={{
+                        width: 26,
+                        height: 26,
+                        borderRadius: '50%',
+                        background: '#FFFFFF',
+                        border: `3px solid ${bStyle.dotBg}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        boxShadow: '0 0 0 3px #F8FAFC',
+                        marginTop: 1
+                      }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: bStyle.dotBg }} />
+                      </div>
+
+                      {/* Tarjeta de la Actuación */}
+                      <div style={{
+                        flex: 1,
+                        background: '#FFFFFF',
+                        border: `1px solid ${BR}`,
+                        borderRadius: 7,
+                        padding: '10px 14px',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        justifyContent: 'space-between',
+                        gap: 12
+                      }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                            <span style={{
+                              padding: '2px 8px',
+                              borderRadius: 99,
+                              background: bStyle.bg,
+                              color: bStyle.color,
+                              border: `1px solid ${bStyle.border}`,
+                              fontSize: 10,
+                              fontWeight: 800,
+                              letterSpacing: '.02em'
+                            }}>
+                              {h.etapa}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 11.5, color: TX, lineHeight: 1.45, wordBreak: 'break-word' }}>
+                            {h.descripcion || <i style={{ color: TX3 }}>Sin descripción detallada</i>}
+                          </div>
+                        </div>
+
+                        {onEliminarHistorialJudicial && (
+                          <button
+                            type="button"
+                            onClick={() => onEliminarHistorialJudicial(h.id)}
+                            title="Eliminar esta actuación judicial"
+                            style={{
+                              border: 'none',
+                              background: 'transparent',
+                              color: '#94A3B8',
+                              cursor: 'pointer',
+                              padding: 4,
+                              borderRadius: 4,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'color 0.15s ease'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.color = '#DC2626'}
+                            onMouseLeave={e => e.currentTarget.style.color = '#94A3B8'}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -2897,14 +3420,17 @@ function TabCierre({
 // ORQUESTADOR PRINCIPAL (PÁGINA COMPLETA)
 // ══════════════════════════════════════════════════════════════════════
 
+// Caché en memoria para carga instantánea (0 ms de espera al entrar a la página)
+let cachedCasosSustracion: Caso[] | null = null;
+
 type KpiFilter = 'all' | 'tramite' | 'pendiente' | 'archivado';
 
 export default function SustracionPage() {
   const router = useRouter();
   const { me } = useMe();
 
-  const [casos, setCasos] = useState<Caso[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [casos, setCasos] = useState<Caso[]>(() => cachedCasosSustracion || []);
+  const [loading, setLoading] = useState<boolean>(() => !cachedCasosSustracion);
   const [selected, setSelected] = useState<Caso | null>(null);
   const [pending, setPending] = useState<Partial<Caso>>({});
   const [saving, setSaving] = useState(false);
@@ -2913,12 +3439,51 @@ export default function SustracionPage() {
   const [fPais, setFPais] = useState('');
   const [fRolAc, setFRolAc] = useState('');
   const [fTipoSol, setFTipoSol] = useState('');
+  const [fFechaDesde, setFFechaDesde] = useState('');
+  const [fFechaHasta, setFFechaHasta] = useState('');
+  const [usuariosSistema, setUsuariosSistema] = useState<string[]>([]);
   const [subBandeja, setSubBandeja] = useState('todos');
   const [kpiFilter, setKpiFilter] = useState<KpiFilter>('all');
   const [tab, setTab] = useState<ExpedienteTab>('resumen');
   const [drawer, setDrawer] = useState<'ficha' | 'sgd' | null>(null);
   const [fichaTab, setFichaTab] = useState<'datos' | 'personas' | 'bitacora'>('datos');
   const [showStats, setShowStats] = useState(false);
+
+  // Cargar usuarios registradores asignados al módulo de Sustracción Internacional
+  useEffect(() => {
+    fetch('/api/usuarios')
+      .then(res => (res.ok ? res.json() : []))
+      .then((data: any[]) => {
+        if (Array.isArray(data)) {
+          // Filtrar estrictamente usuarios que tienen el módulo 'sustracion' / 'sustraccion' asignado
+          const registradores = data
+            .filter(u => {
+              if (u.rol === 'admin') return false;
+              const tieneModulo = Array.isArray(u.modulos) && u.modulos.some(
+                (m: any) => (m.modulo === 'sustracion' || m.modulo === 'sustraccion') && m.rolModulo === 'registrador'
+              );
+              return tieneModulo;
+            })
+            .map(u => u.nombre || u.username)
+            .filter(Boolean);
+          if (registradores.length > 0) {
+            setUsuariosSistema(registradores);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const listaProfesionales = useMemo(() => {
+    if (usuariosSistema.length > 0) {
+      return [...usuariosSistema].sort((a, b) => a.localeCompare(b));
+    }
+    // Registradoras oficiales según la base de datos Oracle
+    return [
+      'Emma Victoria Olaya Anicama',
+      'Janny Ruth Felix-Diaz Silva'
+    ].sort((a, b) => a.localeCompare(b));
+  }, [usuariosSistema]);
 
   // Ordenamiento interactivo de columnas (B.1)
   const [sortField, setSortField] = useState<'codigo' | 'nna' | 'pais' | 'acPeru' | 'fechaIngreso' | 'estado'>('fechaIngreso');
@@ -3000,11 +3565,13 @@ export default function SustracionPage() {
   // Reset de página al cambiar filtros
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, fProfesional, fPais, fRolAc, fTipoSol, subBandeja, kpiFilter, pageSize]);
+  }, [search, fProfesional, fPais, fRolAc, fTipoSol, fFechaDesde, fFechaHasta, subBandeja, kpiFilter, pageSize]);
 
   const cargar = useCallback(async () => {
     try {
-      setLoading(true);
+      if (!cachedCasosSustracion) {
+        setLoading(true);
+      }
       const res = await fetch('/api/sustracion');
       if (!res.ok) throw new Error('Error al cargar casos de sustracción');
       const data = await res.json();
@@ -3019,6 +3586,7 @@ export default function SustracionPage() {
         } catch {}
         return c;
       });
+      cachedCasosSustracion = merged;
       setCasos(merged);
     } catch (e: any) {
       toast.error(e.message || 'Error al conectar con la base de datos');
@@ -3063,8 +3631,9 @@ export default function SustracionPage() {
       });
       if (!res.ok) throw new Error('Error al actualizar el expediente');
       const updated = await res.json();
-      setCasos(prev => prev.map(c => (c.id === updated.id ? updated : c)));
-      setSelected(updated);
+      const updatedPreserved = { ...selected, ...updated, procesoOperativo: selected.procesoOperativo };
+      setCasos(prev => prev.map(c => (c.id === updated.id ? { ...c, ...updated, procesoOperativo: c.procesoOperativo } : c)));
+      setSelected(updatedPreserved);
       setPending({});
       toast.success('Expediente actualizado correctamente');
     } catch (e: any) {
@@ -3097,6 +3666,61 @@ export default function SustracionPage() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showStats, modalNnaIndex, drawer, view, selected, hasPending, saving, formNew, nnaNew]);
+
+  const onOpenNnaModal = (index: number) => {
+    if (!selected) return;
+    const nnaList = selected.nna || [];
+    if (index >= 0 && nnaList[index]) {
+      setModalNnaForm({ ...nnaList[index] });
+      setModalNnaIndex(index);
+    } else {
+      setModalNnaForm(emptyNnaForm());
+      setModalNnaIndex(-1);
+    }
+  };
+
+  const onSaveNnaModal = async () => {
+    if (!selected) return;
+    const currentList = selected.nna ? [...selected.nna] : [];
+    if (modalNnaIndex >= 0) {
+      currentList[modalNnaIndex] = modalNnaForm;
+    } else {
+      currentList.push(modalNnaForm);
+    }
+
+    const nnaPrincipal = currentList[0] || modalNnaForm;
+    const nnaNombreFull = currentList.map(nombreNna).filter(Boolean).join(' / ');
+
+    const payload = {
+      nnaNombre: nnaNombreFull,
+      nnaSexo: nnaPrincipal.sexo || null,
+      nnaEdad: nnaPrincipal.edad ? String(nnaPrincipal.edad) : null,
+      nnaTipoEdad: nnaPrincipal.tipoEdad || 'Años',
+      nnaFechaNac: nnaPrincipal.fechaNacimiento || null,
+      nna: currentList,
+    };
+
+    try {
+      const res = await fetch(`/api/sustracion/${selected.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('Error al guardar NNA');
+      const updated = await res.json();
+      const merged = { ...selected, ...updated, nna: currentList, procesoOperativo: selected.procesoOperativo };
+      setSelected(merged);
+      setCasos(prev => {
+        const next = prev.map(c => (c.id === selected.id ? merged : c));
+        cachedCasosSustracion = next;
+        return next;
+      });
+      setModalNnaIndex(-2);
+      toast.success('NNA actualizado correctamente');
+    } catch (e: any) {
+      toast.error(e.message || 'Error al guardar NNA');
+    }
+  };
 
   const onGuardarProceso = async (proc: ProcesoOperativo, nota?: string, targetTab?: ExpedienteTab) => {
     if (!selected) return;
@@ -3159,18 +3783,33 @@ export default function SustracionPage() {
       }
 
       const etapaCalculada = payload.faseOperativa === 'Judicial' ? 'Judicial' : (payload.faseOperativa === 'Cierre' ? 'Cierre' : 'Administrativo');
+      let nuevoEstado = selected.estado;
+      if (selected.estado === 'Pendiente' && (proc.evaluacionResultado === 'Conforme' || proc.evaluacionResultado === 'Observada' || proc.faseOperativa !== 'Evaluación')) {
+        nuevoEstado = 'Tramite';
+        fetch(`/api/sustracion/${selected.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ estado: 'Tramite' }),
+        }).catch(() => null);
+      }
 
       setSelected(prev => (prev ? {
         ...prev,
+        estado: nuevoEstado,
         etapa: etapaCalculada,
         procesoOperativo: procToStore,
       } : null));
 
-      setCasos(prev => prev.map(c => (c.id === selected.id ? {
-        ...c,
-        etapa: etapaCalculada,
-        procesoOperativo: procToStore,
-      } : c)));
+      setCasos(prev => {
+        const next = prev.map(c => (c.id === selected.id ? {
+          ...c,
+          estado: nuevoEstado,
+          etapa: etapaCalculada,
+          procesoOperativo: procToStore,
+        } : c));
+        cachedCasosSustracion = next;
+        return next;
+      });
 
       toast.success('Proceso operativo actualizado con éxito');
       if (targetTab) setTab(targetTab);
@@ -3182,18 +3821,45 @@ export default function SustracionPage() {
   const onGuardarHistorialJudicial = async (etapa: string, fecha: string, desc: string) => {
     if (!selected) return;
     try {
-      const res = await fetch(`/api/sustracion/${selected.id}/judicial`, {
+      const res = await fetch(`/api/sustracion/${selected.id}/historial-judicial`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ etapa, fecha, descripcion: desc, creadoPor: me?.nombre || (me as any)?.username || 'Usuario' }),
       });
       if (!res.ok) throw new Error('Error al registrar actuación judicial');
       const nuevaH = await res.json();
-      setSelected(prev => (prev ? { ...prev, historialJudicial: [...(prev.historialJudicial || []), nuevaH], estadoJudicial: etapa } : null));
-      setCasos(prev => prev.map(c => (c.id === selected.id ? { ...c, estadoJudicial: etapa } : c)));
+      setSelected(prev => (prev ? { ...prev, estado: 'Tramite', historialJudicial: [...(prev.historialJudicial || []), nuevaH], estadoJudicial: etapa } : null));
+      setCasos(prev => {
+        const next = prev.map(c => (c.id === selected.id ? { ...c, estado: 'Tramite', estadoJudicial: etapa } : c));
+        cachedCasosSustracion = next;
+        return next;
+      });
       toast.success('Actuación judicial registrada');
     } catch (e: any) {
       toast.error(e.message || 'Error al registrar actuación judicial');
+    }
+  };
+
+  const onEliminarHistorialJudicial = async (entradaId: string) => {
+    if (!selected) return;
+    try {
+      const res = await fetch(`/api/sustracion/${selected.id}/historial-judicial/${entradaId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Error al eliminar actuación judicial');
+      setSelected(prev => (prev ? {
+        ...prev,
+        historialJudicial: (prev.historialJudicial || []).filter(h => h.id !== entradaId)
+      } : null));
+      setCasos(prev => {
+        const next = prev.map(c => (c.id === selected.id ? {
+          ...c,
+          historialJudicial: (c.historialJudicial || []).filter(h => h.id !== entradaId)
+        } : c));
+        cachedCasosSustracion = next;
+        return next;
+      });
+      toast.success('Actuación judicial eliminada');
+    } catch (e: any) {
+      toast.error(e.message || 'Error al eliminar actuación judicial');
     }
   };
 
@@ -3207,7 +3873,11 @@ export default function SustracionPage() {
     if (!res.ok) throw new Error('Error al registrar nota');
     const nuevaB = await res.json();
     setSelected(prev => (prev ? { ...prev, bitacora: [...(prev.bitacora || []), nuevaB] } : null));
-    setCasos(prev => prev.map(c => (c.id === selected.id ? { ...c, bitacora: [...(c.bitacora || []), nuevaB] } : c)));
+    setCasos(prev => {
+      const next = prev.map(c => (c.id === selected.id ? { ...c, bitacora: [...(c.bitacora || []), nuevaB] } : c));
+      cachedCasosSustracion = next;
+      return next;
+    });
   };
 
   const onArchivarCaso = async () => {
@@ -3220,6 +3890,7 @@ export default function SustracionPage() {
         estado: 'Archivado',
         fechaSalida: fechaSal,
         motivoCierre: motivo,
+        etapa: 'Cierre',
       };
       const res = await fetch(`/api/sustracion/${selected.id}`, {
         method: 'PUT',
@@ -3228,8 +3899,13 @@ export default function SustracionPage() {
       });
       if (!res.ok) throw new Error('Error al archivar expediente');
       const updated = await res.json();
-      setCasos(prev => prev.map(c => (c.id === updated.id ? updated : c)));
-      setSelected(updated);
+      const fullUpdated = { ...selected, ...updated, estado: 'Archivado', etapa: 'Cierre', fechaSalida: fechaSal, motivoCierre: motivo, procesoOperativo: selected.procesoOperativo };
+      setCasos(prev => {
+        const next = prev.map(c => (c.id === fullUpdated.id ? fullUpdated : c));
+        cachedCasosSustracion = next;
+        return next;
+      });
+      setSelected(fullUpdated);
       setPending({});
       toast.success('Expediente archivado formalmente (100% completado)');
     } catch (e: any) {
@@ -3243,7 +3919,11 @@ export default function SustracionPage() {
     try {
       const res = await fetch(`/api/sustracion/${selected.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Error al eliminar');
-      setCasos(prev => prev.filter(c => c.id !== selected.id));
+      setCasos(prev => {
+        const next = prev.filter(c => c.id !== selected.id);
+        cachedCasosSustracion = next;
+        return next;
+      });
       setSelected(null);
       toast.success('Expediente eliminado');
     } catch (e: any) {
@@ -3260,7 +3940,7 @@ export default function SustracionPage() {
 
     const nnaValidos = nnaNew.filter(n => n.nombres?.trim() || n.primerApellido?.trim());
     if (nnaValidos.length === 0) {
-      setErrorNew('Debe agregar al menos un menor involucrado (NNA) usando el botón "+ Agregar Menor".');
+      setErrorNew('Debe agregar al menos un NNA involucrado usando el botón "+ Agregar NNA".');
       return;
     }
 
@@ -3280,7 +3960,7 @@ export default function SustracionPage() {
         acPeru: formNew.acPeru || 'Requerida',
         etapa: formNew.etapa || 'Administrativo',
         profesional: me?.nombre || (me as any)?.username || 'Usuario en sesión',
-        estado: 'Tramite',
+        estado: 'Pendiente',
         solicitanteNombre: formNew.solicitanteNombre?.trim() || null,
         solicitanteSexo: formNew.solicitanteSexo || null,
         solicitanteTelefono: formNew.solicitanteTelefono?.trim() || null,
@@ -3312,7 +3992,11 @@ export default function SustracionPage() {
         throw new Error(errData.detail || 'Error al registrar el expediente');
       }
       const nuevo = await res.json();
-      setCasos(prev => [nuevo, ...prev]);
+      setCasos(prev => {
+        const next = [nuevo, ...prev];
+        cachedCasosSustracion = next;
+        return next;
+      });
       setSelected(nuevo);
       setView('bandeja');
       setTab('evaluacion');
@@ -3343,7 +4027,12 @@ export default function SustracionPage() {
       'Cierre de caso',
     ];
     const ids: ExpedienteTab[] = ['evaluacion', 'subsanacion', caso.acPeru === 'Requirente' ? 'internacional' : 'retorno', 'judicial', 'cierre'];
-    const closed = caso.estado === 'Archivado' || Boolean(caso.fechaSalida);
+    const closed = caso.estado === 'Archivado' || Boolean(caso.fechaSalida) || Boolean(caso.motivoCierre) || (proceso && proceso.faseOperativa === 'Cierre');
+    const tieneJudicialActivo = Boolean(
+      caso.etapa === 'Judicial' ||
+      (proceso && (proceso.faseOperativa === 'Judicial' || proceso.faseOperativa === 'Judicial exterior')) ||
+      (caso.estadoJudicial && caso.estadoJudicial !== 'Sin demanda' && caso.estadoJudicial !== 'None' && caso.estadoJudicial.trim() !== '')
+    );
 
     let currentStep = 1;
     let nextAction = 'Completar los 8 requisitos de admisibilidad del Convenio de La Haya.';
@@ -3351,21 +4040,31 @@ export default function SustracionPage() {
     if (closed) {
       currentStep = 5;
       nextAction = 'Expediente archivado formalmente.';
-    } else if (caso.etapa === 'Judicial' || (proceso && proceso.faseOperativa === 'Judicial') || caso.estadoJudicial) {
+    } else if (tieneJudicialActivo) {
       currentStep = 4;
       nextAction = caso.acPeru === 'Requirente' ? 'Hacer seguimiento al proceso judicial ante tribunales extranjeros.' : 'Seguimiento a la demanda ante el Juzgado de Familia.';
-    } else if (proceso && proceso.faseOperativa === 'Subsanación') {
+    } else if (proceso && (proceso.faseOperativa === 'Subsanación' || proceso.evaluacionResultado === 'Observada')) {
       currentStep = 2;
       nextAction = proceso.proximaAccion || 'Esperar recepción de documentos observados dentro del plazo legal.';
-    } else if (proceso && (proceso.faseOperativa === 'Retorno voluntario' || proceso.faseOperativa === 'Gestión internacional')) {
+    } else if (proceso && (proceso.faseOperativa === 'Retorno voluntario' || proceso.faseOperativa === 'Gestión internacional' || proceso.evaluacionResultado === 'Conforme' || proceso.evaluacionResultado === 'Completa')) {
       currentStep = 3;
-      nextAction = caso.acPeru === 'Requirente' ? 'Continuar la coordinación con la Autoridad Central extranjera.' : 'Registrar la entrevista y el resultado de la propuesta de retorno.';
-    } else if (proceso && proceso.evaluacionResultado === 'Conforme') {
-      currentStep = 3;
-      nextAction = caso.acPeru === 'Requirente' ? 'Remitir solicitud formal a la AC Extranjera.' : 'Convocar a sesión de entrevista amigable de retorno.';
+      nextAction = caso.acPeru === 'Requirente' ? (proceso.proximaAccion || 'Continuar la coordinación con la Autoridad Central extranjera.') : (proceso.proximaAccion || 'Registrar la entrevista y el resultado de la propuesta de retorno.');
+    } else if (proceso && proceso.evaluacionResultado === 'No corresponde') {
+      currentStep = 5;
+      nextAction = 'Emitir resolución y archivar por no configurar sustracción o no cumplir ámbito de aplicación.';
     }
 
-    const progress = closed ? 100 : Math.round(((currentStep - 1) / 4) * 100);
+    const progress = closed || currentStep === 5 ? 100 : Math.round(((currentStep - 1) / 4) * 100);
+
+    // Derivación dinámica del estado normativo
+    let computedStatus: 'Archivado' | 'Pendiente' | 'Tramite' = 'Pendiente';
+    if (closed || currentStep === 5) {
+      computedStatus = 'Archivado';
+    } else if (currentStep === 1) {
+      computedStatus = 'Pendiente';
+    } else {
+      computedStatus = 'Tramite';
+    }
 
     return {
       current: { number: currentStep, id: ids[currentStep - 1] || 'resumen', label: labels[currentStep - 1] || 'Evaluación' },
@@ -3378,7 +4077,8 @@ export default function SustracionPage() {
       })),
       nextAction,
       progress,
-      closed,
+      closed: closed || currentStep === 5,
+      computedStatus,
       alerts,
     };
   }, []);
@@ -3398,11 +4098,11 @@ export default function SustracionPage() {
     if (!selected) return null;
     const nnaList = (selected.nna && selected.nna.length > 0)
       ? selected.nna
-      : [{ nombres: selected.nnaNombre || 'Menor', primerApellido: '', fechaNacimiento: selected.nnaFechaNac || (selected as any).nnafechanac, edad: selected.nnaEdad || (selected as any).nnaedad, tipoEdad: selected.nnaTipoEdad || (selected as any).nnatipoedad }];
+      : [{ nombres: selected.nnaNombre || 'NNA', primerApellido: '', fechaNacimiento: selected.nnaFechaNac || (selected as any).nnafechanac, edad: selected.nnaEdad || (selected as any).nnaedad, tipoEdad: selected.nnaTipoEdad || (selected as any).nnatipoedad }];
     for (const n of nnaList) {
       const cad = calcularCaducidadHaya(n.fechaNacimiento, n.edad, n.tipoEdad);
       if (cad?.esInminente) {
-        return { nnaNom: nombreNna(n) || 'El menor', ...cad };
+        return { nnaNom: nombreNna(n) || 'El NNA', ...cad };
       }
     }
     return null;
@@ -3438,25 +4138,40 @@ export default function SustracionPage() {
       const txt = search.toLowerCase();
       const nnaStr = nombreCaso(c).toLowerCase();
       const matchTxt = !txt || c.codigo.toLowerCase().includes(txt) || nnaStr.includes(txt) || (c.pais || '').toLowerCase().includes(txt);
-      const matchProf = !fProfesional || c.profesional === fProfesional;
+      
+      const matchProf = !fProfesional || (() => {
+        const prof = (c.profesional || '').toLowerCase();
+        const query = fProfesional.toLowerCase();
+        if (prof === query) return true;
+        const firstName = query.split(' ')[0];
+        if (firstName && prof.includes(firstName)) return true;
+        if (prof && query.includes(prof)) return true;
+        return false;
+      })();
+
       const matchPais = !fPais || c.pais === fPais;
       const matchRol = !fRolAc || c.acPeru === fRolAc;
       const matchTipo = !fTipoSol || c.tipoSolicitud === fTipoSol;
 
-      if (!matchTxt || !matchProf || !matchPais || !matchRol || !matchTipo) return false;
+      const fIngreso = (c.fechaIngreso || '').substring(0, 10);
+      const matchDesde = !fFechaDesde || (fIngreso && fIngreso >= fFechaDesde);
+      const matchHasta = !fFechaHasta || (fIngreso && fIngreso <= fFechaHasta);
+
+      if (!matchTxt || !matchProf || !matchPais || !matchRol || !matchTipo || !matchDesde || !matchHasta) return false;
 
       // Filtro interactivo de KPIs (1-clic)
-      if (kpiFilter === 'tramite' && c.estado !== 'Tramite') return false;
-      if (kpiFilter === 'pendiente' && c.estado !== 'Pendiente') return false;
-      if (kpiFilter === 'archivado' && c.estado !== 'Archivado') return false;
+      const f = flows.get(c.id) || deriveCaseFlow(c);
+      const est = f.computedStatus || c.estado || 'Pendiente';
+      if (kpiFilter === 'tramite' && est !== 'Tramite') return false;
+      if (kpiFilter === 'pendiente' && est !== 'Pendiente') return false;
+      if (kpiFilter === 'archivado' && est !== 'Archivado') return false;
 
-      const f = flows.get(c.id);
-      if (subBandeja === 'activos') return c.estado !== 'Archivado';
-      if (subBandeja === 'cerrados') return c.estado === 'Archivado';
-      if (subBandeja === 'evaluacion') return f && f.current.id === 'evaluacion' && c.estado !== 'Archivado';
-      if (subBandeja === 'subsanacion') return f && f.current.id === 'subsanacion' && c.estado !== 'Archivado';
-      if (subBandeja === 'retorno') return f && (f.current.id === 'retorno' || f.current.id === 'internacional') && c.estado !== 'Archivado';
-      if (subBandeja === 'judicial') return f && f.current.id === 'judicial' && c.estado !== 'Archivado';
+      if (subBandeja === 'activos') return est !== 'Archivado';
+      if (subBandeja === 'cerrados') return est === 'Archivado';
+      if (subBandeja === 'evaluacion') return f && f.current.id === 'evaluacion' && est !== 'Archivado';
+      if (subBandeja === 'subsanacion') return f && f.current.id === 'subsanacion' && est !== 'Archivado';
+      if (subBandeja === 'retorno') return f && (f.current.id === 'retorno' || f.current.id === 'internacional') && est !== 'Archivado';
+      if (subBandeja === 'judicial') return f && f.current.id === 'judicial' && est !== 'Archivado';
       if (subBandeja === 'alerta') {
         const proc = c.procesoOperativo;
         const lim = proc?.fechaLimite || proc?.fechaLimiteSubsanacion || proc?.fechaLimitePasajes;
@@ -3468,7 +4183,7 @@ export default function SustracionPage() {
       }
       return true;
     });
-  }, [casos, search, fProfesional, fPais, fRolAc, fTipoSol, subBandeja, kpiFilter, flows]);
+  }, [casos, search, fProfesional, fPais, fRolAc, fTipoSol, fFechaDesde, fFechaHasta, subBandeja, kpiFilter, flows, deriveCaseFlow]);
 
   const handleSort = (field: 'codigo' | 'nna' | 'pais' | 'acPeru' | 'fechaIngreso' | 'estado') => {
     if (sortField === field) {
@@ -3500,15 +4215,17 @@ export default function SustracionPage() {
         valA = a.fechaIngreso || '';
         valB = b.fechaIngreso || '';
       } else if (sortField === 'estado') {
-        valA = (a.estado || '').toLowerCase();
-        valB = (b.estado || '').toLowerCase();
+        const estA = (flows.get(a.id)?.computedStatus || a.estado || '').toLowerCase();
+        const estB = (flows.get(b.id)?.computedStatus || b.estado || '').toLowerCase();
+        valA = estA;
+        valB = estB;
       }
       if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
       if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
       return 0;
     });
     return list;
-  }, [visibles, sortField, sortOrder]);
+  }, [visibles, sortField, sortOrder, flows]);
 
   const totalPages = useMemo(() => {
     if (pageSize === 0) return 1;
@@ -3526,7 +4243,7 @@ export default function SustracionPage() {
   }, [sortedVisibles, safePage, pageSize]);
 
   const hasActiveFilters = Boolean(
-    search || fProfesional || fPais || fRolAc || fTipoSol || subBandeja !== 'todos' || kpiFilter !== 'all'
+    search || fProfesional || fPais || fRolAc || fTipoSol || fFechaDesde || fFechaHasta || subBandeja !== 'todos' || kpiFilter !== 'all'
   );
 
   const limpiarFiltros = () => {
@@ -3535,8 +4252,11 @@ export default function SustracionPage() {
     setFPais('');
     setFRolAc('');
     setFTipoSol('');
+    setFFechaDesde('');
+    setFFechaHasta('');
     setSubBandeja('todos');
     setKpiFilter('all');
+    setCurrentPage(1);
   };
 
   const stageCounts = useMemo(() => {
@@ -3544,11 +4264,26 @@ export default function SustracionPage() {
       const txt = search.toLowerCase();
       const nnaStr = nombreCaso(c).toLowerCase();
       const matchTxt = !txt || c.codigo.toLowerCase().includes(txt) || nnaStr.includes(txt) || (c.pais || '').toLowerCase().includes(txt);
-      const matchProf = !fProfesional || c.profesional === fProfesional;
+      
+      const matchProf = !fProfesional || (() => {
+        const prof = (c.profesional || '').toLowerCase();
+        const query = fProfesional.toLowerCase();
+        if (prof === query) return true;
+        const firstName = query.split(' ')[0];
+        if (firstName && prof.includes(firstName)) return true;
+        if (prof && query.includes(prof)) return true;
+        return false;
+      })();
+
       const matchPais = !fPais || c.pais === fPais;
       const matchRol = !fRolAc || c.acPeru === fRolAc;
       const matchTipo = !fTipoSol || c.tipoSolicitud === fTipoSol;
-      return matchTxt && matchProf && matchPais && matchRol && matchTipo;
+
+      const fIngreso = (c.fechaIngreso || '').substring(0, 10);
+      const matchDesde = !fFechaDesde || (fIngreso && fIngreso >= fFechaDesde);
+      const matchHasta = !fFechaHasta || (fIngreso && fIngreso <= fFechaHasta);
+
+      return matchTxt && matchProf && matchPais && matchRol && matchTipo && matchDesde && matchHasta;
     });
 
     let todos = baseList.length;
@@ -3560,8 +4295,8 @@ export default function SustracionPage() {
     let alerta = 0;
 
     baseList.forEach(c => {
-      const f = flows.get(c.id);
-      const isArchived = c.estado === 'Archivado';
+      const f = flows.get(c.id) || deriveCaseFlow(c);
+      const isArchived = (f.computedStatus || c.estado) === 'Archivado';
       if (isArchived) {
         cerrados++;
       } else {
@@ -3583,20 +4318,29 @@ export default function SustracionPage() {
     });
 
     return { todos, evaluacion, subsanacion, retorno, judicial, cerrados, alerta };
-  }, [casos, search, fProfesional, fPais, fRolAc, fTipoSol, flows]);
+  }, [casos, search, fProfesional, fPais, fRolAc, fTipoSol, fFechaDesde, fFechaHasta, flows, deriveCaseFlow]);
 
   const kpis: { id: KpiFilter; label: string; value: number; color: string; bgActive: string }[] = useMemo(() => {
     const total = casos.length;
-    const enTramite = casos.filter(c => c.estado === 'Tramite').length;
-    const pendientes = casos.filter(c => c.estado === 'Pendiente').length;
-    const archivados = casos.filter(c => c.estado === 'Archivado').length;
+    let enTramite = 0;
+    let pendientes = 0;
+    let archivados = 0;
+
+    casos.forEach(c => {
+      const flow = flows.get(c.id) || deriveCaseFlow(c);
+      const est = flow.computedStatus || c.estado || 'Pendiente';
+      if (est === 'Archivado') archivados++;
+      else if (est === 'Pendiente') pendientes++;
+      else enTramite++;
+    });
+
     return [
       { id: 'all', label: 'Total expedientes', value: total, color: N2, bgActive: '#F1F5F9' },
       { id: 'tramite', label: 'En trámite', value: enTramite, color: BL, bgActive: '#EFF6FF' },
       { id: 'pendiente', label: 'Pendientes', value: pendientes, color: '#D97706', bgActive: '#FFFBEB' },
       { id: 'archivado', label: 'Archivados', value: archivados, color: '#16A34A', bgActive: '#F0FDF4' },
     ];
-  }, [casos]);
+  }, [casos, flows, deriveCaseFlow]);
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: BG, overflow: 'hidden', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -3612,6 +4356,18 @@ export default function SustracionPage() {
           background-color: #EFF6FF !important;
           color: #2563EB !important;
           border-color: #BFDBFE !important;
+        }
+        @keyframes shimmerPulse {
+          0%, 100% {
+            opacity: 0.45;
+          }
+          50% {
+            opacity: 0.95;
+          }
+        }
+        .skeleton-shimmer {
+          background-color: #E2E8F0;
+          animation: shimmerPulse 1.4s ease-in-out infinite;
         }
       `}</style>
 
@@ -3714,8 +4470,8 @@ export default function SustracionPage() {
 
                 <div style={{ padding: '14px 18px', background: '#F8FAFC', borderBottom: `1px solid ${BR}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
-                    <b style={{ fontSize: 11, color: N2 }}>2. NIÑA, NIÑO O ADOLESCENTE INVOLUCRADOS</b>
-                    <span style={{ display: 'block', fontSize: 10, color: TX3 }}>Debes registrar al menos un menor para dar apertura al expediente</span>
+                    <b style={{ fontSize: 11, color: N2 }}>2. NIÑAS, NIÑOS O ADOLESCENTES INVOLUCRADOS (NNA)</b>
+                    <span style={{ display: 'block', fontSize: 10, color: TX3 }}>Debes registrar al menos un NNA para dar apertura al expediente</span>
                   </div>
                   <button
                     type="button"
@@ -3729,7 +4485,7 @@ export default function SustracionPage() {
                 <div style={{ padding: 14 }}>
                   {nnaNew.length === 0 ? (
                     <div style={{ padding: '24px 16px', textAlign: 'center', background: '#FAFBFD', border: `1.5px dashed ${BR}`, borderRadius: 8, color: TX3, fontSize: 11.5 }}>
-                      No se han agregado menores al expediente. Haz clic en <b>«Agregar»</b> arriba.
+                      No se han agregado NNA al expediente. Haz clic en <b>«Agregar»</b> arriba.
                     </div>
                   ) : (
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5, background: '#fff', border: `1px solid ${BR}`, borderRadius: 6, overflow: 'hidden' }}>
@@ -3880,7 +4636,7 @@ export default function SustracionPage() {
                         textOverflow: 'ellipsis',
                       }}
                     >
-                      Sustracción Internacional de Menores
+                      Sustracción Internacional de NNA
                     </h1>
                     <p
                       style={{
@@ -4002,7 +4758,6 @@ export default function SustracionPage() {
                     e.currentTarget.style.background = BL;
                   }}
                 >
-                  <Plus size={15} strokeWidth={2.5} />
                   <span>+ Nuevo Expediente</span>
                 </button>
 
@@ -4192,25 +4947,49 @@ export default function SustracionPage() {
                     {AC_PERU.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
 
-                  {/* Dropdown Filtro Tipo Solicitud */}
-                  <select
-                    value={fTipoSol}
-                    onChange={e => setFTipoSol(e.target.value)}
-                    style={{ padding: '7px 10px', border: `1px solid ${BR}`, borderRadius: 7, fontSize: 11, color: TX2, background: fTipoSol ? '#EFF6FF' : '#fff', fontWeight: fTipoSol ? 700 : 400 }}
-                  >
-                    <option value="">Tipos de Solicitud</option>
-                    {TIPO_SOL.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-
-                  {/* Dropdown Filtro Especialista */}
+                  {/* Dropdown Filtro Especialista / Usuarios del Sistema */}
                   <select
                     value={fProfesional}
                     onChange={e => setFProfesional(e.target.value)}
                     style={{ padding: '7px 10px', border: `1px solid ${BR}`, borderRadius: 7, fontSize: 11, color: TX2, background: fProfesional ? '#EFF6FF' : '#fff', fontWeight: fProfesional ? 700 : 400 }}
                   >
-                    <option value="">Todos los profesionales</option>
-                    {PROFESIONALES.map(p => <option key={p} value={p}>{p}</option>)}
+                    <option value="">Todos los registradores</option>
+                    {listaProfesionales.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
+
+                  {/* Filtro Rango de Fechas de Ingreso */}
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    background: (fFechaDesde || fFechaHasta) ? '#EFF6FF' : '#fff',
+                    border: `1px solid ${(fFechaDesde || fFechaHasta) ? BL : BR}`,
+                    borderRadius: 7, padding: '4px 8px'
+                  }}>
+                    <Calendar size={12} color={(fFechaDesde || fFechaHasta) ? BL : TX3} />
+                    <span style={{ fontSize: 10, color: TX3, fontWeight: 700 }}>Desde:</span>
+                    <input
+                      type="date"
+                      value={fFechaDesde}
+                      onChange={e => setFFechaDesde(e.target.value)}
+                      style={{ border: 'none', background: 'transparent', fontSize: 11, color: TX, outline: 'none', width: 100, cursor: 'pointer' }}
+                    />
+                    <span style={{ fontSize: 10, color: TX3, fontWeight: 700, marginLeft: 2 }}>Hasta:</span>
+                    <input
+                      type="date"
+                      value={fFechaHasta}
+                      onChange={e => setFFechaHasta(e.target.value)}
+                      style={{ border: 'none', background: 'transparent', fontSize: 11, color: TX, outline: 'none', width: 100, cursor: 'pointer' }}
+                    />
+                    {(fFechaDesde || fFechaHasta) && (
+                      <button
+                        type="button"
+                        onClick={() => { setFFechaDesde(''); setFFechaHasta(''); }}
+                        title="Limpiar fechas"
+                        style={{ border: 'none', background: 'transparent', color: TX3, cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
 
                   {/* Botón Limpiar Filtros */}
                   {hasActiveFilters && (
@@ -4317,11 +5096,11 @@ export default function SustracionPage() {
                         {/* NNA (Ordenable) */}
                         <th
                           onClick={() => handleSort('nna')}
-                          title="Ordenar por Nombre de Menor"
+                          title="Ordenar por Nombre de NNA"
                           style={{ padding: '10px 12px', fontSize: 9.5, fontWeight: 800, color: sortField === 'nna' ? BL : TX3, textTransform: 'uppercase', letterSpacing: '.04em', cursor: 'pointer', userSelect: 'none', minWidth: 220 }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <span>Menor (NNA)</span>
+                            <span>NNA</span>
                             {sortField === 'nna' ? (sortOrder === 'asc' ? <ArrowUp size={12} color={BL} /> : <ArrowDown size={12} color={BL} />) : <ArrowUpDown size={11} color={TX3} />}
                           </div>
                         </th>
@@ -4372,14 +5151,60 @@ export default function SustracionPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {loading && <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: TX3, fontSize: 12 }}>Cargando expedientes...</td></tr>}
-                      {!loading && pagedCasos.length === 0 && <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: TX3, fontSize: 12 }}>Sin resultados para los filtros seleccionados.</td></tr>}
-                      {!loading && pagedCasos.map(caso => {
+                      {loading && pagedCasos.length === 0 && (
+                        Array.from({ length: 5 }).map((_, i) => (
+                          <tr key={`skeleton-${i}`} style={{ borderBottom: `1px solid ${BR}` }}>
+                            {/* Código con botón de copia */}
+                            <td style={{ padding: '13px 12px' }}>
+                              <div className="skeleton-shimmer" style={{ height: 16, width: 85, borderRadius: 4 }} />
+                            </td>
+                            {/* NNA */}
+                            <td style={{ padding: '13px 12px', minWidth: 220 }}>
+                              <div className="skeleton-shimmer" style={{ height: 15, width: i % 2 === 0 ? 170 : 135, borderRadius: 4, marginBottom: 6 }} />
+                              <div className="skeleton-shimmer" style={{ height: 11, width: 60, borderRadius: 4 }} />
+                            </td>
+                            {/* Rol / País */}
+                            <td style={{ padding: '13px 12px' }}>
+                              <div className="skeleton-shimmer" style={{ height: 14, width: 90, borderRadius: 4, marginBottom: 5 }} />
+                              <div className="skeleton-shimmer" style={{ height: 11, width: 55, borderRadius: 4 }} />
+                            </td>
+                            {/* Etapa actual */}
+                            <td style={{ padding: '13px 12px' }}>
+                              <div className="skeleton-shimmer" style={{ height: 22, width: 115, borderRadius: 99 }} />
+                            </td>
+                            {/* Ingreso DGNNA */}
+                            <td style={{ padding: '13px 12px' }}>
+                              <div className="skeleton-shimmer" style={{ height: 14, width: 75, borderRadius: 4 }} />
+                            </td>
+                            {/* Próxima Acción */}
+                            <td style={{ padding: '13px 12px' }}>
+                              <div className="skeleton-shimmer" style={{ height: 14, width: i % 2 === 0 ? '85%' : '65%', borderRadius: 4 }} />
+                            </td>
+                            {/* Avance */}
+                            <td style={{ padding: '13px 12px', width: 100 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                                <div className="skeleton-shimmer" style={{ flex: 1, height: 6, borderRadius: 99 }} />
+                                <div className="skeleton-shimmer" style={{ height: 11, width: 22, borderRadius: 3 }} />
+                              </div>
+                            </td>
+                            {/* Acciones */}
+                            <td style={{ padding: '13px 12px', textAlign: 'right' }}>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <div className="skeleton-shimmer" style={{ height: 24, width: 24, borderRadius: 6 }} />
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                      {!loading && pagedCasos.length === 0 && (
+                        <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: TX3, fontSize: 12 }}>Sin resultados para los filtros seleccionados.</td></tr>
+                      )}
+                      {pagedCasos.map(caso => {
                         const flow = flows.get(caso.id) || deriveCaseFlow(caso);
                         const critical = flow.alerts.some((a: any) => a.tone === 'error');
                         const nnaList = (caso.nna && caso.nna.length > 0)
                           ? caso.nna
-                          : [{ nombres: caso.nnaNombre || 'Menor', primerApellido: '', fechaNacimiento: caso.nnaFechaNac || (caso as any).nnafechanac, edad: caso.nnaEdad || (caso as any).nnaedad, tipoEdad: caso.nnaTipoEdad || (caso as any).nnatipoedad }];
+                          : [{ nombres: caso.nnaNombre || 'NNA', primerApellido: '', fechaNacimiento: caso.nnaFechaNac || (caso as any).nnafechanac, edad: caso.nnaEdad || (caso as any).nnaedad, tipoEdad: caso.nnaTipoEdad || (caso as any).nnatipoedad }];
                         const nnaCount = nnaList.length;
                         const caducidad = nnaList.find(n => calcularCaducidadHaya(n.fechaNacimiento, n.edad, n.tipoEdad)?.esInminente);
                         const cadInfo = caducidad ? calcularCaducidadHaya(caducidad.fechaNacimiento, caducidad.edad, caducidad.tipoEdad) : null;
@@ -4624,11 +5449,16 @@ export default function SustracionPage() {
                   </div>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
-                <button onClick={() => { setFichaTab('datos'); setDrawer('ficha'); }} title="Abrir ficha integral del expediente" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 7, border: `1px solid ${BR}`, background: SURF, color: TX2, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                  <FileText size={13} /> Ficha
-                </button>
-                <button onClick={() => { setFichaTab('bitacora'); setDrawer('ficha'); }} title="Abrir bitácora y notas de seguimiento del expediente" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 7, border: `1px solid ${BR}`, background: SURF, color: TX2, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => { setFichaTab('bitacora'); setDrawer('ficha'); }}
+                  title="Abrir bitácora y notas de seguimiento del expediente"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px',
+                    borderRadius: 7, border: `1px solid ${BR}`, background: SURF,
+                    color: TX, fontSize: 11, fontWeight: 700, cursor: 'pointer'
+                  }}
+                >
                   <MessageSquare size={13} color={BL} /> Bitácora
                   {selected.bitacora && selected.bitacora.length > 0 && (
                     <span style={{ background: BL, color: '#fff', fontSize: 9.5, fontWeight: 800, padding: '1px 6px', borderRadius: 99, marginLeft: 2 }}>
@@ -4636,37 +5466,48 @@ export default function SustracionPage() {
                     </span>
                   )}
                 </button>
-                <button onClick={() => setDrawer('sgd')} title="Generar plantillas oficiales SGD" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 7, border: '1px solid #BFDBFE', background: '#EFF6FF', color: BL, fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
+
+                <button
+                  onClick={() => setDrawer('sgd')}
+                  title="Generar plantillas oficiales SGD"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px',
+                    borderRadius: 7, border: '1px solid #BFDBFE', background: '#EFF6FF',
+                    color: BL, fontSize: 11, fontWeight: 800, cursor: 'pointer'
+                  }}
+                >
                   <FileCode size={13} /> Plantillas SGD
                 </button>
 
-                {selected.numExpedienteJudicial && (
-                  <button
-                    type="button"
-                    onClick={() => window.open('https://cej.pj.gob.pe/cej/forms/busquedaform.html', '_blank', 'noopener,noreferrer')}
-                    title="Consultar expediente en el CEJ del Poder Judicial"
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 11px',
-                      borderRadius: 7, border: '1px solid #BFDBFE', background: '#EFF6FF',
-                      color: BL, fontSize: 11, fontWeight: 700, cursor: 'pointer'
-                    }}
-                  >
-                    <Scale size={13} />
-                    <span>CEJ Judicial ↗</span>
-                  </button>
-                )}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 99, background: '#F1F5F9', border: `1px solid ${BR}`, color: TX2, fontSize: 10.5, fontWeight: 700 }}>
+                  {selected.acPeru === 'Requirente' ? <Plane size={11} /> : <Users size={11} />} AC {selected.acPeru || 'sin rol'}
+                </span>
 
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 99, background: '#F1F5F9', border: `1px solid ${BR}`, color: TX2, fontSize: 10, fontWeight: 700 }}>
-                  {selected.acPeru === 'Requirente' ? <Plane size={10} /> : <Users size={10} />} AC {selected.acPeru || 'sin rol'}
-                </span>
-                <span style={{ padding: '3px 9px', borderRadius: 99, background: '#F1F5F9', border: `1px solid ${BR}`, color: TX2, fontSize: 10, fontWeight: 700 }}>
-                  {selected.pais}
-                </span>
-                <select value={getVal('estado') || 'Tramite'} onChange={e => onChange('estado', e.target.value)} style={{ padding: '4px 9px', borderRadius: 99, background: estadoBadge(getVal('estado') || 'Tramite').bg, color: estadoBadge(getVal('estado') || 'Tramite').color, border: `1px solid ${estadoBadge(getVal('estado') || 'Tramite').border}`, fontSize: 10, fontWeight: 700 }}>
-                  <option value="Tramite">En trámite</option>
-                  <option value="Pendiente">Pendiente</option>
-                  <option value="Archivado">Archivado</option>
-                </select>
+                {/* Badge Automático de Estado */}
+                {(() => {
+                  const est = getVal('estado') || selectedFlow?.computedStatus || selected.estado || 'Pendiente';
+                  const b = estadoBadge(est);
+                  const textoEstado = est === 'Archivado' ? 'Archivado' : (est === 'Pendiente' ? 'Pendiente' : 'En trámite');
+                  return (
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '4px 10px',
+                      borderRadius: 99,
+                      background: b.bg,
+                      color: b.color,
+                      border: `1px solid ${b.border}`,
+                      fontSize: 10.5,
+                      fontWeight: 800,
+                      letterSpacing: '.02em'
+                    }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: b.color }} />
+                      {textoEstado}
+                    </span>
+                  );
+                })()}
+
                 <button
                   onClick={guardar}
                   disabled={saving || !hasPending}
@@ -4675,7 +5516,7 @@ export default function SustracionPage() {
                     display: 'flex',
                     alignItems: 'center',
                     gap: 5,
-                    padding: '7px 13px',
+                    padding: '7px 14px',
                     borderRadius: 7,
                     border: 'none',
                     background: hasPending ? '#16A34A' : '#E2E8F0',
@@ -4688,9 +5529,6 @@ export default function SustracionPage() {
                   }}
                 >
                   <Save size={13} /> {saving ? 'Guardando...' : hasPending ? 'Guardar (Ctrl+S)' : 'Guardado'}
-                </button>
-                <button onClick={eliminarCaso} title="Eliminar expediente" style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                  <Trash2 size={14} />
                 </button>
               </div>
             </div>
@@ -4783,7 +5621,7 @@ export default function SustracionPage() {
                 {tab === 'subsanacion' && <TabSubsanacion caso={selected} onGuardarProceso={onGuardarProceso} />}
                 {tab === 'retorno' && <TabRetorno caso={selected} getVal={getVal} onChange={onChange} onGuardarProceso={onGuardarProceso} />}
                 {tab === 'internacional' && <TabInternacional caso={selected} onGuardarProceso={onGuardarProceso} />}
-                {tab === 'judicial' && <TabJudicial caso={selected} getVal={getVal} onChange={onChange} onGuardarHistorialJudicial={onGuardarHistorialJudicial} />}
+                {tab === 'judicial' && <TabJudicial caso={selected} getVal={getVal} onChange={onChange} onGuardarHistorialJudicial={onGuardarHistorialJudicial} onEliminarHistorialJudicial={onEliminarHistorialJudicial} />}
                 {tab === 'cierre' && <TabCierre caso={selected} getVal={getVal} onChange={onChange} onArchivarCaso={onArchivarCaso} />}
               </div>
             </div>
@@ -4799,7 +5637,7 @@ export default function SustracionPage() {
         modalNnaIndex={modalNnaIndex}
         onSave={() => {
           if (!modalNnaForm.nombres?.trim() || !modalNnaForm.primerApellido?.trim()) {
-            toast.error('Debe ingresar al menos Nombres y Primer Apellido del menor');
+            toast.error('Debe ingresar al menos Nombres y Primer Apellido del NNA');
             return;
           }
           if (view === 'nuevo') {

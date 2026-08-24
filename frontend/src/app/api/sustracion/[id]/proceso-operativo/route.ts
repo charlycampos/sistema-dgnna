@@ -13,6 +13,24 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       else if (fase.includes('cierre')) updatePayload.etapa = 'Cierre'
       else updatePayload.etapa = 'Administrativo'
     }
+    if (body.estado !== undefined) {
+      updatePayload.estado = body.estado
+    } else if (body.faseOperativa) {
+      const fase = String(body.faseOperativa).toLowerCase()
+      if (fase.includes('cierre') || body.evaluacionResultado === 'No corresponde') {
+        updatePayload.estado = 'Archivado'
+      } else if (
+        body.evaluacionResultado === 'Completa' ||
+        body.evaluacionResultado === 'Conforme' ||
+        body.evaluacionResultado === 'Observada' ||
+        fase.includes('subsanac') ||
+        fase.includes('retorno') ||
+        fase.includes('internacional') ||
+        fase.includes('judicial')
+      ) {
+        updatePayload.estado = 'Tramite'
+      }
+    }
     if (body.fechaEntrevista !== undefined) updatePayload.fechaEntrevista = body.fechaEntrevista
     if (body.resultadoEntrevista !== undefined) updatePayload.resultadoEntrevista = body.resultadoEntrevista
     if (body.motivoCierre !== undefined) updatePayload.motivoCierre = body.motivoCierre

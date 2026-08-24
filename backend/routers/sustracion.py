@@ -68,6 +68,9 @@ def crear_caso(
         if not data["nnaNombre"]:
             raise HTTPException(status_code=400, detail="El nombre del menor involucrado (NNA) es obligatorio")
 
+        if not data.get("estado"):
+            data["estado"] = "Pendiente"
+
         data["creadoPor"] = data.get("creadoPor") or current_user.get("nombre", "")
 
         caso = CasoSustracion(**data)
@@ -121,6 +124,16 @@ def actualizar_proceso_operativo(
                 caso.etapa = "Cierre"
             else:
                 caso.etapa = "Administrativo"
+
+        if "estado" in body and body["estado"]:
+            caso.estado = body["estado"]
+        elif "faseOperativa" in body:
+            fase = body["faseOperativa"]
+            eval_res = body.get("evaluacionResultado")
+            if "cierre" in fase.lower() or eval_res == "No corresponde":
+                caso.estado = "Archivado"
+            elif eval_res in ("Completa", "Conforme", "Observada") or any(x in fase.lower() for x in ["subsanac", "retorno", "internacional", "judicial"]):
+                caso.estado = "Tramite"
 
         if "fechaEntrevista" in body and body["fechaEntrevista"]:
             caso.fechaEntrevista = body["fechaEntrevista"]

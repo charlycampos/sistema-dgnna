@@ -114,7 +114,7 @@ class CasoSustracionCreate(BaseModel):
     requeridoCorreo:    Optional[str] = None
     requeridoDomicilio: Optional[str] = None
     profesional:         Optional[str] = None
-    estado:              str = "Tramite"
+    estado:              str = "Pendiente"
     fechaEntrevista:     Optional[str] = None
     resultadoEntrevista: Optional[str] = None
     estadoJudicial:        Optional[str] = None
