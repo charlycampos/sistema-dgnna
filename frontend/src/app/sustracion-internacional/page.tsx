@@ -116,7 +116,15 @@ const SURF = '#FFFFFF', BG = '#F9FAFB', BR = '#E2E8F0';
 const TX = '#0F172A', TX2 = '#475569', TX3 = '#94A3B8';
 
 const PAISES = ['Alemania','Argentina','Australia','Bolivia','Brasil','Canadá','Chile','Colombia','Ecuador','España','Estados Unidos','Francia','Italia','México','Países Bajos','Paraguay','Perú','Portugal','Reino Unido','Uruguay','Venezuela','Otro'];
-const PROFESIONALES = ['EMMA','JANNY','CECILIA'];
+const PROFESIONALES = [
+  'EMMA',
+  'JANNY',
+  'CECILIA',
+  'Emma Victoria Olaya Anicama',
+  'Janny Ruth Felix-Diaz Silva',
+  'Auditor Senior QA - DGNNA',
+  'Administrador'
+];
 const SEXOS = ['Hombre','Mujer'];
 const TIPO_EDAD = ['Años','Meses','Días'];
 const ETAPAS = ['Administrativo','Judicial'];
@@ -145,14 +153,14 @@ const ETAPAS_JUD = [
   'Archivado'
 ];
 const REQ_BASE: RequisitoProceso[] = [
-  { id: 'r1', nombre: '1. Solicitud formal de restitución o régimen de visitas identificada', estado: 'Pendiente' },
-  { id: 'r2', nombre: '2. Identidad y datos del NNA acreditados', estado: 'Pendiente' },
-  { id: 'r3', nombre: '3. Residencia habitual acreditada', estado: 'Pendiente' },
-  { id: 'r4', nombre: '4. Derecho de custodia o visitas legalmente ejercido', estado: 'Pendiente' },
-  { id: 'r5', nombre: '5. Traslado o retención ilícita identificado', estado: 'Pendiente' },
-  { id: 'r6', nombre: '6. Documentación sustentatoria y partidas de nacimiento', estado: 'Pendiente' },
-  { id: 'r7', nombre: '7. Traducciones oficiales al español, cuando corresponda', estado: 'Pendiente' },
-  { id: 'r8', nombre: '8. Información para ubicación del NNA y del presunto sustractor', estado: 'Pendiente' },
+  { id: 'r1', nombre: 'Solicitud formal de restitución o régimen de visitas identificada', estado: 'Pendiente' },
+  { id: 'r2', nombre: 'Identidad y datos del NNA acreditados', estado: 'Pendiente' },
+  { id: 'r3', nombre: 'Residencia habitual acreditada', estado: 'Pendiente' },
+  { id: 'r4', nombre: 'Derecho de custodia o visitas legalmente ejercido', estado: 'Pendiente' },
+  { id: 'r5', nombre: 'Traslado o retención ilícita identificado', estado: 'Pendiente' },
+  { id: 'r6', nombre: 'Documentación sustentatoria y partidas de nacimiento', estado: 'Pendiente' },
+  { id: 'r7', nombre: 'Traducciones oficiales al español, cuando corresponda', estado: 'Pendiente' },
+  { id: 'r8', nombre: 'Información para ubicación del NNA y del presunto sustractor', estado: 'Pendiente' },
 ];
 
 const BASE_LEGAL_REQUISITOS: Record<string, {
@@ -285,16 +293,58 @@ function TooltipBaseLegal({ reqId }: { reqId: string }) {
   );
 }
 
+function computeNormativeStatus(caso: Caso, pendingOverrides?: Partial<Caso>): 'Archivado' | 'Pendiente' | 'Tramite' {
+  if (pendingOverrides?.estado === 'Archivado') return 'Archivado';
+  if (pendingOverrides?.estado === 'Pendiente') return 'Pendiente';
+  if (pendingOverrides?.estado === 'Tramite') return 'Tramite';
+
+  const estado = pendingOverrides?.estado || caso.estado;
+  const fechaSalida = pendingOverrides?.fechaSalida !== undefined ? pendingOverrides.fechaSalida : caso.fechaSalida;
+  const motivoCierre = pendingOverrides?.motivoCierre !== undefined ? pendingOverrides.motivoCierre : caso.motivoCierre;
+  const proceso = caso.procesoOperativo;
+
+  const isClosed = estado === 'Archivado' || Boolean(fechaSalida) || Boolean(motivoCierre) || (proceso && proceso.faseOperativa === 'Cierre') || (proceso && proceso.evaluacionResultado === 'No corresponde');
+  if (isClosed) return 'Archivado';
+
+  const tieneJudicialActivo = Boolean(
+    caso.etapa === 'Judicial' ||
+    (pendingOverrides?.etapa === 'Judicial') ||
+    (proceso && (proceso.faseOperativa === 'Judicial' || proceso.faseOperativa === 'Judicial exterior')) ||
+    (caso.estadoJudicial && caso.estadoJudicial !== 'Sin demanda' && caso.estadoJudicial !== 'None' && caso.estadoJudicial.trim() !== '') ||
+    (pendingOverrides?.estadoJudicial && pendingOverrides.estadoJudicial !== 'Sin demanda' && pendingOverrides.estadoJudicial !== 'None' && pendingOverrides.estadoJudicial.trim() !== '')
+  );
+  if (tieneJudicialActivo) return 'Tramite';
+
+  if (proceso && (proceso.faseOperativa === 'Subsanación' || proceso.evaluacionResultado === 'Observada')) {
+    return 'Tramite';
+  }
+
+  if (proceso && (proceso.faseOperativa === 'Retorno voluntario' || proceso.faseOperativa === 'Gestión internacional' || proceso.evaluacionResultado === 'Conforme' || proceso.evaluacionResultado === 'Completa')) {
+    return 'Tramite';
+  }
+
+  return 'Pendiente';
+}
+
 function estadoBadge(e: string) {
-  if (e === 'Tramite') return { bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE', label: 'En trámite', accent: BL };
-  if (e === 'Pendiente') return { bg: '#FFFBEB', color: '#92400E', border: '#FDE68A', label: 'Pendiente', accent: '#D97706' };
-  return { bg: '#F1F5F9', color: '#475569', border: '#CBD5E1', label: 'Archivado', accent: '#64748B' };
+  if (e === 'Archivado') return { bg: '#F0FDF4', color: '#15803D', border: '#BBF7D0', label: 'Archivado', accent: '#16A34A' };
+  if (e === 'Pendiente') return { bg: '#FFFBEB', color: '#B45309', border: '#FDE68A', label: 'Pendiente', accent: '#D97706' };
+  return { bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE', label: 'En trámite', accent: BL };
 }
 
 // ── UTILIDADES DE FECHA Y TEXTO ────────────────────────────────────────
 
 function todayStr(): string {
   const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function lastMonthStr(): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() - 1);
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
@@ -590,6 +640,7 @@ function Row({
         >
           <option value="">Seleccionar...</option>
           {opts?.map(o => <option key={o} value={o}>{o}</option>)}
+          {safeVal && opts && !opts.includes(safeVal) && <option value={safeVal}>{safeVal}</option>}
         </select>
       ) : type === 'textarea' ? (
         <textarea
@@ -630,14 +681,71 @@ function SummaryValue({ label, value }: { label: string; value?: React.ReactNode
 // ── MODAL NNA: REGISTRO Y EDICIÓN DE MENORES ──────────────────────────
 
 function ModalNna({
-  isOpen, modalNnaForm, setModalNnaForm, modalNnaIndex, onSave, onClose
+  isOpen, modalNnaForm, setModalNnaForm, modalNnaIndex, onSave, onClose, casos = [], currentCasoId
 }: {
   isOpen: boolean; modalNnaForm: NnaForm; setModalNnaForm: React.Dispatch<React.SetStateAction<NnaForm>>;
   modalNnaIndex: number; onSave: () => void; onClose: () => void;
+  casos?: Caso[]; currentCasoId?: string;
 }) {
   if (!isOpen) return null;
 
   const caducidad = calcularCaducidadHaya(modalNnaForm.fechaNacimiento, modalNnaForm.edad, modalNnaForm.tipoEdad);
+
+  // Detector inteligente de antecedentes / coincidencias de NNA en tiempo real
+  const coincidenciasNna = useMemo(() => {
+    if (!casos || casos.length === 0) return [];
+    const nom = (modalNnaForm.nombres || '').trim();
+    const ape1 = (modalNnaForm.primerApellido || '').trim();
+    const ape2 = (modalNnaForm.segundoApellido || '').trim();
+    const queryFull = [nom, ape1, ape2].filter(Boolean).join(' ');
+
+    const cleanStr = (s: string) =>
+      s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, ' ').trim();
+
+    const queryNorm = cleanStr(queryFull);
+    const tokens = queryNorm.split(/\s+/).filter(t => t.length >= 3);
+    if (tokens.length === 0) return [];
+
+    const matches: { id: string; codigo: string; nnaNombre: string; pais: string; tipoSolicitud: string; estado: string; profesional?: string | null; fechaIngreso?: string | null }[] = [];
+
+    for (const c of casos) {
+      if (currentCasoId && c.id === currentCasoId) continue;
+
+      const nnaNames: string[] = [];
+      if (c.nna && c.nna.length > 0) {
+        c.nna.forEach(n => {
+          nnaNames.push([n.nombres, n.primerApellido, n.segundoApellido].filter(Boolean).join(' '));
+        });
+      }
+      if (c.nnaNombre) nnaNames.push(c.nnaNombre);
+      if ((c as any).nnanombre) nnaNames.push((c as any).nnanombre);
+
+      for (const nName of nnaNames) {
+        const nNorm = cleanStr(nName);
+        if (!nNorm) continue;
+
+        const matchedTokens = tokens.filter(t => nNorm.includes(t));
+        const isMatch = tokens.length === 1
+          ? (tokens[0].length >= 4 && nNorm.includes(tokens[0]))
+          : (matchedTokens.length >= Math.min(2, tokens.length));
+
+        if (isMatch) {
+          matches.push({
+            id: c.id,
+            codigo: c.codigo,
+            nnaNombre: nName,
+            pais: c.pais,
+            tipoSolicitud: c.tipoSolicitud || 'Restitución',
+            estado: c.estado || 'Tramite',
+            profesional: c.profesional,
+            fechaIngreso: c.fechaIngreso,
+          });
+          break;
+        }
+      }
+    }
+    return matches;
+  }, [modalNnaForm.nombres, modalNnaForm.primerApellido, modalNnaForm.segundoApellido, casos, currentCasoId]);
 
   return (
     <div
@@ -781,6 +889,77 @@ function ModalNna({
               <span><b>Alerta Convenio:</b> {caducidad.texto}</span>
             </div>
           )}
+
+          {/* Banner de coincidencias / antecedentes detectados en tiempo real */}
+          {coincidenciasNna.length > 0 && (
+            <div style={{
+              background: '#FFFBEB',
+              border: '1.5px solid #F59E0B',
+              borderRadius: 8,
+              padding: '10px 12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#92400E', fontSize: 11.5, fontWeight: 800 }}>
+                <Search size={14} color="#D97706" style={{ flexShrink: 0 }} />
+                <span>
+                  Posible coincidencia de NNA ({coincidenciasNna.length} expediente{coincidenciasNna.length > 1 ? 's' : ''} previo{coincidenciasNna.length > 1 ? 's' : ''} encontrado{coincidenciasNna.length > 1 ? 's' : ''}):
+                </span>
+              </div>
+              <div style={{ fontSize: 10.5, color: '#78350F' }}>
+                Se detectaron casos registrados con datos o nombres similares en el sistema:
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 130, overflowY: 'auto' }}>
+                {coincidenciasNna.map(m => {
+                  const estColor = estadoBadge(m.estado);
+                  return (
+                    <div
+                      key={m.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        background: '#FFFFFF',
+                        border: '1px solid #FDE68A',
+                        borderRadius: 6,
+                        padding: '6px 10px',
+                        fontSize: 11,
+                        gap: 8
+                      }}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: 800, color: '#1E293B' }}>{m.codigo}</span>
+                          <span style={{ color: '#64748B' }}>•</span>
+                          <span style={{ color: '#334155', fontWeight: 600 }}>{m.pais}</span>
+                          <span style={{ color: '#64748B' }}>({m.tipoSolicitud})</span>
+                        </div>
+                        <div style={{ fontSize: 10, color: BL, fontWeight: 700, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          NNA: {m.nnaNombre} {m.profesional ? `• Esp: ${m.profesional}` : ''}
+                        </div>
+                      </div>
+                      <span
+                        style={{
+                          fontSize: 9.5,
+                          fontWeight: 700,
+                          padding: '2px 7px',
+                          borderRadius: 4,
+                          background: estColor.bg,
+                          color: estColor.color,
+                          border: `1px solid ${estColor.border}`,
+                          flexShrink: 0,
+                          textTransform: 'uppercase'
+                        }}
+                      >
+                        {estColor.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{
@@ -828,7 +1007,7 @@ function DrawerSGD({ caso, onClose }: { caso: Caso; onClose: () => void }) {
   // INYECCIÓN DINÁMICA DE REQUISITOS OBSERVADOS EN EL TEXTO DEL OFICIO
   const reqsObs = (proc?.requisitos || []).filter(r => r.estado === 'Observado');
   const listaObsTexto = reqsObs.length > 0
-    ? reqsObs.map((r, i) => `${i + 1}. ${r.nombre}: No se acompaña documentación suficiente, actualizada o legible.`).join('\n')
+    ? reqsObs.map((r, i) => `${i + 1}. ${r.nombre.replace(/^\d+\.\s*/, '')}: No se acompaña documentación suficiente, actualizada o legible.`).join('\n')
     : '1. Acreditación fehaciente de residencia habitual previa y derecho de custodia ejercido al momento del traslado.';
 
   const nnaInfoTexto = caso.nna && caso.nna.length > 0
@@ -1720,7 +1899,7 @@ function TabResumen({
 }) {
   const proceso = caso.procesoOperativo || { faseOperativa: 'Evaluación', requisitos: REQ_BASE };
   const reqPend = (proceso.requisitos || []).filter(r => r.estado === 'Pendiente' || r.estado === 'Observado').length;
-  const b = estadoBadge(caso.estado);
+  const b = estadoBadge(computeNormativeStatus(caso));
 
   const [quickNote, setQuickNote] = useState('');
   const [savingQuickNote, setSavingQuickNote] = useState(false);
@@ -2138,6 +2317,19 @@ function TabPersonas({
   caso: Caso; getVal: (f: keyof Caso) => string; onChange: (f: keyof Caso, v: any) => void; onOpenNnaModal: (idx: number) => void;
 }) {
   const esRequirente = getVal('acPeru') === 'Requirente';
+  const nnaList = useMemo(() => {
+    if (caso.nna && caso.nna.length > 0) return caso.nna;
+    const nom = getVal('nnaNombre') || caso.nnaNombre || 'Sin nombre';
+    return [{
+      id: '1',
+      nombres: nom,
+      primerApellido: '',
+      edad: getVal('nnaEdad') || caso.nnaEdad || '',
+      tipoEdad: getVal('nnaTipoEdad') || caso.nnaTipoEdad || 'Años',
+      sexo: getVal('nnaSexo') || caso.nnaSexo || '',
+      fechaNacimiento: getVal('nnaFechaNac') || caso.nnaFechaNac || (caso as any).nnafechanac || '',
+    }];
+  }, [caso, getVal]);
 
   return (
     <div style={{ flex: 1, overflowY: 'auto' }} className="main-scroll">
@@ -2168,7 +2360,7 @@ function TabPersonas({
             </tr>
           </thead>
           <tbody>
-            {(caso.nna && caso.nna.length > 0 ? caso.nna : [{ id: '1', nombres: caso.nnaNombre || 'Sin nombre', primerApellido: '', edad: caso.nnaEdad || '', tipoEdad: caso.nnaTipoEdad || 'Años', sexo: caso.nnaSexo || '' }]).map((n, i) => (
+            {nnaList.map((n, i) => (
               <tr key={n.id || i} style={{ borderBottom: `1px solid ${BR}` }}>
                 <td style={{ padding: '9px 12px', color: TX3 }}>{i + 1}</td>
                 <td style={{ padding: '9px 12px', fontWeight: 700 }}>{nombreNna(n)}</td>
@@ -2198,7 +2390,7 @@ function TabPersonas({
 
         {/* Columna Derecha: Parte Requerida */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', alignContent: 'start' }}>
-          <Sec title={esRequirente ? 'Parte Requerida (En el Exterior)' : 'Parte Requerida / Presunto Sustractor'} />
+          <Sec title={esRequirente ? 'Parte Requerida (En el Exterior)' : 'Parte Requerida'} />
           <Row label="Nombres y Apellidos" value={getVal('requeridoNombre')} span={2} onChange={v => onChange('requeridoNombre', v)} />
           <Row label="Sexo" value={getVal('requeridoSexo')} type="select" opts={SEXOS} span={1} onChange={v => onChange('requeridoSexo', v)} />
           <Row label="Teléfono de Contacto" value={getVal('requeridoTelefono')} span={1} onChange={v => onChange('requeridoTelefono', v)} />
@@ -2552,12 +2744,11 @@ function TabEvaluacion({
                   {isConforme ? <Check size={13} strokeWidth={3} /> : isObservado ? <AlertTriangle size={12} strokeWidth={2.5} /> : i + 1}
                 </div>
 
-                {/* Nombre del Requisito y Base Legal */}
+                {/* Nombre del Requisito */}
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 12.5, fontWeight: isConforme || isObservado ? 700 : 600, color: isObservado ? '#991B1B' : TX, lineHeight: 1.4 }}>
-                    {r.nombre}
+                    {r.nombre.replace(/^\d+\.\s*/, '')}
                   </div>
-                  <TooltipBaseLegal reqId={r.id} />
                 </div>
 
                 {/* BOTONERA DE ESTADOS INTERACTIVOS (1 CLIC SOLO ÍCONOS) */}
@@ -3439,8 +3630,8 @@ export default function SustracionPage() {
   const [fPais, setFPais] = useState('');
   const [fRolAc, setFRolAc] = useState('');
   const [fTipoSol, setFTipoSol] = useState('');
-  const [fFechaDesde, setFFechaDesde] = useState('');
-  const [fFechaHasta, setFFechaHasta] = useState('');
+  const [fFechaDesde, setFFechaDesde] = useState<string>(() => lastMonthStr());
+  const [fFechaHasta, setFFechaHasta] = useState<string>(() => todayStr());
   const [usuariosSistema, setUsuariosSistema] = useState<string[]>([]);
   const [subBandeja, setSubBandeja] = useState('todos');
   const [kpiFilter, setKpiFilter] = useState<KpiFilter>('all');
@@ -3631,8 +3822,22 @@ export default function SustracionPage() {
       });
       if (!res.ok) throw new Error('Error al actualizar el expediente');
       const updated = await res.json();
-      const updatedPreserved = { ...selected, ...updated, procesoOperativo: selected.procesoOperativo };
-      setCasos(prev => prev.map(c => (c.id === updated.id ? { ...c, ...updated, procesoOperativo: c.procesoOperativo } : c)));
+      const updatedPreserved = {
+        ...selected,
+        ...updated,
+        procesoOperativo: selected.procesoOperativo,
+        nna: (pending as any).nna || selected.nna,
+      };
+      setCasos(prev => {
+        const next = prev.map(c => (c.id === updated.id ? {
+          ...c,
+          ...updated,
+          procesoOperativo: c.procesoOperativo,
+          nna: (pending as any).nna || selected.nna || c.nna,
+        } : c));
+        cachedCasosSustracion = next;
+        return next;
+      });
       setSelected(updatedPreserved);
       setPending({});
       toast.success('Expediente actualizado correctamente');
@@ -3784,12 +3989,19 @@ export default function SustracionPage() {
 
       const etapaCalculada = payload.faseOperativa === 'Judicial' ? 'Judicial' : (payload.faseOperativa === 'Cierre' ? 'Cierre' : 'Administrativo');
       let nuevoEstado = selected.estado;
-      if (selected.estado === 'Pendiente' && (proc.evaluacionResultado === 'Conforme' || proc.evaluacionResultado === 'Observada' || proc.faseOperativa !== 'Evaluación')) {
+      if (proc.faseOperativa === 'Cierre' || proc.evaluacionResultado === 'No corresponde') {
+        nuevoEstado = 'Archivado';
+        fetch(`/api/sustracion/${selected.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ estado: 'Archivado', etapa: 'Cierre' }),
+        }).catch(() => null);
+      } else if (proc.evaluacionResultado === 'Conforme' || proc.evaluacionResultado === 'Observada' || proc.faseOperativa === 'Subsanación' || proc.faseOperativa === 'Retorno voluntario' || proc.faseOperativa === 'Gestión internacional' || proc.faseOperativa === 'Judicial') {
         nuevoEstado = 'Tramite';
         fetch(`/api/sustracion/${selected.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ estado: 'Tramite' }),
+          body: JSON.stringify({ estado: 'Tramite', etapa: etapaCalculada }),
         }).catch(() => null);
       }
 
@@ -4057,24 +4269,37 @@ export default function SustracionPage() {
     const progress = closed || currentStep === 5 ? 100 : Math.round(((currentStep - 1) / 4) * 100);
 
     // Derivación dinámica del estado normativo
-    let computedStatus: 'Archivado' | 'Pendiente' | 'Tramite' = 'Pendiente';
-    if (closed || currentStep === 5) {
-      computedStatus = 'Archivado';
-    } else if (currentStep === 1) {
-      computedStatus = 'Pendiente';
-    } else {
-      computedStatus = 'Tramite';
-    }
+    const computedStatus = computeNormativeStatus(caso);
+
+    const tieneObservaciones = Boolean(
+      (proceso && (proceso.faseOperativa === 'Subsanación' || proceso.evaluacionResultado === 'Observada')) ||
+      (proceso && Array.isArray(proceso.requisitos) && proceso.requisitos.some(r => r.estado === 'Observado'))
+    );
 
     return {
       current: { number: currentStep, id: ids[currentStep - 1] || 'resumen', label: labels[currentStep - 1] || 'Evaluación' },
-      stages: ids.map((id, idx) => ({
-        id,
-        number: idx + 1,
-        label: labels[idx],
-        status: idx + 1 < currentStep ? 'complete' : idx + 1 === currentStep ? 'active' : 'locked',
-        note: idx + 1 === 1 ? 'Evaluación de requisitos de admisibilidad' : idx + 1 === 2 ? 'Subsanación de observaciones' : idx + 1 === 3 ? (caso.acPeru === 'Requirente' ? 'SGD / Cancillería' : 'Audiencia no contenciosa') : idx + 1 === 4 ? (caso.acPeru === 'Requirente' ? 'Tribunal exterior' : 'Juzgado de Familia') : 'Resolución y archivo',
-      })),
+      stages: ids.map((id, idx) => {
+        const isSubsanacion = id === 'subsanacion';
+        const noAplicaSubsanacion = isSubsanacion && !tieneObservaciones;
+        const note = idx + 1 === 1
+          ? 'Evaluación de requisitos de admisibilidad'
+          : idx + 1 === 2
+          ? (noAplicaSubsanacion ? 'Solo si hay observaciones' : 'Subsanación de observaciones')
+          : idx + 1 === 3
+          ? (caso.acPeru === 'Requirente' ? 'SGD / Cancillería' : 'Audiencia no contenciosa')
+          : idx + 1 === 4
+          ? (caso.acPeru === 'Requirente' ? 'Tribunal exterior' : 'Juzgado de Familia')
+          : 'Resolución y archivo';
+
+        return {
+          id,
+          number: idx + 1,
+          label: labels[idx],
+          disabled: noAplicaSubsanacion,
+          status: noAplicaSubsanacion ? 'na' : (idx + 1 < currentStep ? 'complete' : idx + 1 === currentStep ? 'active' : 'locked'),
+          note,
+        };
+      }),
       nextAction,
       progress,
       closed: closed || currentStep === 5,
@@ -4530,9 +4755,9 @@ export default function SustracionPage() {
                     <Row label="Domicilio" value={formNew.solicitanteDomicilio || ''} span={2} onChange={v => setFormNew(p => ({ ...p, solicitanteDomicilio: v }))} />
                   </div>
 
-                  {/* Columna Derecha: 4. Parte Requerida / Presunto Sustractor */}
+                  {/* Columna Derecha: 4. Parte Requerida */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', alignContent: 'start' }}>
-                    <Sec title={formNew.acPeru === 'Requirente' ? '4. Parte Requerida (En el Exterior)' : '4. Parte Requerida / Presunto Sustractor'} />
+                    <Sec title={formNew.acPeru === 'Requirente' ? '4. Parte Requerida (En el Exterior)' : '4. Parte Requerida'} />
                     <Row label="Nombres y Apellidos" value={formNew.requeridoNombre || ''} span={2} onChange={v => setFormNew(p => ({ ...p, requeridoNombre: v }))} />
                     <Row label="Sexo" value={formNew.requeridoSexo || ''} type="select" opts={SEXOS} span={1} onChange={v => setFormNew(p => ({ ...p, requeridoSexo: v }))} />
                     <Row label="Teléfono de Contacto" value={formNew.requeridoTelefono || ''} span={1} onChange={v => setFormNew(p => ({ ...p, requeridoTelefono: v }))} />
@@ -4979,14 +5204,23 @@ export default function SustracionPage() {
                       onChange={e => setFFechaHasta(e.target.value)}
                       style={{ border: 'none', background: 'transparent', fontSize: 11, color: TX, outline: 'none', width: 100, cursor: 'pointer' }}
                     />
-                    {(fFechaDesde || fFechaHasta) && (
+                    {(fFechaDesde || fFechaHasta) ? (
                       <button
                         type="button"
                         onClick={() => { setFFechaDesde(''); setFFechaHasta(''); }}
-                        title="Limpiar fechas"
+                        title="Limpiar rango de fechas (Ver todos)"
                         style={{ border: 'none', background: 'transparent', color: TX3, cursor: 'pointer', padding: 2, display: 'flex', alignItems: 'center' }}
                       >
                         <X size={12} />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => { setFFechaDesde(lastMonthStr()); setFFechaHasta(todayStr()); }}
+                        title="Filtrar por el último mes"
+                        style={{ border: 'none', background: '#EFF6FF', color: BL, fontSize: 10, fontWeight: 800, cursor: 'pointer', padding: '2px 6px', borderRadius: 4 }}
+                      >
+                        Último mes
                       </button>
                     )}
                   </div>
@@ -5081,6 +5315,18 @@ export default function SustracionPage() {
                   <table style={{ width: '100%', minWidth: 1020, borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ background: '#F8FAFC', borderBottom: `1px solid ${BR}`, textAlign: 'left' }}>
+                        {/* Fecha de Ingreso Solicitud (Ordenable) */}
+                        <th
+                          onClick={() => handleSort('fechaIngreso')}
+                          title="Ordenar por Fecha de Ingreso de Solicitud"
+                          style={{ padding: '10px 12px', fontSize: 9.5, fontWeight: 800, color: sortField === 'fechaIngreso' ? BL : TX3, textTransform: 'uppercase', letterSpacing: '.04em', cursor: 'pointer', userSelect: 'none', width: 125 }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span>Ingreso Solicitud</span>
+                            {sortField === 'fechaIngreso' ? (sortOrder === 'asc' ? <ArrowUp size={12} color={BL} /> : <ArrowDown size={12} color={BL} />) : <ArrowUpDown size={11} color={TX3} />}
+                          </div>
+                        </th>
+
                         {/* Hoja de Trámite (Ordenable) */}
                         <th
                           onClick={() => handleSort('codigo')}
@@ -5122,23 +5368,6 @@ export default function SustracionPage() {
                           Etapa Actual
                         </th>
 
-                        {/* Fecha de Ingreso (Ordenable) */}
-                        <th
-                          onClick={() => handleSort('fechaIngreso')}
-                          title="Ordenar por Fecha de Ingreso"
-                          style={{ padding: '10px 12px', fontSize: 9.5, fontWeight: 800, color: sortField === 'fechaIngreso' ? BL : TX3, textTransform: 'uppercase', letterSpacing: '.04em', cursor: 'pointer', userSelect: 'none', width: 120 }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <span>Ingreso DGNNA</span>
-                            {sortField === 'fechaIngreso' ? (sortOrder === 'asc' ? <ArrowUp size={12} color={BL} /> : <ArrowDown size={12} color={BL} />) : <ArrowUpDown size={11} color={TX3} />}
-                          </div>
-                        </th>
-
-                        {/* Próxima acción */}
-                        <th style={{ padding: '10px 12px', fontSize: 9.5, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                          Próxima Acción
-                        </th>
-
                         {/* Avance */}
                         <th style={{ padding: '10px 12px', fontSize: 9.5, fontWeight: 800, color: TX3, textTransform: 'uppercase', letterSpacing: '.04em', width: 100 }}>
                           Avance
@@ -5154,6 +5383,10 @@ export default function SustracionPage() {
                       {loading && pagedCasos.length === 0 && (
                         Array.from({ length: 5 }).map((_, i) => (
                           <tr key={`skeleton-${i}`} style={{ borderBottom: `1px solid ${BR}` }}>
+                            {/* Ingreso Solicitud */}
+                            <td style={{ padding: '13px 12px' }}>
+                              <div className="skeleton-shimmer" style={{ height: 14, width: 75, borderRadius: 4 }} />
+                            </td>
                             {/* Código con botón de copia */}
                             <td style={{ padding: '13px 12px' }}>
                               <div className="skeleton-shimmer" style={{ height: 16, width: 85, borderRadius: 4 }} />
@@ -5172,14 +5405,6 @@ export default function SustracionPage() {
                             <td style={{ padding: '13px 12px' }}>
                               <div className="skeleton-shimmer" style={{ height: 22, width: 115, borderRadius: 99 }} />
                             </td>
-                            {/* Ingreso DGNNA */}
-                            <td style={{ padding: '13px 12px' }}>
-                              <div className="skeleton-shimmer" style={{ height: 14, width: 75, borderRadius: 4 }} />
-                            </td>
-                            {/* Próxima Acción */}
-                            <td style={{ padding: '13px 12px' }}>
-                              <div className="skeleton-shimmer" style={{ height: 14, width: i % 2 === 0 ? '85%' : '65%', borderRadius: 4 }} />
-                            </td>
                             {/* Avance */}
                             <td style={{ padding: '13px 12px', width: 100 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -5197,7 +5422,7 @@ export default function SustracionPage() {
                         ))
                       )}
                       {!loading && pagedCasos.length === 0 && (
-                        <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: TX3, fontSize: 12 }}>Sin resultados para los filtros seleccionados.</td></tr>
+                        <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: TX3, fontSize: 12 }}>Sin resultados para los filtros seleccionados.</td></tr>
                       )}
                       {pagedCasos.map(caso => {
                         const flow = flows.get(caso.id) || deriveCaseFlow(caso);
@@ -5230,6 +5455,11 @@ export default function SustracionPage() {
                             onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
                             onMouseLeave={e => e.currentTarget.style.background = SURF}
                           >
+                            {/* Fecha de Ingreso Solicitud */}
+                            <td style={{ padding: '11px 12px', fontSize: 11, color: TX2, width: 125 }}>
+                              {fmtFecha(caso.fechaIngreso)}
+                            </td>
+
                             {/* Código con botón de copia 1-clic */}
                             <td style={{ padding: '11px 12px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -5284,16 +5514,6 @@ export default function SustracionPage() {
                                 {flow.closed ? 'Cerrado' : `${flow.current.number}. ${flow.current.label}`}
                               </span>
                               {critical && <div style={{ marginTop: 4, color: '#DC2626', fontSize: 10, fontWeight: 700, display: 'flex', gap: 4, alignItems: 'center' }}><AlertTriangle size={10} /> Alerta</div>}
-                            </td>
-
-                            {/* Fecha de Ingreso */}
-                            <td style={{ padding: '11px 12px', fontSize: 11, color: TX2 }}>
-                              {fmtFecha(caso.fechaIngreso)}
-                            </td>
-
-                            {/* Próxima Acción */}
-                            <td style={{ padding: '11px 12px', maxWidth: 260, fontSize: 11, lineHeight: 1.45, color: TX2 }}>
-                              {flow.nextAction}
                             </td>
 
                             {/* Avance */}
@@ -5451,6 +5671,18 @@ export default function SustracionPage() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <button
+                  onClick={() => { setFichaTab('datos'); setDrawer('ficha'); }}
+                  title="Abrir Ficha Técnica del Expediente (Datos del Caso y Personas Involucradas)"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px',
+                    borderRadius: 7, border: `1px solid ${BR}`, background: SURF,
+                    color: TX, fontSize: 11, fontWeight: 700, cursor: 'pointer'
+                  }}
+                >
+                  <FileText size={13} color={BL} /> Ficha Técnica
+                </button>
+
+                <button
                   onClick={() => { setFichaTab('bitacora'); setDrawer('ficha'); }}
                   title="Abrir bitácora y notas de seguimiento del expediente"
                   style={{
@@ -5485,9 +5717,8 @@ export default function SustracionPage() {
 
                 {/* Badge Automático de Estado */}
                 {(() => {
-                  const est = getVal('estado') || selectedFlow?.computedStatus || selected.estado || 'Pendiente';
+                  const est = computeNormativeStatus(selected, pending);
                   const b = estadoBadge(est);
-                  const textoEstado = est === 'Archivado' ? 'Archivado' : (est === 'Pendiente' ? 'Pendiente' : 'En trámite');
                   return (
                     <span style={{
                       display: 'inline-flex',
@@ -5502,8 +5733,8 @@ export default function SustracionPage() {
                       fontWeight: 800,
                       letterSpacing: '.02em'
                     }}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: b.color }} />
-                      {textoEstado}
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: b.accent }} />
+                      {b.label}
                     </span>
                   );
                 })()}
@@ -5581,30 +5812,41 @@ export default function SustracionPage() {
                 {selectedFlow.stages.map((stage: any, index: number) => {
                   const active = tab === stage.id;
                   const complete = stage.status === 'complete';
-                  const locked = stage.status === 'locked';
+                  const isNa = Boolean(stage.disabled || stage.status === 'na');
                   return (
                     <div key={stage.id} style={{ marginBottom: 4 }}>
                       <button
-                        onClick={() => setTab(stage.id)}
+                        onClick={() => {
+                          if (isNa) {
+                            toast.info('La etapa de Subsanación solo se habilita si existen requisitos observados en la Evaluación inicial.');
+                            return;
+                          }
+                          setTab(stage.id);
+                        }}
                         style={{
                           width: '100%', display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 11px',
                           borderRadius: 8, border: `1px solid ${active ? '#BFDBFE' : 'transparent'}`,
-                          background: active ? '#EFF6FF' : 'transparent', textAlign: 'left', cursor: 'pointer'
+                          background: active ? '#EFF6FF' : 'transparent',
+                          opacity: isNa ? 0.42 : 1,
+                          textAlign: 'left', cursor: isNa ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.15s ease'
                         }}
+                        title={isNa ? 'Solo se habilita si hay requisitos observados en la Evaluación' : undefined}
                       >
                         <span style={{
                           width: 22, height: 22, borderRadius: '50%',
-                          background: complete ? '#16A34A' : active ? BL : '#F1F5F9',
-                          color: complete || active ? '#fff' : TX3,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0
+                          background: complete ? '#16A34A' : active ? BL : isNa ? '#F1F5F9' : '#F1F5F9',
+                          color: complete || active ? '#fff' : isNa ? '#94A3B8' : TX3,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0,
+                          border: isNa ? '1px dashed #CBD5E1' : 'none'
                         }}>
                           {complete ? <Check size={11} strokeWidth={3} /> : stage.number}
                         </span>
                         <span style={{ minWidth: 0 }}>
-                          <span style={{ display: 'block', color: active ? BL : TX, fontSize: 12, fontWeight: active ? 800 : 700 }}>
-                            {stage.label}
+                          <span style={{ display: 'block', color: active ? BL : isNa ? '#94A3B8' : TX, fontSize: 12, fontWeight: active ? 800 : 700 }}>
+                            {stage.label} {isNa && <span style={{ fontSize: 9.5, fontWeight: 600, color: '#94A3B8', marginLeft: 4 }}>(Condicional)</span>}
                           </span>
-                          <span style={{ display: 'block', color: TX3, fontSize: 10, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <span style={{ display: 'block', color: isNa ? '#94A3B8' : TX3, fontSize: 10, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {stage.note}
                           </span>
                         </span>
@@ -5635,6 +5877,8 @@ export default function SustracionPage() {
         modalNnaForm={modalNnaForm}
         setModalNnaForm={setModalNnaForm}
         modalNnaIndex={modalNnaIndex}
+        casos={casos}
+        currentCasoId={selected?.id}
         onSave={() => {
           if (!modalNnaForm.nombres?.trim() || !modalNnaForm.primerApellido?.trim()) {
             toast.error('Debe ingresar al menos Nombres y Primer Apellido del NNA');
@@ -5647,15 +5891,29 @@ export default function SustracionPage() {
               setNnaNew(prev => [...prev, { ...modalNnaForm }]);
             }
           } else if (selected) {
-            const currentNna = selected.nna || [];
+            const currentNna = selected.nna && selected.nna.length > 0 ? [...selected.nna] : [];
             let updatedNna: NnaForm[];
             if (modalNnaIndex >= 0) {
-              updatedNna = currentNna.map((item, idx) => (idx === modalNnaIndex ? { ...modalNnaForm } : item));
+              if (currentNna.length > modalNnaIndex) {
+                updatedNna = currentNna.map((item, idx) => (idx === modalNnaIndex ? { ...modalNnaForm } : item));
+              } else {
+                updatedNna = [{ ...modalNnaForm }];
+              }
             } else {
               updatedNna = [...currentNna, { ...modalNnaForm }];
             }
-            setSelected(prev => (prev ? { ...prev, nna: updatedNna } : null));
-            setPending(prev => ({ ...prev, nna: updatedNna as any }));
+            const primerNna = updatedNna[0] || {};
+            const nnaNombreCompuesto = updatedNna.map(n => nombreNna(n)).filter(Boolean).join(' / ');
+            const nnaPayload = {
+              nna: updatedNna,
+              nnaNombre: nnaNombreCompuesto,
+              nnaSexo: primerNna.sexo || null,
+              nnaEdad: primerNna.edad ? String(primerNna.edad) : null,
+              nnaTipoEdad: primerNna.tipoEdad || 'Años',
+              nnaFechaNac: primerNna.fechaNacimiento || null,
+            };
+            setSelected(prev => (prev ? { ...prev, ...nnaPayload } : null));
+            setPending(prev => ({ ...prev, ...(nnaPayload as any) }));
           }
           setModalNnaIndex(-2);
         }}
@@ -5687,8 +5945,8 @@ export default function SustracionPage() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {hasPending && (
-                  <button onClick={guardar} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 6, border: 0, background: '#16A34A', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                    <Save size={13} /> Guardar
+                  <button onClick={guardar} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 14px', borderRadius: 6, border: 0, background: '#16A34A', color: '#fff', fontSize: 11, fontWeight: 800, cursor: 'pointer', boxShadow: '0 1px 3px rgba(22,163,74,0.3)' }}>
+                    <Save size={13} /> {saving ? 'Guardando...' : 'Guardar'}
                   </button>
                 )}
                 <button type="button" onClick={() => setDrawer(null)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: TX3 }}><X size={18} /></button>
@@ -5701,8 +5959,76 @@ export default function SustracionPage() {
             </div>
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {fichaTab === 'datos' && <TabDatos caso={selected} getVal={getVal} onChange={onChange} />}
-              {fichaTab === 'personas' && <TabPersonas caso={selected} getVal={getVal} onChange={onChange} onOpenNnaModal={idx => { setModalNnaForm(selected.nna?.[idx] ? { ...selected.nna[idx] } : emptyNnaForm()); setModalNnaIndex(idx); }} />}
+              {fichaTab === 'personas' && (
+                <TabPersonas
+                  caso={selected}
+                  getVal={getVal}
+                  onChange={onChange}
+                  onOpenNnaModal={idx => {
+                    let initialForm = emptyNnaForm();
+                    if (selected.nna && selected.nna[idx]) {
+                      initialForm = { ...selected.nna[idx] };
+                    } else if (idx === 0) {
+                      const nomFull = getVal('nnaNombre') || selected.nnaNombre || '';
+                      const partes = nomFull.trim().split(/\s+/).filter(Boolean);
+                      let nombres = '';
+                      let primerApellido = '';
+                      let segundoApellido = '';
+                      if (partes.length >= 3) {
+                        segundoApellido = partes[partes.length - 1];
+                        primerApellido = partes[partes.length - 2];
+                        nombres = partes.slice(0, partes.length - 2).join(' ');
+                      } else if (partes.length === 2) {
+                        nombres = partes[0];
+                        primerApellido = partes[1];
+                      } else {
+                        nombres = partes[0] || '';
+                      }
+                      initialForm = {
+                        nombres,
+                        primerApellido,
+                        segundoApellido,
+                        sexo: getVal('nnaSexo') || selected.nnaSexo || '',
+                        edad: getVal('nnaEdad') || (selected.nnaEdad ? String(selected.nnaEdad) : ''),
+                        tipoEdad: getVal('nnaTipoEdad') || selected.nnaTipoEdad || 'Años',
+                        fechaNacimiento: getVal('nnaFechaNac') || selected.nnaFechaNac || (selected as any).nnafechanac || '',
+                      };
+                    }
+                    setModalNnaForm(initialForm);
+                    setModalNnaIndex(idx);
+                  }}
+                />
+              )}
               {fichaTab === 'bitacora' && <TabBitacora caso={selected} me={me} onAgregarBitacora={onAgregarBitacora} />}
+            </div>
+            {/* BARRA INFERIOR DE ACCIONES STICKY EN EL DRAWER */}
+            <div style={{ padding: '12px 20px', background: '#F8FAFC', borderTop: `1px solid ${BR}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 11, color: hasPending ? '#D97706' : TX3, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+                {hasPending ? '⚠️ Hay cambios pendientes en la ficha' : '✓ Todos los datos están guardados'}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setDrawer(null)}
+                  style={{ padding: '7px 14px', borderRadius: 6, border: `1px solid ${BR}`, background: '#fff', color: TX2, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Cerrar
+                </button>
+                <button
+                  type="button"
+                  onClick={guardar}
+                  disabled={saving || !hasPending}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6, padding: '7px 18px', borderRadius: 6, border: 0,
+                    background: hasPending ? '#16A34A' : '#CBD5E1', color: '#fff', fontSize: 11, fontWeight: 800,
+                    cursor: hasPending ? 'pointer' : 'not-allowed', opacity: hasPending ? 1 : 0.7,
+                    boxShadow: hasPending ? '0 1px 3px rgba(22,163,74,0.3)' : 'none',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <Save size={13} /> {saving ? 'Guardando...' : 'Guardar Cambios'}
+                </button>
+              </div>
             </div>
           </div>
         </>
