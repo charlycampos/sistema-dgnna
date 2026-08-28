@@ -4,6 +4,8 @@ frontend/node_modules/
 frontend/.next/
 venv/
 backend/venv/
+__pycache__/
+*.py[cod]
 *.exe
 *.zip
 *.xlsx

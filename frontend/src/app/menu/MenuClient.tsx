@@ -22,36 +22,10 @@ interface Modulo {
 export default function MenuClient({ session }: Props) {
   const router = useRouter()
 
-  const isDirector = session.rol === 'director' || session.rol === 'directora'
   const isAdmin = session.rol === 'admin'
-
-  // Si es Directora, se muestran estrictamente sus 3 módulos
-  const modulosDirector: Modulo[] = [
-    {
-      id: 'director',
-      titulo: 'Centro de Mando Directivo',
-      descripcion: 'Tablero ejecutivo con KPIs macro y reportes de gestión',
-      icono: <LayoutDashboard className="w-8 h-8" />,
-      ruta: '/director',
-      disponible: true,
-    },
-    {
-      id: 'sala-reuniones',
-      titulo: 'Sala de Reuniones',
-      descripcion: 'Reserva y gestión de salas para reuniones institucionales',
-      icono: <CalendarDays className="w-8 h-8" />,
-      ruta: '/sala-reuniones',
-      disponible: true,
-    },
-    {
-      id: 'usuarios',
-      titulo: 'Gestión de Usuarios',
-      descripcion: 'Administración de cuentas y permisos del sistema',
-      icono: <Users className="w-8 h-8" />,
-      ruta: '/usuarios',
-      disponible: true,
-    },
-  ]
+  const tieneRolDirectivo = session.modulos?.some(
+    modulo => modulo.rolModulo === 'directora' || modulo.rolModulo === 'director'
+  ) ?? false
 
   // Módulos estándar para administrador y especialistas
   const modulosEstandar: Modulo[] = [
@@ -145,7 +119,14 @@ export default function MenuClient({ session }: Props) {
     },
   ]
 
-  const modulos = isDirector ? modulosDirector : modulosEstandar
+  // El menú se deriva de los módulos asignados. Los accesos globales se
+  // mantienen explícitos: ADMIN ve todo y Gestión de Usuarios es solo ADMIN.
+  const modulos = modulosEstandar.filter((modulo) => {
+    if (isAdmin) return true
+    if (modulo.id === 'director') return tieneRolDirectivo
+    if (modulo.soloAdmin || !modulo.disponible) return false
+    return session.modulos?.some(asignado => asignado.modulo === modulo.id) ?? false
+  })
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -155,8 +136,9 @@ export default function MenuClient({ session }: Props) {
 
   /** true si el usuario tiene acceso a este módulo */
   const tieneAcceso = (modulo: Modulo): boolean => {
-    if (isAdmin || isDirector) return true
-    if (modulo.soloAdmin && !isAdmin) return false
+    if (isAdmin) return true
+    if (modulo.id === 'director') return tieneRolDirectivo
+    if (modulo.soloAdmin) return false
     if (!modulo.disponible) return false
     return session.modulos?.some(m => m.modulo === modulo.id) ?? false
   }
@@ -166,7 +148,7 @@ export default function MenuClient({ session }: Props) {
       toast.info('Este módulo estará disponible próximamente')
       return
     }
-    if (modulo.soloAdmin && !isAdmin && !isDirector) {
+    if (modulo.soloAdmin && !isAdmin) {
       toast.error('Solo los administradores pueden acceder a esta sección')
       return
     }
@@ -246,11 +228,7 @@ export default function MenuClient({ session }: Props) {
         {/* Grid de módulos con el diseño azul original */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {modulos.map((modulo) => {
-            const esVisible = !modulo.soloAdmin || isAdmin || isDirector
-            if (!esVisible) return null
-
             const acceso = tieneAcceso(modulo)
-            if (!acceso && !isAdmin && !isDirector) return null
 
             const proximamente = !modulo.disponible
             const sinPermiso = modulo.disponible && !acceso

@@ -34,21 +34,22 @@ class AuthService:
         if not bcrypt.checkpw(password.encode(), usuario.passwordHash.encode()):
             raise PermissionError("Credenciales incorrectas")
 
-        rol = usuario.rol
-        if not rol or rol == "usuario":
-            if any(m.rolModulo in ("directora", "director") for m in usuario.modulos):
-                rol = "directora"
-            else:
-                rol = "usuario"
+        # El rol global es independiente de los roles asignados por modulo.
+        # Un permiso de lectura como "directora" nunca debe elevar al usuario
+        # a una identidad global distinta de "usuario".
+        rol = "admin" if usuario.rol == "admin" else "usuario"
 
         modulos_payload = [
             {"modulo": m.modulo, "rolModulo": m.rolModulo}
             for m in usuario.modulos
         ]
 
-        # Compatibilidad con roles legacy
-        if not modulos_payload and usuario.rol in ("registrador", "directora"):
-            modulos_payload = [{"modulo": "apelaciones", "rolModulo": usuario.rol}]
+        # Compatibilidad prudente con cuentas legacy que guardaban el rol de
+        # Apelaciones en la columna global. El token moderno conserva siempre
+        # rol=usuario y expresa ese acceso exclusivamente dentro de modulos.
+        if not modulos_payload and usuario.rol in ("registrador", "directora", "director"):
+            rol_modulo = "registrador" if usuario.rol == "registrador" else "directora"
+            modulos_payload = [{"modulo": "apelaciones", "rolModulo": rol_modulo}]
 
         token = self._crear_token({
             "userId":  usuario.id,

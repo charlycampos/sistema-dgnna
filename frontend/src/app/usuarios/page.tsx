@@ -23,6 +23,11 @@ interface Usuario {
   modulos: ModuloPermiso[]
 }
 
+type ErrorCarga = {
+  tipo: 'sesion' | 'acceso' | 'general'
+  mensaje: string
+}
+
 const MODULOS_DISPONIBLES = [
   { id: 'apelaciones',     label: 'Módulo Apelaciones' },
   { id: 'sustraccion',     label: 'Módulo Sustracción Internacional' },
@@ -82,6 +87,7 @@ type FormNuevo = {
 export default function UsuariosPage() {
   const [usuarios, setUsuarios]             = useState<Usuario[]>([])
   const [loading, setLoading]               = useState(true)
+  const [errorCarga, setErrorCarga]         = useState<ErrorCarga | null>(null)
   const [busqueda, setBusqueda]             = useState('')
   const [modalCrear, setModalCrear]         = useState(false)
   const [modalEditar, setModalEditar]       = useState<Usuario | null>(null)
@@ -92,17 +98,47 @@ export default function UsuariosPage() {
 
   const formInit: FormNuevo = {
     nombre: '', email: '', password: '', esAdmin: false,
-    modulos: [{ modulo: 'apelaciones', rolModulo: 'registrador' }]
+    modulos: []
   }
   const [form, setForm] = useState<FormNuevo>(formInit)
 
   const cargarUsuarios = useCallback(async () => {
     setLoading(true)
+    setErrorCarga(null)
     try {
       const res = await fetch('/api/usuarios')
-      if (res.status === 403) { toast.error('Acceso denegado'); return }
-      setUsuarios(await res.json())
-    } catch { toast.error('Error cargando usuarios') }
+      if (res.status === 401) {
+        setUsuarios([])
+        setErrorCarga({
+          tipo: 'sesion',
+          mensaje: 'Tu sesión venció. Inicia sesión nuevamente para continuar.',
+        })
+        return
+      }
+      if (res.status === 403) {
+        setUsuarios([])
+        setErrorCarga({
+          tipo: 'acceso',
+          mensaje: 'No tienes permisos para administrar las cuentas del sistema.',
+        })
+        return
+      }
+      if (!res.ok) {
+        throw new Error(`Error HTTP ${res.status}`)
+      }
+
+      const data: unknown = await res.json()
+      if (!Array.isArray(data)) {
+        throw new Error('La respuesta de usuarios no es una lista')
+      }
+      setUsuarios(data)
+    } catch {
+      setUsuarios([])
+      setErrorCarga({
+        tipo: 'general',
+        mensaje: 'No pudimos cargar los usuarios. Verifica la conexión e inténtalo nuevamente.',
+      })
+    }
     finally { setLoading(false) }
   }, [])
 
@@ -222,13 +258,15 @@ export default function UsuariosPage() {
               <p className="text-xs text-gray-400">Administración de cuentas y permisos por módulo</p>
             </div>
           </div>
-          <button
-            onClick={() => setModalCrear(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Nuevo Usuario
-          </button>
+          {!errorCarga && (
+            <button
+              onClick={() => setModalCrear(true)}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Nuevo Usuario
+            </button>
+          )}
         </div>
       </header>
 
@@ -256,6 +294,35 @@ export default function UsuariosPage() {
         <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
           {loading ? (
             <div className="p-12 text-center text-gray-400 text-sm">Cargando usuarios...</div>
+          ) : errorCarga ? (
+            <div role="alert" className="p-10 text-center">
+              <p className="font-semibold text-gray-900">
+                {errorCarga.tipo === 'sesion'
+                  ? 'Sesión expirada'
+                  : errorCarga.tipo === 'acceso'
+                    ? 'Acceso restringido'
+                    : 'No se pudieron cargar los usuarios'}
+              </p>
+              <p className="mt-2 text-sm text-gray-600">{errorCarga.mensaje}</p>
+              <div className="mt-5 flex flex-wrap justify-center gap-3">
+                {errorCarga.tipo === 'general' ? (
+                  <button
+                    type="button"
+                    onClick={cargarUsuarios}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  >
+                    Reintentar
+                  </button>
+                ) : (
+                  <Link
+                    href={errorCarga.tipo === 'sesion' ? '/login' : '/menu'}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  >
+                    {errorCarga.tipo === 'sesion' ? 'Iniciar sesión' : 'Volver al menú'}
+                  </Link>
+                )}
+              </div>
+            </div>
           ) : filtrados.length === 0 ? (
             <div className="p-12 text-center text-gray-400 text-sm">No se encontraron usuarios</div>
           ) : (
