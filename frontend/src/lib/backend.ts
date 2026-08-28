@@ -7,10 +7,10 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
-const BACKEND_URL     = process.env.BACKEND_URL     ?? 'http://localhost:8000'
-const SUSTRACCION_SERVICE_URL = process.env.SUSTRACCION_SERVICE_URL ?? 'http://localhost:8003'
-const POI_SERVICE_URL = process.env.POI_SERVICE_URL ?? 'http://localhost:8007'
-const MAPA_SERVICE_URL = process.env.MAPA_SERVICE_URL ?? 'http://localhost:8008'
+const BACKEND_URL     = process.env.BACKEND_URL     || process.env.BACKEND_INTERNAL_URL || 'http://gateway:8000'
+const SUSTRACCION_SERVICE_URL = process.env.SUSTRACCION_SERVICE_URL || 'http://sustracion-service:8003'
+const POI_SERVICE_URL = process.env.POI_SERVICE_URL || 'http://poi-service:8007'
+const MAPA_SERVICE_URL = process.env.MAPA_SERVICE_URL || 'http://mapa-service:8008'
 const COOKIE_NAME = 'dgnna_session'
 
 /**

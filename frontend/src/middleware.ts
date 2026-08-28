@@ -57,9 +57,9 @@ export async function middleware(request: NextRequest) {
     const response = NextResponse.next()
     response.cookies.set(COOKIE_NAME, nuevoToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.COOKIE_SECURE === 'true',
       sameSite: 'lax',
-      maxAge: 60 * SESSION_MINUTES,
+      maxAge: SESSION_MINUTES * 60,
       path: '/',
     })
     return response

@@ -59,7 +59,7 @@ def tabla_existe(cur, nombre):
 
 def main():
     print("=" * 60)
-    print("  Migración SYSTEM → Microservicios")
+    print("  Migracion SYSTEM -> Microservicios")
     print("=" * 60)
 
     src_con  = conectar(SRC)
@@ -117,10 +117,18 @@ def main():
 
     # ─── APELACIONES_DB ───────────────────────────────────────────────────────
     print("\n[APELACIONES_DB]")
+    if tabla_existe(apel, "apelantes_detalle"):
+        apel.execute("DELETE FROM apelantes_detalle")
+    if tabla_existe(apel, "nna_detalle"):
+        apel.execute("DELETE FROM nna_detalle")
     apel.execute("DELETE FROM apelaciones")
     apel.execute("DELETE FROM abogados")
     apel.execute("DELETE FROM complejidades_juridicas")
     apel.execute("DELETE FROM extension_rangos")
+    if tabla_existe(apel, "revisores"):
+        apel.execute("DELETE FROM revisores")
+    if tabla_existe(apel, "procedencias"):
+        apel.execute("DELETE FROM procedencias")
     apel_con.commit()
 
     # Abogados — "createdAt","updatedAt" con comillas
@@ -219,8 +227,14 @@ def main():
     if sust.fetchone()[0] > 0:
         sust.execute("ALTER TABLE casos_sustracion RENAME COLUMN requeridonomre TO requeridombre")
         sust_con.commit()
-        print("  ✓ Columna 'requeridonomre' renombrada a 'requeridombre'")
+        print("  [OK] Columna 'requeridonomre' renombrada a 'requeridombre'")
 
+    if tabla_existe(sust, "proceso_operativo_sustracion"):
+        sust.execute("DELETE FROM proceso_operativo_sustracion")
+    if tabla_existe(sust, "proceso_operativo_sustraccion"):
+        sust.execute("DELETE FROM proceso_operativo_sustraccion")
+    if tabla_existe(sust, "nna_sustracion"):
+        sust.execute("DELETE FROM nna_sustracion")
     sust.execute("DELETE FROM historial_judicial")
     sust.execute("DELETE FROM bitacora_sustracion")
     sust.execute("DELETE FROM casos_sustracion")

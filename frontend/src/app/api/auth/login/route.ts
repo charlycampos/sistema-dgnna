@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:8000'
+const BACKEND_URL = process.env.BACKEND_URL || process.env.BACKEND_INTERNAL_URL || 'http://gateway:8000'
 const COOKIE_NAME = 'dgnna_session'
 const MAX_AGE = 60 * 60 * 8 // 8 horas de sesión activa (jornada laboral)
 
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
     response.cookies.set(COOKIE_NAME, data.access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.COOKIE_SECURE === 'true',
       sameSite: 'lax',
       maxAge: MAX_AGE,
       path: '/',

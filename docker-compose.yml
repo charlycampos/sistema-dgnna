@@ -1,0 +1,221 @@
+name: dgnna
+
+networks:
+  dgnna-net:
+    driver: bridge
+
+services:
+  # ─────────────────────────────────────────────────────────────
+  # 1. FRONTEND
+  # ─────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - BACKEND_URL=http://gateway:8000
+      - BACKEND_INTERNAL_URL=http://gateway:8000
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+    depends_on:
+      - gateway
+    networks:
+      - dgnna-net
+
+  # ─────────────────────────────────────────────────────────────
+  # 2. API GATEWAY
+  # ─────────────────────────────────────────────────────────────
+  gateway:
+    build:
+      context: ./servicios/api-gateway
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - APELACIONES_SERVICE_URL=http://apelaciones-service:8002
+      - SUSTRACION_SERVICE_URL=http://sustracion-service:8003
+      - SALA_SERVICE_URL=http://sala-service:8004
+      - PROYECTOS_LEY_SERVICE_URL=http://proyectosley-service:8005
+      - TRANSPARENCIA_SERVICE_URL=http://transparencia-service:8006
+      - POI_PP117_SERVICE_URL=http://poi-service:8007
+      - MAPA_SERVICE_URL=http://mapa-service:8008
+      - PREVENIR_PROTEGER_SERVICE_URL=http://prevenir-service:8010
+    networks:
+      - dgnna-net
+
+  # ─────────────────────────────────────────────────────────────
+  # 3. MICROSERVICIO: AUTH
+  # ─────────────────────────────────────────────────────────────
+  auth-service:
+    build:
+      context: ./servicios/servicio-auth
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - PORT=8001
+      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - DATABASE_URL=${DATABASE_URL_AUTH:-oracle+oracledb://auth_db:Auth2026@host.docker.internal:1521/?service_name=XEPDB1}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - dgnna-net
+
+  # ─────────────────────────────────────────────────────────────
+  # 4. MICROSERVICIO: APELACIONES
+  # ─────────────────────────────────────────────────────────────
+  apelaciones-service:
+    build:
+      context: ./servicios/servicio-apelaciones
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      - PORT=8002
+      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - DATABASE_URL=${DATABASE_URL_APELACIONES:-oracle+oracledb://apelaciones_db:Apelaciones2026@host.docker.internal:1521/?service_name=XEPDB1}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - dgnna-net
+
+  # ─────────────────────────────────────────────────────────────
+  # 5. MICROSERVICIO: SUSTRACCIÓN INTERNACIONAL
+  # ─────────────────────────────────────────────────────────────
+  sustracion-service:
+    build:
+      context: ./servicios/servicio-sustracion
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    environment:
+      - PORT=8003
+      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - DATABASE_URL=${DATABASE_URL_SUSTRACION:-oracle+oracledb://sustracion_db:Sustracion2026@host.docker.internal:1521/?service_name=XEPDB1}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - dgnna-net
+
+  # ─────────────────────────────────────────────────────────────
+  # 6. MICROSERVICIO: SALA DE REUNIONES
+  # ─────────────────────────────────────────────────────────────
+  sala-service:
+    build:
+      context: ./servicios/servicio-sala
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8004:8004"
+    environment:
+      - PORT=8004
+      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - DATABASE_URL=${DATABASE_URL_SALA:-oracle+oracledb://sala_db:Sala2026@host.docker.internal:1521/?service_name=XEPDB1}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - dgnna-net
+
+  # ─────────────────────────────────────────────────────────────
+  # 7. MICROSERVICIO: PROYECTOS DE LEY
+  # ─────────────────────────────────────────────────────────────
+  proyectosley-service:
+    build:
+      context: ./servicios/servicio-proyectos-ley
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8005:8005"
+    environment:
+      - PORT=8005
+      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - DATABASE_URL=${DATABASE_URL_PROYECTOS_LEY:-oracle+oracledb://PROYECTOS_LEY_DB:proyectos_ley_2026@host.docker.internal:1521/?service_name=XEPDB1}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - dgnna-net
+
+  # ─────────────────────────────────────────────────────────────
+  # 8. MICROSERVICIO: TRANSPARENCIA
+  # ─────────────────────────────────────────────────────────────
+  transparencia-service:
+    build:
+      context: ./servicios/servicio-transparencia
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8006:8006"
+    environment:
+      - PORT=8006
+      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - DATABASE_URL=${DATABASE_URL_TRANSPARENCIA:-oracle+oracledb://TRANSPARENCIA_DB:123456@host.docker.internal:1521/?service_name=XEPDB1}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - dgnna-net
+
+  # ─────────────────────────────────────────────────────────────
+  # 9. MICROSERVICIO: POI / PP 0117
+  # ─────────────────────────────────────────────────────────────
+  poi-service:
+    build:
+      context: ./servicios/servicio-poi-pp117
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8007:8007"
+    environment:
+      - PORT=8007
+      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - DATABASE_URL=${DATABASE_URL_POI:-oracle+oracledb://poi_db:Poi2026@host.docker.internal:1521/?service_name=XEPDB1}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - dgnna-net
+
+  # ─────────────────────────────────────────────────────────────
+  # 10. MICROSERVICIO: MAPA
+  # ─────────────────────────────────────────────────────────────
+  mapa-service:
+    build:
+      context: ./servicios/servicio-mapa
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8008:8008"
+    environment:
+      - PORT=8008
+      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - DATABASE_URL=${DATABASE_URL_MAPA:-oracle+oracledb://mapa_db:Mapa2026@host.docker.internal:1521/?service_name=XEPDB1}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - dgnna-net
+
+  # ─────────────────────────────────────────────────────────────
+  # 11. MICROSERVICIO: PREVENIR PARA PROTEGER
+  # ─────────────────────────────────────────────────────────────
+  prevenir-service:
+    build:
+      context: ./servicios/servicio-prevenir-proteger
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8010:8010"
+    environment:
+      - PORT=8010
+      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - DATABASE_URL=${DATABASE_URL_PREVENIR:-oracle+oracledb://prevenir_db:Prevenir2026@host.docker.internal:1521/?service_name=XEPDB1}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - dgnna-net

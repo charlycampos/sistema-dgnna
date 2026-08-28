@@ -21,7 +21,7 @@ export interface SessionPayload {
   userId: string
   nombre: string
   email: string
-  rol: 'admin' | 'usuario'
+  rol: 'admin' | 'usuario' | 'director' | 'directora' | 'registrador' | 'abogado' | string
   modulos: ModuloPermiso[]
 }
 

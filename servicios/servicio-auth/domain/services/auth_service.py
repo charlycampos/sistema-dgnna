@@ -34,7 +34,13 @@ class AuthService:
         if not bcrypt.checkpw(password.encode(), usuario.passwordHash.encode()):
             raise PermissionError("Credenciales incorrectas")
 
-        rol = "admin" if usuario.es_admin() else "usuario"
+        rol = usuario.rol
+        if not rol or rol == "usuario":
+            if any(m.rolModulo in ("directora", "director") for m in usuario.modulos):
+                rol = "directora"
+            else:
+                rol = "usuario"
+
         modulos_payload = [
             {"modulo": m.modulo, "rolModulo": m.rolModulo}
             for m in usuario.modulos

@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { LogOut, Scale, Globe, BookOpen, Users, ChevronRight, Lock, Landmark, CalendarDays, FileText, Eye, BarChart3, MapPin } from 'lucide-react'
+import { LogOut, Scale, Globe, BookOpen, Users, ChevronRight, Lock, Landmark, CalendarDays, FileText, Eye, BarChart3, MapPin, LayoutDashboard } from 'lucide-react'
 import type { SessionPayload } from '@/lib/auth'
 
 interface Props {
@@ -22,7 +22,48 @@ interface Modulo {
 export default function MenuClient({ session }: Props) {
   const router = useRouter()
 
-  const modulos: Modulo[] = [
+  const isDirector = session.rol === 'director' || session.rol === 'directora'
+  const isAdmin = session.rol === 'admin'
+
+  // Si es Directora, se muestran estrictamente sus 3 módulos
+  const modulosDirector: Modulo[] = [
+    {
+      id: 'director',
+      titulo: 'Centro de Mando Directivo',
+      descripcion: 'Tablero ejecutivo con KPIs macro y reportes de gestión',
+      icono: <LayoutDashboard className="w-8 h-8" />,
+      ruta: '/director',
+      disponible: true,
+    },
+    {
+      id: 'sala-reuniones',
+      titulo: 'Sala de Reuniones',
+      descripcion: 'Reserva y gestión de salas para reuniones institucionales',
+      icono: <CalendarDays className="w-8 h-8" />,
+      ruta: '/sala-reuniones',
+      disponible: true,
+    },
+    {
+      id: 'usuarios',
+      titulo: 'Gestión de Usuarios',
+      descripcion: 'Administración de cuentas y permisos del sistema',
+      icono: <Users className="w-8 h-8" />,
+      ruta: '/usuarios',
+      disponible: true,
+    },
+  ]
+
+  // Módulos estándar para administrador y especialistas
+  const modulosEstandar: Modulo[] = [
+    {
+      id: 'director',
+      titulo: 'Centro de Mando Directivo',
+      descripcion: 'Tablero ejecutivo de alta dirección',
+      icono: <LayoutDashboard className="w-8 h-8" />,
+      ruta: '/director',
+      disponible: true,
+      soloAdmin: true,
+    },
     {
       id: 'apelaciones',
       titulo: 'Módulo Apelaciones',
@@ -104,6 +145,8 @@ export default function MenuClient({ session }: Props) {
     },
   ]
 
+  const modulos = isDirector ? modulosDirector : modulosEstandar
+
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')
@@ -112,10 +155,10 @@ export default function MenuClient({ session }: Props) {
 
   /** true si el usuario tiene acceso a este módulo */
   const tieneAcceso = (modulo: Modulo): boolean => {
-    if (session.rol === 'admin') return true
-    if (modulo.soloAdmin) return false
+    if (isAdmin || isDirector) return true
+    if (modulo.soloAdmin && !isAdmin) return false
     if (!modulo.disponible) return false
-    return session.modulos.some(m => m.modulo === modulo.id)
+    return session.modulos?.some(m => m.modulo === modulo.id) ?? false
   }
 
   const handleClick = (modulo: Modulo) => {
@@ -123,7 +166,7 @@ export default function MenuClient({ session }: Props) {
       toast.info('Este módulo estará disponible próximamente')
       return
     }
-    if (modulo.soloAdmin && session.rol !== 'admin') {
+    if (modulo.soloAdmin && !isAdmin && !isDirector) {
       toast.error('Solo los administradores pueden acceder a esta sección')
       return
     }
@@ -136,22 +179,23 @@ export default function MenuClient({ session }: Props) {
 
   // Iniciales del usuario
   const iniciales = session.nombre
-    .split(' ')
+    ?.split(' ')
     .slice(0, 2)
     .map(n => n[0])
     .join('')
-    .toUpperCase()
+    .toUpperCase() || 'DG'
 
   const rolLabel: Record<string, string> = {
     admin: 'Administrador',
     registrador: 'Registrador',
     directora: 'Directora',
+    director: 'Director',
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 to-blue-50">
 
-      {/* Header */}
+      {/* Header Original */}
       <header className="bg-white border-b shadow-sm">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -188,25 +232,25 @@ export default function MenuClient({ session }: Props) {
         </div>
       </header>
 
-      {/* Contenido */}
+      {/* Contenido Original */}
       <main className="max-w-5xl mx-auto px-6 py-12">
         <div className="mb-10 text-center">
           <h1 className="text-2xl font-bold text-gray-900">
-            Bienvenido, {session.nombre.split(' ')[0]}
+            Bienvenido, {session.nombre?.split(' ')[0]}
           </h1>
           <p className="text-gray-500 mt-1 text-sm">
             Selecciona el módulo al que deseas acceder
           </p>
         </div>
 
-        {/* Grid de módulos */}
+        {/* Grid de módulos con el diseño azul original */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {modulos.map((modulo) => {
-            const esVisible = !modulo.soloAdmin || session.rol === 'admin'
+            const esVisible = !modulo.soloAdmin || isAdmin || isDirector
             if (!esVisible) return null
 
             const acceso = tieneAcceso(modulo)
-            if (!acceso) return null
+            if (!acceso && !isAdmin && !isDirector) return null
 
             const proximamente = !modulo.disponible
             const sinPermiso = modulo.disponible && !acceso
@@ -258,7 +302,7 @@ export default function MenuClient({ session }: Props) {
           })}
         </div>
 
-        {/* Descripción del módulo seleccionado (footer sutil) */}
+        {/* Footer sutil original */}
         <p className="text-center text-xs text-gray-400 mt-10">
           DGNNA · Ministerio de la Mujer y Poblaciones Vulnerables · © {new Date().getFullYear()}
         </p>
@@ -266,4 +310,3 @@ export default function MenuClient({ session }: Props) {
     </div>
   )
 }
-
