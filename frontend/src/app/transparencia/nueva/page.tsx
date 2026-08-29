@@ -9,6 +9,7 @@ import { calcularPlazoHabiles } from '@/lib/calcular-plazo'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { DatePickerInput } from '@/components/ui/date-picker-input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
@@ -142,10 +143,9 @@ export default function NuevaTransparenciaPage() {
                     <FormItem>
                       <FormLabel>Fecha de Ingreso *</FormLabel>
                       <FormControl>
-                        <Input
-                          type="date"
-                          value={toDateValue(field.value)}
-                          onChange={e => field.onChange(fromDateValue(e.target.value))}
+                        <DatePickerInput
+                          value={field.value}
+                          onChange={field.onChange}
                         />
                       </FormControl>
                       <FormMessage />
@@ -156,10 +156,9 @@ export default function NuevaTransparenciaPage() {
                     <FormItem>
                       <FormLabel>Plazo Interno</FormLabel>
                       <FormControl>
-                        <Input
-                          type="date"
-                          value={toDateValue(field.value)}
-                          onChange={e => field.onChange(fromDateValue(e.target.value))}
+                        <DatePickerInput
+                          value={field.value}
+                          onChange={field.onChange}
                         />
                       </FormControl>
                       <FormMessage />

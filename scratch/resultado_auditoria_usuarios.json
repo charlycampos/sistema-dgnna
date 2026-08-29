@@ -1,0 +1,38 @@
+[
+  {
+    "modulo": "Sustracción Internacional",
+    "usuario": "eolaya@mimp.gob.pe (Emma Olaya)",
+    "accion": "Crear Expediente Sustracción con NNA",
+    "status": 201,
+    "resultado": "EXITOSO",
+    "id_bd": "4e1b79ed-fd95-4e9c-b909-d97446ade585",
+    "usuario_estampado": "Emma Victoria Olaya Anicama"
+  },
+  {
+    "modulo": "Sala de Reuniones",
+    "usuario": "scamarena@mimp.gob.pe (Silvia Camarena)",
+    "accion": "Crear Reserva de Sala",
+    "status": 201,
+    "resultado": "EXITOSO",
+    "id_bd": "a9acc5d3-a3d5-498b-9aea-cb246ec94cde",
+    "usuario_estampado": "Silvia Camerana Arestegui"
+  },
+  {
+    "modulo": "Ley de Transparencia",
+    "usuario": "mmoreno@mimp.gob.pe (Maria Moreno)",
+    "accion": "Crear Solicitud de Transparencia",
+    "status": 201,
+    "resultado": "EXITOSO",
+    "id_bd": "21b47b71-b386-4ce5-a196-527ea61f0c3c",
+    "usuario_estampado": "Maria de Jesus Moreno Rivera"
+  },
+  {
+    "modulo": "Apelaciones",
+    "usuario": "dgnna01@mimp.gob.pe (Yasmina Cerna)",
+    "accion": "Acceso y consulta de expedientes de apelación",
+    "status": 200,
+    "resultado": "EXITOSO",
+    "id_bd": "176 expedientes consultados",
+    "usuario_estampado": "Acceso Concedido"
+  }
+]

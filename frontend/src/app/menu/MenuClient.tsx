@@ -140,7 +140,11 @@ export default function MenuClient({ session }: Props) {
     if (modulo.id === 'director') return tieneRolDirectivo
     if (modulo.soloAdmin) return false
     if (!modulo.disponible) return false
-    return session.modulos?.some(m => m.modulo === modulo.id) ?? false
+    return session.modulos?.some(m => 
+      m.modulo === modulo.id || 
+      (modulo.id === 'sustraccion' && m.modulo === 'sustracion') || 
+      (modulo.id === 'sustracion' && m.modulo === 'sustraccion')
+    ) ?? false
   }
 
   const handleClick = (modulo: Modulo) => {

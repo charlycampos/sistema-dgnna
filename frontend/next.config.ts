@@ -1,7 +1,7 @@
-import type { NextConfig } from "next";
+﻿import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Configuración limpia sin variables estáticas horneadas
+  // Configuración limpia
 };
 
 export default nextConfig;

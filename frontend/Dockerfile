@@ -1,16 +1,13 @@
-FROM node:20-alpine AS builder
+﻿FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Instalar dependencias
 COPY package.json package-lock.json* ./
 RUN npm install
 
-# Copiar código fuente y compilar
 COPY . .
 RUN npm run build
 
-# Etapa de ejecución en producción
 FROM node:20-alpine AS runner
 WORKDIR /app
 

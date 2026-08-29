@@ -13,6 +13,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     restart: unless-stopped
+    mem_limit: 400m
     ports:
       - "3000:3000"
     environment:
@@ -33,6 +34,7 @@ services:
       context: ./servicios/api-gateway
       dockerfile: Dockerfile
     restart: unless-stopped
+    mem_limit: 200m
     ports:
       - "8000:8000"
     environment:
@@ -57,6 +59,7 @@ services:
       context: ./servicios/servicio-auth
       dockerfile: Dockerfile
     restart: unless-stopped
+    mem_limit: 200m
     ports:
       - "8001:8001"
     environment:
@@ -76,6 +79,7 @@ services:
       context: ./servicios/servicio-apelaciones
       dockerfile: Dockerfile
     restart: unless-stopped
+    mem_limit: 200m
     ports:
       - "8002:8002"
     environment:
@@ -95,6 +99,7 @@ services:
       context: ./servicios/servicio-sustracion
       dockerfile: Dockerfile
     restart: unless-stopped
+    mem_limit: 200m
     ports:
       - "8003:8003"
     environment:
@@ -114,6 +119,7 @@ services:
       context: ./servicios/servicio-sala
       dockerfile: Dockerfile
     restart: unless-stopped
+    mem_limit: 200m
     ports:
       - "8004:8004"
     environment:
@@ -133,6 +139,7 @@ services:
       context: ./servicios/servicio-proyectos-ley
       dockerfile: Dockerfile
     restart: unless-stopped
+    mem_limit: 200m
     ports:
       - "8005:8005"
     environment:
@@ -152,6 +159,7 @@ services:
       context: ./servicios/servicio-transparencia
       dockerfile: Dockerfile
     restart: unless-stopped
+    mem_limit: 200m
     ports:
       - "8006:8006"
     environment:
@@ -171,6 +179,7 @@ services:
       context: ./servicios/servicio-poi-pp117
       dockerfile: Dockerfile
     restart: unless-stopped
+    mem_limit: 200m
     ports:
       - "8007:8007"
     environment:
@@ -190,6 +199,7 @@ services:
       context: ./servicios/servicio-mapa
       dockerfile: Dockerfile
     restart: unless-stopped
+    mem_limit: 200m
     ports:
       - "8008:8008"
     environment:
@@ -209,6 +219,7 @@ services:
       context: ./servicios/servicio-prevenir-proteger
       dockerfile: Dockerfile
     restart: unless-stopped
+    mem_limit: 200m
     ports:
       - "8010:8010"
     environment:

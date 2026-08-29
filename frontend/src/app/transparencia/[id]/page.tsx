@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { DatePickerInput } from '@/components/ui/date-picker-input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
@@ -204,7 +205,7 @@ export default function TransparenciaDetallePage({ params }: { params: Promise<{
                       <FormItem>
                         <FormLabel>Fecha de Ingreso *</FormLabel>
                         <FormControl>
-                          <Input type="date" value={toDateValue(field.value)} onChange={e => field.onChange(fromDateValue(e.target.value))} />
+                          <DatePickerInput value={field.value} onChange={field.onChange} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -214,7 +215,7 @@ export default function TransparenciaDetallePage({ params }: { params: Promise<{
                       <FormItem>
                         <FormLabel>Plazo Interno</FormLabel>
                         <FormControl>
-                          <Input type="date" value={toDateValue(field.value)} onChange={e => field.onChange(fromDateValue(e.target.value))} />
+                          <DatePickerInput value={field.value} onChange={field.onChange} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -335,7 +336,7 @@ export default function TransparenciaDetallePage({ params }: { params: Promise<{
                       <FormItem>
                         <FormLabel>Fecha de Atención</FormLabel>
                         <FormControl>
-                          <Input type="date" value={toDateValue(field.value)} onChange={e => field.onChange(fromDateValue(e.target.value))} />
+                          <DatePickerInput value={field.value} onChange={field.onChange} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
