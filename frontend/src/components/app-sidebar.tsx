@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Scale, LayoutDashboard, Inbox, Settings, LayoutGrid, LogOut, FileSearch, BarChart3, Upload, TrendingUp, PieChart, MapPin } from 'lucide-react'
+import { Scale, LayoutDashboard, Inbox, Settings, LayoutGrid, LogOut, FileSearch, BarChart3, Upload, TrendingUp, PieChart, MapPin, ShieldCheck } from 'lucide-react'
 import { useMe } from '@/lib/use-me'
 
 export function AppSidebar() {
@@ -148,6 +148,40 @@ export function AppSidebar() {
                   </span>
                   <span className={`transition-all duration-300 ${isCollapsed ? 'hidden opacity-0 w-0 h-0 overflow-hidden' : 'opacity-100'}`}>
                     Configuración
+                  </span>
+                </Link>
+                {me?.rol === 'admin' && (
+                  <Link
+                    href="/auditoria"
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      pathname === '/auditoria'
+                        ? 'bg-blue-50 text-blue-700 font-semibold shadow-sm'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    } ${isCollapsed ? 'justify-center px-0' : ''}`}
+                    title={isCollapsed ? 'Auditoría' : undefined}
+                  >
+                    <span className={pathname === '/auditoria' ? 'text-blue-600 shrink-0' : 'text-gray-400 shrink-0'}>
+                      <ShieldCheck className="h-4 w-4" />
+                    </span>
+                    <span className={`transition-all duration-300 ${isCollapsed ? 'hidden opacity-0 w-0 h-0 overflow-hidden' : 'opacity-100'}`}>
+                      Auditoría
+                    </span>
+                  </Link>
+                )}
+                <Link
+                  href="/normativa"
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    pathname === '/normativa'
+                      ? 'bg-blue-50 text-blue-700 font-semibold shadow-sm'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  } ${isCollapsed ? 'justify-center px-0' : ''}`}
+                  title={isCollapsed ? 'Consulta Normativa' : undefined}
+                >
+                  <span className={pathname === '/normativa' ? 'text-blue-600 shrink-0' : 'text-gray-400 shrink-0'}>
+                    <Scale className="h-4 w-4" />
+                  </span>
+                  <span className={`transition-all duration-300 ${isCollapsed ? 'hidden opacity-0 w-0 h-0 overflow-hidden' : 'opacity-100'}`}>
+                    Consulta Normativa
                   </span>
                 </Link>
               </div>

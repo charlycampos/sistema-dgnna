@@ -1,60 +1,57 @@
-# Sistema de Gestión de Apelaciones - DGNNA
+# Sistema Integral DGNNA — Ministerio de la Mujer y Poblaciones Vulnerables (MIMP)
 
-## Descripción
-Este es un proyecto [Next.js](https://nextjs.org) diseñado para la gestión de apelaciones de la DGNNA (Dirección General de Niñas, Niños y Adolescentes). Permite registrar, asignar y dar seguimiento a los expedientes de apelación, incluyendo la generación de reportes y exportación de datos.
+## 📌 Descripción General
+Plataforma web modular de alta disponibilidad para la Dirección General de Niñas, Niños y Adolescentes (DGNNA - MIMP). Centraliza la gestión operativa, jurídica y administrativa en **13 servicios distribuidos en contenedores Docker**:
 
-## Tecnologías
-- **Framework Web**: [Next.js 15](https://nextjs.org/) (React)
-- **Base de Datos**: Oracle (vía SQLAlchemy en el Backend)
-- **Estilos**: [Tailwind CSS](https://tailwindcss.com/)
-- **Componentes UI**: [Radix UI](https://www.radix-ui.com/) / Lucide Icons
+1. **Gestión de Recursos de Apelación y Triaje Jurídico** (SLA y balanceo de carga).
+2. **Restitución y Sustracción Internacional de Menores** (Convenio de La Haya 1980 / Directiva 006-2021-MIMP).
+3. **Seguimiento de Proyectos de Ley del Congreso** (Opiniones técnicas y alertas).
+4. **Solicitudes de Transparencia y Acceso a la Información** (Ley 27806).
+5. **Reserva y Disponibilidad de Salas de Reunión**.
+6. **Plan Operativo Institucional y Presupuesto por Resultados (POI - PP 0117)**.
+7. **Mapa Interactivo y Cobertura Territorial de Servicios (UPE, CAR, DEMUNA)**.
+8. **Intervenciones Preventivas y de Protección (Estrategia Prevenir / Proteger)**.
+9. **Módulo de Auditoría y Trazabilidad Global** (Historial inmutable, comparador Diff de campos y reportes Excel).
+10. **Consulta Normativa y Asistente RAG Multi-LLM** (ChatGPT, Gemini, Claude anclado en 398 artículos de DL 1297 y Reglamento).
+11. **Autenticación Unificada y Control de Accesos por Módulo (RBAC)**.
+12. **API Gateway Central**.
+13. **Frontend Unificado Next.js 16 / React 19**.
 
-## Requisitos Previos
-- [Node.js](https://nodejs.org/) (LTS recomendado, v18 o superior)
-- Python 3.11+
-- Cliente de Oracle (Instant Client si es necesario) e instanciar `oracledb`.
-- Git
+---
 
-## Instalación y Ejecución (Desarrollo)
+## 🏗️ Arquitectura Técnica
+* **Frontend:** [Next.js 16 (App Router)](https://nextjs.org/) + React 19 + Tailwind CSS + Lucide Icons.
+* **API Gateway & Microservicios:** [FastAPI](https://fastapi.tiangolo.com/) (Python 3.11) + SQLAlchemy 2.0.
+* **Motor RAG & Multi-LLM:** OpenAI GPT-4o + Google Gemini 1.5/2.0 Flash + Anthropic Claude 3.5 con fallback cascade y búsqueda vectorial en memoria con NumPy.
+* **Bases de Datos:** Oracle Database XE 21c (PDB `XEPDB1`) con esquemas dedicados por microservicio + soporte SQLite para contingencia.
+* **Contenedores:** Docker & Docker Compose con red bridge interna `dgnna-net`.
 
-1.  **Clonar el repositorio:**
-    ```bash
-    git clone https://github.com/usuario/sistema-apelaciones.git
-    cd sistema-apelaciones
-    ```
+Para consultar el mapa topológico completo y los diagramas Mermaid, revisa el archivo:  
+👉 **[ARQUITECTURA_DOCKER.md](ARQUITECTURA_DOCKER.md)**
 
-2.  **Configurar Backend:**
-    - Ve a la carpeta `backend/`.
-    - Crea un archivo `.env` basado en `.env.example`.
-    - Configura `DATABASE_URL` con tu cadena de conexión a Oracle:
-      `DATABASE_URL=oracle+oracledb://usuario:password@host:1521/?service_name=ORCL`
+---
 
-3.  **Instalar dependencias y ejecutar:**
-    - Ejecuta `iniciar.bat` en la raíz para iniciar tanto el Frontend como el Backend.
+## 🚀 Puesta en Marcha Rápida (Docker)
 
-## Scripts Disponibles
+1. **Levantar todo el ecosistema (13 contenedores):**
+   ```powershell
+   docker compose up -d
+   ```
 
-- `npm run dev`: Inicia el servidor de desarrollo de Next.js.
-- `npm run build`: Compila la aplicación para producción.
-- `npm run start`: Inicia la aplicación compilada.
-- `npm run electron`: Inicia la aplicación en modo desarrollo de escritorio (Electron).
-- `npm run electron:build`: Compila y empaqueta la aplicación de escritorio para Windows.
-- `npm run db:studio`: Abre una interfaz web para inspeccionar la base de datos.
-- `npm run lint`: Ejecuta el linter (ESLint).
+2. **Verificar estado de los contenedores:**
+   ```powershell
+   docker compose ps
+   ```
 
-## Estructura de Archivos Clave
-- `src/app`: Rutas y páginas de la aplicación (App Router).
-- `src/components`: Componentes reutilizables.
-- `src/lib`: Utilidades y configuraciones.
-- `prisma/schema.prisma`: Definición del esquema de la base de datos.
-- `electron-main.js`: Punto de entrada para la aplicación Electron.
+3. **Acceso Web:**
+   * **Aplicación Principal:** [http://localhost:3000](http://localhost:3000)
+   * **Módulo de Consulta Normativa:** [http://localhost:3000/normativa](http://localhost:3000/normativa)
+   * **Módulo de Auditoría:** [http://localhost:3000/auditoria](http://localhost:3000/auditoria)
+   * **API Gateway Health:** [http://localhost:8000/health](http://localhost:8000/health)
+   * **Documentación Swagger:** [http://localhost:8000/docs](http://localhost:8000/docs)
 
-## Documentación Adicional
-Revisa la carpeta `docs/` para más información:
-- [Guía de Inicio Rápido / Usuario Final](docs/COMO_INICIAR.md)
-- [Empaquetado y Distribución](docs/EMPAQUETADO.md)
-- [Readme de Electron](docs/ELECTRON_README.md)
-- [Análisis del Sistema](docs/analisis_sistema_triaje.md)
+---
 
-## Autor
-Desarrollado para DGNNA - Ministerio de la Mujer y Poblaciones Vulnerables.
+## 👥 Equipo y Perfiles
+Consulte **[AGENTS.md](AGENTS.md)** para conocer las responsabilidades de UX/UI, QA normativo y arquitectura fullstack.
+

@@ -47,7 +47,9 @@ services:
       - TRANSPARENCIA_SERVICE_URL=http://transparencia-service:8006
       - POI_PP117_SERVICE_URL=http://poi-service:8007
       - MAPA_SERVICE_URL=http://mapa-service:8008
+      - AUDITORIA_SERVICE_URL=http://auditoria-service:8009
       - PREVENIR_PROTEGER_SERVICE_URL=http://prevenir-service:8010
+      - NORMATIVA_SERVICE_URL=http://normativa-service:8011
     networks:
       - dgnna-net
 
@@ -230,3 +232,55 @@ services:
       - "host.docker.internal:host-gateway"
     networks:
       - dgnna-net
+
+  # ─────────────────────────────────────────────────────────────
+  # 12. MICROSERVICIO: AUDITORIA Y TRAZABILIDAD
+  # ─────────────────────────────────────────────────────────────
+  auditoria-service:
+    container_name: auditoria-service-1
+    build:
+      context: ./servicios/servicio-auditoria
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    mem_limit: 200m
+    ports:
+      - "8009:8009"
+    environment:
+      - PORT=8009
+      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - DATABASE_URL=${DATABASE_URL_AUDITORIA:-oracle+oracledb://auditoria_db:Auditoria2026@host.docker.internal:1521/?service_name=XEPDB1}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - dgnna-net
+
+  # ─────────────────────────────────────────────────────────────
+  # 13. MICROSERVICIO: CONSULTA NORMATIVA Y RAG MULTI-LLM
+  # ─────────────────────────────────────────────────────────────
+  normativa-service:
+    container_name: normativa-service-1
+    build:
+      context: ./servicios/servicio-normativa
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    mem_limit: 512m
+    ports:
+      - "8011:8011"
+    environment:
+      - PORT=8011
+      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - DATABASE_URL=${DATABASE_URL_NORMATIVA:-oracle+oracledb://normativa_db:Normativa2026@host.docker.internal:1521/?service_name=XEPDB1}
+      - AUDITORIA_SERVICE_URL=http://auditoria-service:8009
+      - IA_HABILITADA=true
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - LLM_DEFAULT_PROVIDER=${LLM_DEFAULT_PROVIDER:-openai}
+    volumes:
+      - ./normativa:/app/normativa:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - dgnna-net
+
+

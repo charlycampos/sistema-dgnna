@@ -12,6 +12,7 @@ from infrastructure.api.schemas import (
     ProcesoOperativoUpdate,
 )
 from domain.services.sustracion_service import SustracionService
+from infrastructure.api.audit_client import registrar_auditoria
 
 router = APIRouter(prefix="/api/sustracion", tags=["sustracion"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="http://localhost:8001/api/auth/login")
@@ -46,7 +47,18 @@ def listar(
 @router.post("", response_model=CasoSustracionOut, status_code=201)
 def crear(body: CasoSustracionCreate, service: SustracionService = Depends(get_service), usuario: str = Depends(get_usuario)):
     try:
-        return _caso_out(service.crear(body.model_dump(), usuario=usuario))
+        nuevo_caso = service.crear(body.model_dump(), usuario=usuario)
+        registrar_auditoria(
+            modulo="sustracion",
+            tabla="casos_sustracion",
+            registro_id=nuevo_caso.id,
+            codigo_referencia=nuevo_caso.codigo,
+            accion="CREAR",
+            campos_cambiados=", ".join(body.model_dump().keys()),
+            valores_nuevos=body.model_dump(),
+            usuario_nombre=usuario or "Especialista"
+        )
+        return _caso_out(nuevo_caso)
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
     except Exception as e:
@@ -71,7 +83,25 @@ def actualizar_proceso(
 ):
     try:
         datos = body.model_dump(exclude_unset=True)
-        return _caso_out(service.actualizar_proceso(id, datos, usuario=usuario))
+        caso_anterior = service.obtener(id)
+        caso_actualizado = service.actualizar_proceso(id, datos, usuario=usuario)
+        
+        # Calcular campos modificados
+        campos_mod = list(datos.keys())
+        previos = {k: getattr(caso_anterior, k, None) for k in campos_mod}
+        
+        registrar_auditoria(
+            modulo="sustracion",
+            tabla="casos_sustracion",
+            registro_id=caso_actualizado.id,
+            codigo_referencia=caso_actualizado.codigo,
+            accion="MODIFICAR",
+            campos_cambiados=", ".join(campos_mod),
+            valores_previos=previos,
+            valores_nuevos=datos,
+            usuario_nombre=usuario or "Especialista"
+        )
+        return _caso_out(caso_actualizado)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -79,9 +109,27 @@ def actualizar_proceso(
 
 
 @router.put("/{id}", response_model=CasoSustracionOut)
-def actualizar(id: str, body: CasoSustracionUpdate, service: SustracionService = Depends(get_service)):
+def actualizar(id: str, body: CasoSustracionUpdate, service: SustracionService = Depends(get_service), usuario: str = Depends(get_usuario)):
     try:
-        return _caso_out(service.actualizar(id, body.model_dump(exclude_unset=True)))
+        datos = body.model_dump(exclude_unset=True)
+        caso_anterior = service.obtener(id)
+        caso_actualizado = service.actualizar(id, datos)
+        
+        campos_mod = list(datos.keys())
+        previos = {k: getattr(caso_anterior, k, None) for k in campos_mod}
+
+        registrar_auditoria(
+            modulo="sustracion",
+            tabla="casos_sustracion",
+            registro_id=caso_actualizado.id,
+            codigo_referencia=caso_actualizado.codigo,
+            accion="MODIFICAR",
+            campos_cambiados=", ".join(campos_mod),
+            valores_previos=previos,
+            valores_nuevos=datos,
+            usuario_nombre=usuario or "Especialista"
+        )
+        return _caso_out(caso_actualizado)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -89,9 +137,19 @@ def actualizar(id: str, body: CasoSustracionUpdate, service: SustracionService =
 
 
 @router.delete("/{id}")
-def eliminar(id: str, service: SustracionService = Depends(get_service)):
+def eliminar(id: str, service: SustracionService = Depends(get_service), usuario: str = Depends(get_usuario)):
     try:
+        caso = service.obtener(id)
+        codigo = caso.codigo if caso else id
         service.eliminar(id)
+        registrar_auditoria(
+            modulo="sustracion",
+            tabla="casos_sustracion",
+            registro_id=id,
+            codigo_referencia=codigo,
+            accion="ELIMINAR",
+            usuario_nombre=usuario or "Especialista"
+        )
         return {"success": True}
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))

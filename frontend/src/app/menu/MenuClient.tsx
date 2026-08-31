@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { LogOut, Scale, Globe, BookOpen, Users, ChevronRight, Lock, Landmark, CalendarDays, FileText, Eye, BarChart3, MapPin, LayoutDashboard } from 'lucide-react'
+import { LogOut, Scale, Globe, BookOpen, Users, ChevronRight, Lock, Landmark, CalendarDays, FileText, Eye, BarChart3, MapPin, LayoutDashboard, ShieldCheck } from 'lucide-react'
 import type { SessionPayload } from '@/lib/auth'
 
 interface Props {
@@ -116,6 +116,23 @@ export default function MenuClient({ session }: Props) {
       ruta: '/usuarios',
       disponible: true,
       soloAdmin: true,
+    },
+    {
+      id: 'auditoria',
+      titulo: 'Módulo de Auditoría y Trazabilidad',
+      descripcion: 'Registro inmutable de modificaciones y actividades en los 7 módulos',
+      icono: <ShieldCheck className="w-8 h-8" />,
+      ruta: '/auditoria',
+      disponible: true,
+      soloAdmin: true,
+    },
+    {
+      id: 'normativa',
+      titulo: 'Consulta Normativa y Asistente RAG',
+      descripcion: 'Búsqueda de artículos legales (DL 1297 y Reglamento) y asistente Multi-LLM',
+      icono: <Scale className="w-8 h-8" />,
+      ruta: '/normativa',
+      disponible: true,
     },
   ]
 

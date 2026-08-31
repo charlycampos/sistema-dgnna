@@ -462,3 +462,23 @@ class PoiDato(Base):
     motivoMes = Column(String(2000), nullable=True)
 
     carga = relationship("PoiCarga", back_populates="datos")
+
+
+class AuditoriaSistema(Base):
+    __tablename__ = "auditoria_sistema"
+
+    id               = Column(String(36), primary_key=True, default=new_id)
+    modulo           = Column(String(50), nullable=False)   # sustracion, apelaciones, proyectos-ley, etc.
+    tablaAfectada    = Column("tablaafectada", String(50), nullable=False)
+    registroId       = Column("registroid", String(100), nullable=False)
+    codigoReferencia = Column("codigoreferencia", String(100), nullable=True)
+    accion           = Column(String(30), nullable=False)   # CREAR, MODIFICAR, ELIMINAR, LOGIN, PERMISOS
+    camposCambiados  = Column("camposcambiados", String(1000), nullable=True)
+    valoresPrevios   = Column("valoresprevios", Text, nullable=True)
+    valoresNuevos    = Column("valoresnuevos", Text, nullable=True)
+    usuarioId        = Column("usuarioid", String(50), nullable=False)
+    usuarioNombre    = Column("usuarionombre", String(200), nullable=False)
+    usuarioRol       = Column("usuariorol", String(50), nullable=True)
+    ipOrigen         = Column("iporigen", String(50), nullable=True)
+    createdAt        = Column("createdat", DateTime, default=datetime.utcnow, nullable=False)
+

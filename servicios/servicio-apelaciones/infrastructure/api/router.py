@@ -12,6 +12,7 @@ from infrastructure.db.apelacion_repository_impl import ApelacionRepositoryImpl
 from infrastructure.db.complejidad_repository_impl import ComplejidadRepositoryImpl
 from infrastructure.api.schemas import ApelacionCreate, ApelacionUpdate, ApelacionOut
 from domain.services.apelacion_service import ApelacionService
+from infrastructure.api.audit_client import registrar_auditoria
 
 router = APIRouter(prefix="/api/apelaciones", tags=["apelaciones"])
 
@@ -61,7 +62,18 @@ def crear(body: ApelacionCreate, db: Session = Depends(get_db)):
     service = get_service(db)
     try:
         entidad = service.registrar(body.model_dump())
-        return _query_con_relaciones(db).filter(ApelacionModel.id == entidad.id).first()
+        res = _query_con_relaciones(db).filter(ApelacionModel.id == entidad.id).first()
+        registrar_auditoria(
+            modulo="apelaciones",
+            tabla="apelaciones",
+            registro_id=entidad.id,
+            codigo_referencia=body.numeroExpediente,
+            accion="CREAR",
+            campos_cambiados=", ".join(body.model_dump().keys()),
+            valores_nuevos=body.model_dump(),
+            usuario_nombre="Especialista Apelaciones"
+        )
+        return res
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -74,8 +86,24 @@ def crear(body: ApelacionCreate, db: Session = Depends(get_db)):
 def actualizar(id: str, body: ApelacionUpdate, db: Session = Depends(get_db)):
     service = get_service(db)
     try:
+        ap_anterior = db.query(ApelacionModel).filter(ApelacionModel.id == id).first()
+        previos = {k: getattr(ap_anterior, k, None) for k in body.model_dump().keys()} if ap_anterior else None
+        
         entidad = service.actualizar(id, body.model_dump())
-        return _query_con_relaciones(db).filter(ApelacionModel.id == entidad.id).first()
+        res = _query_con_relaciones(db).filter(ApelacionModel.id == entidad.id).first()
+        
+        registrar_auditoria(
+            modulo="apelaciones",
+            tabla="apelaciones",
+            registro_id=entidad.id,
+            codigo_referencia=body.numeroExpediente or (ap_anterior.numeroExpediente if ap_anterior else id),
+            accion="MODIFICAR",
+            campos_cambiados=", ".join(body.model_dump().keys()),
+            valores_previos=previos,
+            valores_nuevos=body.model_dump(),
+            usuario_nombre="Especialista Apelaciones"
+        )
+        return res
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
@@ -88,6 +116,13 @@ def actualizar(id: str, body: ApelacionUpdate, db: Session = Depends(get_db)):
 def eliminar(id: str, service: ApelacionService = Depends(get_service)):
     try:
         service.eliminar(id)
+        registrar_auditoria(
+            modulo="apelaciones",
+            tabla="apelaciones",
+            registro_id=id,
+            accion="ELIMINAR",
+            usuario_nombre="Especialista Apelaciones"
+        )
         return {"success": True}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
