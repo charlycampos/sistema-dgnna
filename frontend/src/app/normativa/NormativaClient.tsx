@@ -462,63 +462,74 @@ export default function NormativaClient({ session }: Props) {
 
         {/* SELECTOR DE PROVEEDOR MULTI-LLM Y BOTÓN ADMIN */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
-            <span className="text-[10px] font-bold text-slate-500 px-2 uppercase">Motor IA:</span>
-            
-            <button
-              onClick={() => setProveedorIA('deepseek')}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition flex items-center gap-1 cursor-pointer ${
-                proveedorIA === 'deepseek'
-                  ? 'bg-white text-indigo-900 shadow-2xs border border-slate-200'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              title="DeepSeek AI (Principal · Ultra Rápido y Económico)"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-600"></span> DeepSeek
-            </button>
+          {esAdmin ? (
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+              <span className="text-[10px] font-bold text-slate-500 px-2 uppercase">Motor IA:</span>
+              
+              <button
+                onClick={() => setProveedorIA('deepseek')}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition flex items-center gap-1 cursor-pointer ${
+                  proveedorIA === 'deepseek'
+                    ? 'bg-white text-indigo-900 shadow-2xs border border-slate-200'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="DeepSeek AI (Principal · Ultra Rápido y Económico)"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-600"></span> DeepSeek
+              </button>
 
-            <button
-              onClick={() => setProveedorIA('gemini')}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition flex items-center gap-1 cursor-pointer ${
-                proveedorIA === 'gemini'
-                  ? 'bg-white text-blue-800 shadow-2xs border border-slate-200'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              title="Google Gemini 2.5 Flash / Pro"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Gemini
-            </button>
+              <button
+                onClick={() => setProveedorIA('gemini')}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition flex items-center gap-1 cursor-pointer ${
+                  proveedorIA === 'gemini'
+                    ? 'bg-white text-blue-800 shadow-2xs border border-slate-200'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Google Gemini 2.5 Flash / Pro"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Gemini
+              </button>
 
-            <button
-              onClick={() => setProveedorIA('openai')}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition flex items-center gap-1 cursor-pointer ${
-                proveedorIA === 'openai'
-                  ? 'bg-white text-emerald-800 shadow-2xs border border-slate-200'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              title="OpenAI GPT-4o"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ChatGPT
-            </button>
+              <button
+                onClick={() => setProveedorIA('openai')}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition flex items-center gap-1 cursor-pointer ${
+                  proveedorIA === 'openai'
+                    ? 'bg-white text-emerald-800 shadow-2xs border border-slate-200'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="OpenAI GPT-4o"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ChatGPT
+              </button>
 
-            <button
-              onClick={() => setProveedorIA('claude')}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition flex items-center gap-1 cursor-pointer ${
-                proveedorIA === 'claude'
-                  ? 'bg-white text-amber-800 shadow-2xs border border-slate-200'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              title="Anthropic Claude 3.5 Sonnet / Haiku"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Claude
-            </button>
-          </div>
+              <button
+                onClick={() => setProveedorIA('claude')}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition flex items-center gap-1 cursor-pointer ${
+                  proveedorIA === 'claude'
+                    ? 'bg-white text-amber-800 shadow-2xs border border-slate-200'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Anthropic Claude 3.5 Sonnet / Haiku"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Claude
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-slate-100/90 px-3 py-1.5 rounded-lg border border-slate-200 text-xs select-none">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Motor IA:</span>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-white border border-slate-200 shadow-2xs text-slate-800 font-bold">
+                <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span>
+                <span>DeepSeek AI</span>
+                <span className="text-[10px] font-medium text-slate-400 border-l border-slate-200 pl-1.5 ml-0.5">Oficial DGNNA</span>
+              </div>
+            </div>
+          )}
 
           {/* BOTÓN EXCLUSIVO PARA ADMINISTRADOR */}
           {esAdmin && (
             <button
               onClick={() => setModalAdminOpen(true)}
-              className="px-2.5 py-1.5 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-300 hover:border-blue-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
+              className="px-2.5 py-1.5 bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-300 hover:border-blue-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs cursor-pointer"
               title="Configurar claves de API de IA (Solo Administrador)"
             >
               <Settings className="w-3.5 h-3.5 text-blue-600" />

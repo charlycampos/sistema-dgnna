@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Scale, Trophy, Users } from 'lucide-react'
+import { Scale, Trophy, Users, UserX } from 'lucide-react'
 import type { CargaAbogado } from '@/types'
 
 interface PanelAsignacionProps {
@@ -21,12 +21,16 @@ export function PanelAsignacion({ cargaAbogados }: PanelAsignacionProps) {
         )
     }
 
-    const abogadoSugerido = cargaAbogados.reduce((prev, current) =>
-        prev.puntosActivos < current.puntosActivos ? prev : current
-    )
-    const hayEmpate = cargaAbogados.filter(
-        (a) => a.puntosActivos === abogadoSugerido.puntosActivos
-    ).length > 1
+    // Sugerencia inteligente evaluada únicamente entre abogados activos
+    const abogadosActivos = cargaAbogados.filter(a => a.abogado.activo)
+    const abogadoSugerido = abogadosActivos.length > 0
+        ? abogadosActivos.reduce((prev, current) => prev.puntosActivos < current.puntosActivos ? prev : current)
+        : null
+
+    const hayEmpate = abogadoSugerido
+        ? abogadosActivos.filter((a) => a.puntosActivos === abogadoSugerido.puntosActivos).length > 1
+        : false
+
     const maxPuntos = Math.max(...cargaAbogados.map((a) => a.puntosActivos ?? 0)) || 0
 
     return (
@@ -50,14 +54,15 @@ export function PanelAsignacion({ cargaAbogados }: PanelAsignacionProps) {
                         <h4 className="font-medium text-sm text-gray-500 uppercase tracking-wide">
                             Carga por Abogado
                         </h4>
-                        <span className="text-xs text-gray-400">
-                            Barra = puntos pendientes (máx: {maxPuntos} pts)
+                        <span className="text-xs text-gray-400 font-medium">
+                            Barra = puntos totales acumulados (máx: {maxPuntos} pts)
                         </span>
                     </div>
 
                     {cargaAbogados.map((carga, index) => {
-                        const esSugerido = !hayEmpate && carga.abogado.id === abogadoSugerido.abogado.id
-                        const esEmpate = hayEmpate && carga.puntosActivos === abogadoSugerido.puntosActivos
+                        const esActivo = carga.abogado.activo
+                        const esSugerido = esActivo && !hayEmpate && abogadoSugerido && carga.abogado.id === abogadoSugerido.abogado.id
+                        const esEmpate = esActivo && hayEmpate && abogadoSugerido && carga.puntosActivos === abogadoSugerido.puntosActivos
                         const maxPuntosAbogado = Math.max(...cargaAbogados.map((a) => a.puntosActivos ?? 0)) || 1
                         const pts = carga.puntosActivos ?? 0
                         const porcentaje = isFinite(pts / maxPuntosAbogado) ? (pts / maxPuntosAbogado) * 100 : 0
@@ -67,23 +72,35 @@ export function PanelAsignacion({ cargaAbogados }: PanelAsignacionProps) {
                         return (
                             <div
                                 key={carga.abogado.id}
-                                className={`rounded-lg border p-4 ${esSugerido
-                                        ? 'border-green-300 bg-green-50'
-                                        : esEmpate
-                                            ? 'border-amber-300 bg-amber-50'
-                                            : 'border-gray-200 bg-white hover:bg-gray-50'
-                                    }`}
+                                className={`rounded-lg border p-4 transition-all ${
+                                    !esActivo
+                                        ? 'border-gray-200 bg-gray-50/60 opacity-80'
+                                        : esSugerido
+                                            ? 'border-green-300 bg-green-50'
+                                            : esEmpate
+                                                ? 'border-amber-300 bg-amber-50'
+                                                : 'border-gray-200 bg-white hover:bg-gray-50'
+                                }`}
                             >
                                 <div className="flex items-center gap-4">
                                     {/* Avatar */}
-                                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm ${bgColors[index % bgColors.length]}`}>
-                                        {carga.abogado.nombre.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-sm ${
+                                        !esActivo ? 'bg-slate-400' : bgColors[index % bgColors.length]
+                                    }`}>
+                                        {carga.abogado.nombre.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                                     </div>
 
                                     {/* Info */}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
-                                            <p className="font-medium text-gray-900 truncate">{carga.abogado.nombre}</p>
+                                            <p className={`font-medium truncate ${!esActivo ? 'text-gray-600' : 'text-gray-900'}`}>
+                                                {carga.abogado.nombre}
+                                            </p>
+                                            {!esActivo && (
+                                                <Badge variant="outline" className="bg-gray-100 text-gray-500 border-gray-300 text-[10px] py-0">
+                                                    Histórico / Inactivo
+                                                </Badge>
+                                            )}
                                             {esSugerido && (
                                                 <Badge className="bg-green-600 text-white text-xs">
                                                     <Trophy className="h-3 w-3 mr-1" />
@@ -97,8 +114,15 @@ export function PanelAsignacion({ cargaAbogados }: PanelAsignacionProps) {
 
                                         <div className="mt-1.5 h-1.5 bg-gray-200 rounded-full overflow-hidden">
                                             <div
-                                                className={`h-full rounded-full ${esSugerido ? 'bg-green-500' : esEmpate ? 'bg-amber-500' : 'bg-blue-500'
-                                                    }`}
+                                                className={`h-full rounded-full ${
+                                                    !esActivo
+                                                        ? 'bg-slate-400'
+                                                        : esSugerido
+                                                            ? 'bg-green-500'
+                                                            : esEmpate
+                                                                ? 'bg-amber-500'
+                                                                : 'bg-blue-500'
+                                                }`}
                                                 style={{ width: `${Math.max(isNaN(porcentaje) ? 0 : porcentaje, 5)}%` }}
                                             />
                                         </div>
@@ -132,3 +156,4 @@ export function PanelAsignacion({ cargaAbogados }: PanelAsignacionProps) {
         </Card>
     )
 }
+

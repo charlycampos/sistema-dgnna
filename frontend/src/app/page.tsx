@@ -136,29 +136,41 @@ export default function HomePage() {
       return diffDias >= 0 && diffDias <= 5
     }).length
 
-    // 1. Recalcular Balance de Abogados para el período
+    // 1. Recalcular Balance de Abogados para el período (Puntos Totales)
     const abMap: Record<
       string,
       { model: Abogado; casosActivos: number; casosResueltos: number; casosCerrados: number; puntosActivos: number }
     > = {}
 
-    abogadosList
-      .filter(ab => ab.activo)
-      .forEach(ab => {
-        abMap[ab.id] = {
-          model: ab,
-          casosActivos: 0,
-          casosResueltos: 0,
-          casosCerrados: 0,
-          puntosActivos: 0,
-        }
-      })
+    // Inicializar con todos los abogados registrados
+    abogadosList.forEach(ab => {
+      abMap[ab.id] = {
+        model: ab,
+        casosActivos: 0,
+        casosResueltos: 0,
+        casosCerrados: 0,
+        puntosActivos: 0,
+      }
+    })
 
     filtrados.forEach(a => {
-      if (a.abogadoId && abMap[a.abogadoId]) {
+      if (a.abogadoId) {
+        if (!abMap[a.abogadoId]) {
+          const abObj: Abogado = a.abogado || { id: a.abogadoId, nombre: 'Abogado ' + a.abogadoId.slice(0, 6), activo: false }
+          abMap[a.abogadoId] = {
+            model: abObj,
+            casosActivos: 0,
+            casosResueltos: 0,
+            casosCerrados: 0,
+            puntosActivos: 0,
+          }
+        }
+
+        const pts = a.puntosTotal || 0
+        abMap[a.abogadoId].puntosActivos += pts // Puntos Totales acumulados en el período
+
         if (a.estado === 'Pendiente') {
           abMap[a.abogadoId].casosActivos++
-          abMap[a.abogadoId].puntosActivos += a.puntosTotal || 0
         } else if (a.estado === 'Resuelto') {
           abMap[a.abogadoId].casosResueltos++
         } else if (a.estado === 'Atendido') {
@@ -167,13 +179,16 @@ export default function HomePage() {
       }
     })
 
-    const cargaPorAbogado: CargaAbogado[] = Object.values(abMap).map(item => ({
-      abogado: item.model,
-      casosActivos: item.casosActivos,
-      casosResueltos: item.casosResueltos,
-      casosCerrados: item.casosCerrados,
-      puntosActivos: item.puntosActivos,
-    }))
+    // Incluir abogados activos y aquellos inactivos que tengan casos en este período
+    const cargaPorAbogado: CargaAbogado[] = Object.values(abMap)
+      .filter(item => item.model.activo || (item.casosActivos + item.casosResueltos + item.casosCerrados) > 0)
+      .map(item => ({
+        abogado: item.model,
+        casosActivos: item.casosActivos,
+        casosResueltos: item.casosResueltos,
+        casosCerrados: item.casosCerrados,
+        puntosActivos: item.puntosActivos,
+      }))
 
     // 2. Recalcular Carga por Revisor
     const revMap: Record<string, { revisorId: string; nombre: string; totalCasos: number; casosPendientes: number; casosResueltos: number; casosAtendidos: number }> = {}
