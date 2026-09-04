@@ -84,6 +84,8 @@ export interface ApelacionConRelaciones {
   fechaAsignacion: Date
   estado: string
   numeroResolucion: string | null
+  resultadoResolucion?: ResultadoResolucion | null
+  fechaResolucion?: Date | string | null
   documentoAtencion: string | null
   cargos: string | null
   observaciones: string | null
@@ -126,10 +128,21 @@ export interface ApelacionFormData {
   fechaAsignacion: Date
   estado: Estado
   numeroResolucion?: string
+  resultadoResolucion?: ResultadoResolucion | null
+  fechaResolucion?: Date | null
   documentoAtencion?: string
   cargos?: string
   observaciones?: string
 }
+
+export type ResultadoResolucion =
+  | 'FUNDADO'
+  | 'FUNDADO_EN_PARTE'
+  | 'INFUNDADO'
+  | 'IMPROCEDENTE'
+  | 'CARECE_DE_OBJETO'
+  | 'NULIDAD'
+  | 'REMISION_ORGANO_COMPETENTE'
 
 // Para estadísticas del dashboard
 export interface EstadisticasDashboard {

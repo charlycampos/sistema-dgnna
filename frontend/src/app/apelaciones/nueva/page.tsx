@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { apelacionSchema } from '@/lib/validations'
+import { apelacionSchema, RESULTADOS_RESOLUCION } from '@/lib/validations'
 import { calcularPuntosExtension } from '@/lib/calcular-puntos'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -222,6 +222,8 @@ export default function NuevaApelacionPage() {
             fechaAsignacion: new Date(),
             estado: 'Pendiente',
             numeroResolucion: '',
+            resultadoResolucion: null,
+            fechaResolucion: null,
             documentoAtencion: '',
             cargos: '',
             observaciones: '',
@@ -539,6 +541,7 @@ export default function NuevaApelacionPage() {
                     ...pendingData,
                     fechaIngreso: pendingData.fechaIngreso.toISOString(),
                     fechaAsignacion: pendingData.fechaAsignacion.toISOString(),
+                    fechaResolucion: pendingData.fechaResolucion?.toISOString() ?? null,
                     fechaRevisor: pendingData.fechaAsignacionRevisor
                         ? new Date(pendingData.fechaAsignacionRevisor).toISOString()
                         : null,
@@ -580,6 +583,7 @@ export default function NuevaApelacionPage() {
                     abogadoId: abogadoIdVinculado, // Sobrescribir abogado!
                     fechaIngreso: pendingData.fechaIngreso.toISOString(),
                     fechaAsignacion: pendingData.fechaAsignacion.toISOString(),
+                    fechaResolucion: pendingData.fechaResolucion?.toISOString() ?? null,
                     fechaRevisor: pendingData.fechaAsignacionRevisor
                         ? new Date(pendingData.fechaAsignacionRevisor).toISOString()
                         : null,
@@ -703,6 +707,7 @@ export default function NuevaApelacionPage() {
 
     const folios = form.watch('folios')
     const complejidadId = form.watch('complejidadId')
+    const estado = form.watch('estado')
     const puntosExtension = calcularPuntosExtension(folios || 0)
     const complejidadSeleccionada = complejidades.find((c) => c.id === complejidadId)
     const puntosComplejidad = complejidadSeleccionada?.puntos || 0
@@ -1380,6 +1385,71 @@ export default function NuevaApelacionPage() {
                                                 />
                                             </div>
                                         </div>
+
+                                        {(estado === 'Resuelto' || estado === 'Atendido') && (
+                                            <div className="space-y-4">
+                                                <h3 className="text-lg font-semibold">Resolución</h3>
+                                                <div className="grid gap-4 md:grid-cols-3">
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="numeroResolucion"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>N.º de resolución</FormLabel>
+                                                                <FormControl><Input {...field} /></FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="fechaResolucion"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Fecha de resolución</FormLabel>
+                                                                <FormControl>
+                                                                    <Input
+                                                                        type="date"
+                                                                        value={dateToValue(field.value)}
+                                                                        onChange={(e) => field.onChange(valueToDate(e.target.value))}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </div>
+                                                <FormField
+                                                    control={form.control}
+                                                    name="resultadoResolucion"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Resultado de la resolución</FormLabel>
+                                                            <FormDescription>Seleccione el pronunciamiento principal consignado en la resolución.</FormDescription>
+                                                            <Select
+                                                                value={field.value ?? '__ninguno__'}
+                                                                onValueChange={(value) => field.onChange(value === '__ninguno__' ? null : value)}
+                                                            >
+                                                                <FormControl>
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder="Seleccione un resultado" />
+                                                                    </SelectTrigger>
+                                                                </FormControl>
+                                                                <SelectContent>
+                                                                    <SelectItem value="__ninguno__">Sin resultado registrado</SelectItem>
+                                                                    {RESULTADOS_RESOLUCION.map((item) => (
+                                                                        <SelectItem key={item.value} value={item.value}>
+                                                                            {item.label}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            </div>
+                                        )}
 
                                         {/* Observaciones */}
                                         <FormField

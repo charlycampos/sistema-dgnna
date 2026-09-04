@@ -121,6 +121,8 @@ class ApelacionModel(Base):
     fechaAsignacion   = Column("fechaasignacion",   DateTime, nullable=False)
     estado            = Column("estado",            String(20), default="Pendiente")
     numeroResolucion  = Column("numeroresolucion",  String(200), nullable=True)
+    resultadoResolucion = Column("resultadoresolucion", String(40), nullable=True)
+    fechaResolucion   = Column("fecharesolucion",   DateTime, nullable=True)
     documentoAtencion = Column("documentoatencion", String(200), nullable=True)
     cargos            = Column("cargos",            String(200), nullable=True)
     observaciones     = Column("observaciones",     String(1000), nullable=True)

@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { ApelacionConRelaciones, TransparenciaRegistro } from '@/types';
 import { format } from 'date-fns';
+import { RESULTADOS_RESOLUCION } from '@/lib/validations';
 
 export function descargarExcelApelaciones(apelaciones: ApelacionConRelaciones[]) {
     // Preparar datos con cabecera exacta según requerimiento
@@ -39,6 +40,10 @@ export function descargarExcelApelaciones(apelaciones: ApelacionConRelaciones[])
         'Revisado por': a.revisor?.nombre || '',
         'Fecha Asignación Revisor': a.fechaRevisor ? format(new Date(a.fechaRevisor), 'dd/MM/yyyy') : '',
         'N° Resolución': a.numeroResolucion || '',
+        'Resultado de la Resolución': a.resultadoResolucion
+            ? RESULTADOS_RESOLUCION.find((item) => item.value === a.resultadoResolucion)?.label ?? a.resultadoResolucion
+            : '',
+        'Fecha de Resolución': a.fechaResolucion ? format(new Date(a.fechaResolucion), 'dd/MM/yyyy') : '',
         'Documento de Atención': a.documentoAtencion || '',
         'Cargos': a.cargos || '',
         'Observaciones': a.observaciones || ''
@@ -72,6 +77,8 @@ export function descargarExcelApelaciones(apelaciones: ApelacionConRelaciones[])
         { wch: 22 },  // Revisado por
         { wch: 20 },  // Fecha Asignación Revisor
         { wch: 28 },  // N° Resolución
+        { wch: 32 },  // Resultado de la Resolución
+        { wch: 20 },  // Fecha de Resolución
         { wch: 30 },  // Documento de Atención
         { wch: 12 },  // Cargos
         { wch: 35 }   // Observaciones

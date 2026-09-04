@@ -25,6 +25,14 @@ def run_migrations():
     import traceback
     
     migraciones = [
+        "ALTER TABLE apelaciones ADD (resultadoResolucion VARCHAR2(40))",
+        "ALTER TABLE apelaciones ADD (fechaResolucion TIMESTAMP)",
+        """ALTER TABLE apelaciones ADD CONSTRAINT ck_ap_resultado_resolucion CHECK (
+            resultadoResolucion IS NULL OR resultadoResolucion IN (
+                'FUNDADO', 'FUNDADO_EN_PARTE', 'INFUNDADO', 'IMPROCEDENTE',
+                'CARECE_DE_OBJETO', 'NULIDAD', 'REMISION_ORGANO_COMPETENTE'
+            )
+        )""",
         "ALTER TABLE reservas_sala ADD (estado VARCHAR2(20) DEFAULT 'Programado' NOT NULL)",
         # casos_sustracion — campos nuevos
         "ALTER TABLE casos_sustracion ADD (nnaSexo VARCHAR2(10))",

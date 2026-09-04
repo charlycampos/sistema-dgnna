@@ -50,6 +50,8 @@ class ApelacionService:
             fechaAsignacion   = datos.get("fechaAsignacion"),
             estado            = datos.get("estado", "Pendiente"),
             numeroResolucion  = datos.get("numeroResolucion"),
+            resultadoResolucion = datos.get("resultadoResolucion"),
+            fechaResolucion   = datos.get("fechaResolucion"),
             documentoAtencion = datos.get("documentoAtencion"),
             cargos            = datos.get("cargos"),
             observaciones     = datos.get("observaciones"),
@@ -80,6 +82,8 @@ class ApelacionService:
         apelacion.abogadoId         = datos["abogadoId"]
         apelacion.estado            = datos.get("estado", apelacion.estado)
         apelacion.numeroResolucion  = datos.get("numeroResolucion")
+        apelacion.resultadoResolucion = datos.get("resultadoResolucion")
+        apelacion.fechaResolucion   = datos.get("fechaResolucion")
         apelacion.documentoAtencion = datos.get("documentoAtencion")
         apelacion.cargos            = datos.get("cargos")
         apelacion.observaciones     = datos.get("observaciones")

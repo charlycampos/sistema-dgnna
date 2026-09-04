@@ -65,13 +65,21 @@ CREATE TABLE apelaciones_db.apelaciones (
     fechaasignacion   TIMESTAMP      NOT NULL,
     estado            VARCHAR2(20)   DEFAULT 'Pendiente',
     numeroresolucion  VARCHAR2(200),
+    resultadoresolucion VARCHAR2(40),
+    fecharesolucion   TIMESTAMP,
     documentoatencion VARCHAR2(200),
     cargos            VARCHAR2(200),
     observaciones     VARCHAR2(1000),
     createdat         TIMESTAMP      DEFAULT SYSTIMESTAMP,
     updatedat         TIMESTAMP      DEFAULT SYSTIMESTAMP,
     CONSTRAINT fk_ap_abogado     FOREIGN KEY (abogadoid)     REFERENCES apelaciones_db.abogados(id),
-    CONSTRAINT fk_ap_complejidad FOREIGN KEY (complejidadid) REFERENCES apelaciones_db.complejidades_juridicas(id)
+    CONSTRAINT fk_ap_complejidad FOREIGN KEY (complejidadid) REFERENCES apelaciones_db.complejidades_juridicas(id),
+    CONSTRAINT ck_ap_resultado_resolucion CHECK (
+        resultadoresolucion IS NULL OR resultadoresolucion IN (
+            'FUNDADO', 'FUNDADO_EN_PARTE', 'INFUNDADO', 'IMPROCEDENTE',
+            'CARECE_DE_OBJETO', 'NULIDAD', 'REMISION_ORGANO_COMPETENTE'
+        )
+    )
 );
 
 -- ============================================================

@@ -7,6 +7,16 @@ const nombrePersonaSchema = z.string().optional().nullable().refine(
     "Solo letras, espacios y puntos (para iniciales)"
 );
 
+export const RESULTADOS_RESOLUCION = [
+    { value: "FUNDADO", label: "Fundado" },
+    { value: "FUNDADO_EN_PARTE", label: "Fundado en parte" },
+    { value: "INFUNDADO", label: "Infundado" },
+    { value: "IMPROCEDENTE", label: "Improcedente" },
+    { value: "CARECE_DE_OBJETO", label: "Carece de objeto emitir pronunciamiento" },
+    { value: "NULIDAD", label: "Declara la nulidad" },
+    { value: "REMISION_ORGANO_COMPETENTE", label: "Remisión al órgano competente" },
+] as const;
+
 export const apelacionBaseSchema = z.object({
     numeroExpediente: z.string().min(1, "El número de expediente es obligatorio"),
     fechaIngreso: z.date({ message: "La fecha de ingreso es obligatoria" }),
@@ -39,6 +49,11 @@ export const apelacionBaseSchema = z.object({
     fechaAsignacion: z.date({ message: "La fecha de asignación es obligatoria" }),
     estado: z.enum(["Pendiente", "Resuelto", "Atendido", "Observado"]),
     numeroResolucion: z.string().optional(),
+    resultadoResolucion: z.enum(RESULTADOS_RESOLUCION.map((item) => item.value) as [
+        typeof RESULTADOS_RESOLUCION[number]["value"],
+        ...typeof RESULTADOS_RESOLUCION[number]["value"][],
+    ]).optional().nullable(),
+    fechaResolucion: z.date().optional().nullable(),
     documentoAtencion: z.string().optional(),
     cargos: z.string().optional(),
     observaciones: z.string().optional(),

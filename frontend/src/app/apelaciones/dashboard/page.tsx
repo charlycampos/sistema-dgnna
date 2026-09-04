@@ -10,9 +10,9 @@ import { AppSidebar } from '@/components/app-sidebar'
 import {
   FileText, Plus, Settings, Scale, Clock,
   CheckCircle2, AlertCircle, Building2, ArrowRight, TrendingUp, ClipboardList, Menu,
-  Calendar, Layers, Sparkles
+  Calendar, Layers, Sparkles, Users, FolderOpen, Info
 } from 'lucide-react'
-import type { EstadisticasDashboard, Abogado, CargaAbogado, CargaRevisor } from '@/types'
+import type { EstadisticasDashboard, Abogado, CargaAbogado, CargaRevisor, ComplejidadJuridica } from '@/types'
 import { useMe } from '@/lib/use-me'
 
 interface CargaRevisorData {
@@ -30,6 +30,7 @@ export default function ApelacionesDashboardPage() {
   const [stats, setStats] = useState<EstadisticasDashboard | null>(null)
   const [rawApelaciones, setRawApelaciones] = useState<any[]>([])
   const [abogadosList, setAbogadosList] = useState<Abogado[]>([])
+  const [complejidadesList, setComplejidadesList] = useState<ComplejidadJuridica[]>([])
   const [cargaRevisoresOriginal, setCargaRevisoresOriginal] = useState<CargaRevisorData[]>([])
   const [periodo, setPeriodo] = useState<Periodo>('ano')
   const [loading, setLoading] = useState(true)
@@ -51,29 +52,29 @@ export default function ApelacionesDashboardPage() {
 
   const fetchDashboard = async () => {
     try {
-      const [dashRes, revisoresRes, apelRes, abgsRes] = await Promise.all([
-        fetch('/api/dashboard'),
-        fetch('/api/revisor/carga'),
-        fetch('/api/apelaciones'),
-        fetch('/api/abogados'),
+      const safeFetchJson = async (url: string) => {
+        try {
+          const res = await fetch(url)
+          if (!res.ok) return null
+          return await res.json()
+        } catch {
+          return null
+        }
+      }
+
+      const [dashData, revData, apelData, abgsData, compData] = await Promise.all([
+        safeFetchJson('/api/dashboard'),
+        safeFetchJson('/api/revisor/carga'),
+        safeFetchJson('/api/apelaciones'),
+        safeFetchJson('/api/abogados'),
+        safeFetchJson('/api/complejidad'),
       ])
 
-      if (dashRes.ok) {
-        const data = await dashRes.json()
-        setStats(data)
-      }
-      if (revisoresRes.ok) {
-        const revData = await revisoresRes.json()
-        setCargaRevisoresOriginal(Array.isArray(revData) ? revData : [])
-      }
-      if (apelRes.ok) {
-        const apelData = await apelRes.json()
-        setRawApelaciones(Array.isArray(apelData) ? apelData : [])
-      }
-      if (abgsRes.ok) {
-        const abgsData = await abgsRes.json()
-        setAbogadosList(Array.isArray(abgsData) ? abgsData : [])
-      }
+      if (dashData) setStats(dashData)
+      if (Array.isArray(revData)) setCargaRevisoresOriginal(revData)
+      if (Array.isArray(apelData)) setRawApelaciones(apelData)
+      if (Array.isArray(abgsData)) setAbogadosList(abgsData)
+      if (Array.isArray(compData)) setComplejidadesList(compData)
     } catch (error) {
       console.error('Error al cargar dashboard:', error)
     } finally {
@@ -207,16 +208,25 @@ export default function ApelacionesDashboardPage() {
 
     const revisoresFiltrados = Object.values(revMap)
 
-    // 3. Recalcular Complejidad
+    // 3. Recalcular Complejidad con nombres reales
+    const compCatalogMap: Record<string, string> = {}
+    complejidadesList.forEach(c => {
+      compCatalogMap[c.id] = c.nombre
+    })
+
     const compMap: Record<string, number> = {}
     filtrados.forEach(a => {
-      const cNombre = a.complejidadJuridica?.nombre || 'General'
+      const cNombre = a.complejidad?.nombre || (a.complejidadId && compCatalogMap[a.complejidadId]) || a.complejidadJuridica?.nombre || 'General'
       compMap[cNombre] = (compMap[cNombre] || 0) + 1
     })
-    const casosPorComplejidad = Object.entries(compMap).map(([nombre, cantidad]) => ({
-      nombre,
-      cantidad,
-    }))
+
+    const ordenCanonica: Record<string, number> = { 'Baja': 1, 'Media': 2, 'Alta': 3, 'Muy Alta': 4 }
+    const casosPorComplejidad = Object.entries(compMap)
+      .map(([nombre, cantidad]) => ({
+        nombre,
+        cantidad,
+      }))
+      .sort((a, b) => (ordenCanonica[a.nombre] || 99) - (ordenCanonica[b.nombre] || 99))
 
     // 4. Recalcular Procedencias
     const procMap: Record<string, number> = {}
@@ -245,7 +255,7 @@ export default function ApelacionesDashboardPage() {
       revisoresFiltrados,
       countPeriodo: totalCasos,
     }
-  }, [rawApelaciones, stats, cargaRevisoresOriginal, abogadosList, periodo])
+  }, [rawApelaciones, stats, cargaRevisoresOriginal, abogadosList, complejidadesList, periodo])
 
   if (loading) {
     return (
@@ -383,6 +393,51 @@ export default function ApelacionesDashboardPage() {
             </span>
           </div>
 
+          {/* Barra Horizontal de Acciones Rápidas y Reportes Avanzados */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-3 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2 pl-1 sm:pl-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
+                  <Sparkles className="h-4 w-4 text-blue-600" />
+                  Acciones del Sistema:
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5 flex-1 justify-end">
+                {canWrite('apelaciones') && (
+                  <Link href="/apelaciones/nueva">
+                    <Button className="bg-blue-600 hover:bg-blue-700 shadow-xs text-xs font-bold gap-1.5" size="sm">
+                      <Plus className="h-3.5 w-3.5" />
+                      Nueva Apelación
+                    </Button>
+                  </Link>
+                )}
+
+                <Link href="/apelaciones">
+                  <Button variant="outline" className="text-xs font-semibold gap-1.5 hover:border-blue-300 hover:bg-blue-50/40 text-gray-700" size="sm">
+                    <FileText className="h-3.5 w-3.5 text-blue-600" />
+                    Ver Apelaciones
+                  </Button>
+                </Link>
+
+                <Link href="/configuracion">
+                  <Button variant="outline" className="text-xs font-semibold gap-1.5 hover:border-purple-300 hover:bg-purple-50/40 text-gray-700" size="sm">
+                    <Settings className="h-3.5 w-3.5 text-purple-600" />
+                    Configuración
+                  </Button>
+                </Link>
+
+                <Link href="/reportes">
+                  <Button variant="outline" className="text-xs font-bold gap-1.5 border-indigo-200 bg-indigo-50/60 hover:bg-indigo-100 text-indigo-700 shadow-xs" size="sm">
+                    <TrendingUp className="h-3.5 w-3.5 text-indigo-600" />
+                    Reportes Avanzados
+                    <span className="text-[9px] bg-indigo-200 text-indigo-800 px-1.5 py-0.5 rounded font-black">PRO</span>
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+
           {/* Alerta plazos */}
           {(statsFiltradas?.casosConPlazoProximo ?? 0) > 0 && (
             <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 shadow-xs">
@@ -457,61 +512,126 @@ export default function ApelacionesDashboardPage() {
             </Card>
           </div>
 
-          {/* Panel asignación inteligente + Acciones Rápidas */}
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
+          {/* Fila Principal: Sistema de Asignación (Puntos) y Estado de Expedientes (Cantidades) a la MISMA ALTURA */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            {/* Columna Izquierda: Asignación Inteligente (Solo Puntos) */}
+            <div>
               {statsFiltradas?.cargaPorAbogado && (
                 <PanelAsignacion cargaAbogados={statsFiltradas.cargaPorAbogado} />
               )}
             </div>
-            <div className="space-y-6">
-              <Card className="bg-white border-gray-200">
-                <CardHeader className="pb-3 border-b bg-gray-50/50">
-                  <CardTitle className="text-sm font-bold text-gray-800 uppercase tracking-wider">Acciones Rápidas</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2.5 pt-4">
-                  {canWrite('apelaciones') && (
-                    <Link href="/apelaciones/nueva" className="block">
-                      <Button className="w-full justify-between bg-blue-600 hover:bg-blue-700 shadow-xs" size="lg">
-                        <span className="flex items-center font-semibold"><Plus className="mr-2 h-4 w-4" />Nueva Apelación</span>
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                  )}
-                  <Link href="/apelaciones" className="block">
-                    <Button variant="outline" className="w-full justify-between hover:border-blue-300 hover:bg-blue-50/30" size="lg">
-                      <span className="flex items-center text-gray-700 font-medium"><FileText className="mr-2 h-4 w-4 text-blue-600" />Ver Apelaciones</span>
-                      <ArrowRight className="h-4 w-4 text-gray-400" />
-                    </Button>
-                  </Link>
-                  <Link href="/configuracion" className="block">
-                    <Button variant="outline" className="w-full justify-between hover:border-purple-300 hover:bg-purple-50/30" size="lg">
-                      <span className="flex items-center text-gray-700 font-medium"><Settings className="mr-2 h-4 w-4 text-purple-600" />Configuración</span>
-                      <ArrowRight className="h-4 w-4 text-gray-400" />
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
 
-              <Link href="/reportes" className="block">
-                <Button variant="outline" className="w-full justify-between h-auto py-4 border-dashed border-gray-300 bg-gray-50/50 hover:bg-blue-50/40 hover:border-blue-300 transition-colors" size="lg">
-                  <span className="flex items-center gap-3">
-                    <div className="p-2.5 bg-blue-100 rounded-xl border border-blue-200">
-                      <TrendingUp className="h-5 w-5 text-blue-600" />
+            {/* Columna Derecha: Estado de Expedientes por Abogado (Cantidades Físicas) */}
+            <Card className="bg-white border-gray-200 shadow-sm overflow-hidden h-full flex flex-col">
+              <CardHeader className="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-indigo-600 rounded-xl text-white shadow-xs">
+                      <FolderOpen className="h-5 w-5" />
                     </div>
-                    <div className="text-left">
-                      <span className="block font-bold text-gray-900 text-sm">Reportes Avanzados</span>
-                      <span className="block text-xs text-gray-500 font-normal">Estadísticas y productividad</span>
+                    <div>
+                      <CardTitle className="text-base font-bold text-gray-900 leading-tight">Estado de Expedientes por Abogado</CardTitle>
+                      <CardDescription className="text-xs text-gray-500">Conteo cuantitativo de casos tramitados (en unidades físicas)</CardDescription>
                     </div>
+                  </div>
+                  <span className="text-xs font-semibold text-gray-600 bg-gray-100 px-3 py-1 rounded-full border border-gray-200">
+                    {periodoLabel}
                   </span>
-                  <ArrowRight className="h-4 w-4 text-gray-400" />
-                </Button>
-              </Link>
-            </div>
+                </div>
+              </CardHeader>
+
+              <CardContent className="p-5 space-y-3 flex-1 flex flex-col justify-between">
+                {(() => {
+                  const abogadosActivosExp = (statsFiltradas?.cargaPorAbogado || []).filter(c => c.abogado.activo)
+                  const abogadosInactivosExp = (statsFiltradas?.cargaPorAbogado || []).filter(c => !c.abogado.activo && (c.casosActivos + c.casosResueltos + c.casosCerrados) > 0)
+
+                  if (abogadosActivosExp.length === 0) {
+                    return (
+                      <p className="text-center text-gray-400 py-6 text-sm">Sin datos de expedientes para el período seleccionado</p>
+                    )
+                  }
+
+                  return (
+                    <>
+                      <div className="space-y-3">
+                        {abogadosActivosExp.map((carga, index) => {
+                          const totalCasosAbogado = carga.casosActivos + carga.casosResueltos + carga.casosCerrados
+                          const bgColors = ['bg-blue-600', 'bg-purple-600', 'bg-amber-600', 'bg-emerald-600']
+                          const initials = carga.abogado.nombre
+                            .split(' ')
+                            .slice(0, 2)
+                            .map((n: string) => n[0])
+                            .join('')
+                            .toUpperCase()
+
+                          return (
+                            <div
+                              key={carga.abogado.id}
+                              className="p-3.5 rounded-xl border border-gray-200 bg-white hover:border-indigo-300 hover:shadow-xs transition-all"
+                            >
+                              <div className="flex items-center justify-between pb-2.5 border-b border-gray-100 mb-2.5">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-xs shrink-0 ${
+                                    bgColors[index % bgColors.length]
+                                  }`}>
+                                    {initials}
+                                  </div>
+                                  <div className="truncate">
+                                    <span className="font-bold text-gray-900 text-sm block truncate">{carga.abogado.nombre}</span>
+                                  </div>
+                                </div>
+                                <span className="text-xs font-extrabold text-gray-800 bg-gray-100 px-2.5 py-1 rounded-md shrink-0 border border-gray-200">
+                                  {totalCasosAbogado} expedientes
+                                </span>
+                              </div>
+
+                              {/* 3 Métricas Cuantitativas Físicas en Bloques de Color */}
+                              <div className="grid grid-cols-3 gap-2 text-center">
+                                <div className="p-1.5 rounded-lg bg-amber-50 border border-amber-100">
+                                  <div className="text-base font-black text-amber-600 leading-none">{carga.casosActivos}</div>
+                                  <div className="text-[9px] font-bold text-amber-800 uppercase tracking-tight mt-0.5">Pendientes</div>
+                                </div>
+                                <div className="p-1.5 rounded-lg bg-blue-50 border border-blue-100">
+                                  <div className="text-base font-black text-blue-600 leading-none">{carga.casosResueltos}</div>
+                                  <div className="text-[9px] font-bold text-blue-800 uppercase tracking-tight mt-0.5">Resueltos</div>
+                                </div>
+                                <div className="p-1.5 rounded-lg bg-emerald-50 border border-emerald-100">
+                                  <div className="text-base font-black text-emerald-600 leading-none">{carga.casosCerrados}</div>
+                                  <div className="text-[9px] font-bold text-emerald-800 uppercase tracking-tight mt-0.5">Atendidos</div>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {/* Comentario Informativo sobre Expedientes de Personal Inactivo */}
+                      {abogadosInactivosExp.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-gray-100 flex items-start gap-2 bg-gray-50/80 p-2.5 rounded-xl border border-gray-200/70 text-xs text-gray-500">
+                          <Info className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
+                          <span className="leading-relaxed">
+                            <strong className="text-gray-700">Expedientes históricos:</strong>{' '}
+                            {abogadosInactivosExp.map((a, i) => {
+                              const tot = a.casosActivos + a.casosResueltos + a.casosCerrados
+                              return (
+                                <span key={a.abogado.id}>
+                                  {a.abogado.nombre} cuenta con <strong>{tot} expedientes</strong> ({a.casosActivos} pend., {a.casosResueltos} res., {a.casosCerrados} aten.)
+                                  {i < abogadosInactivosExp.length - 1 ? '; ' : ''}
+                                </span>
+                              )
+                            })} (personal inactivo de periodos anteriores).
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )
+                })()}
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Carga por Revisor + Por Complejidad */}
-          <div className="grid gap-6 lg:grid-cols-2">
+          {/* Fila Secundaria: Carga por Revisor Legal + Por Complejidad Jurídica */}
+          <div className="grid gap-6 lg:grid-cols-2 items-start">
 
             {/* Carga por Revisor */}
             <Card className="bg-white border-gray-200">
@@ -568,32 +688,52 @@ export default function ApelacionesDashboardPage() {
               </CardContent>
             </Card>
 
-            {/* Por Complejidad Jurídica */}
-            <Card className="bg-white border-gray-200">
+            {/* Por Complejidad Jurídica (Con Tipos Reales) */}
+            <Card className="bg-white border-gray-200 shadow-sm">
               <CardHeader className="pb-3 border-b bg-gray-50/50">
-                <CardTitle className="text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2">
-                  <Scale className="h-4 w-4 text-blue-600" />
-                  Por Complejidad Jurídica
-                </CardTitle>
-                <CardDescription className="text-xs">Distribución de casos en {periodoLabel}</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-blue-50 rounded-xl text-blue-600 border border-blue-100">
+                      <Layers className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-sm font-bold text-gray-800 uppercase tracking-wider">Por Complejidad Jurídica</CardTitle>
+                      <CardDescription className="text-xs">Distribución según tipología jurídica real ({periodoLabel})</CardDescription>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Tipos Clasificados
+                  </span>
+                </div>
               </CardHeader>
               <CardContent className="pt-4">
                 <div className="space-y-3.5">
                   {statsFiltradas?.casosPorComplejidad && statsFiltradas.casosPorComplejidad.length > 0 ? (
-                    statsFiltradas.casosPorComplejidad.map((item, index) => {
-                      const colors = ['bg-blue-600', 'bg-green-600', 'bg-amber-600', 'bg-purple-600']
+                    statsFiltradas.casosPorComplejidad.map((item) => {
                       const total = statsFiltradas.casosPorComplejidad.reduce((acc, i) => acc + (i.cantidad ?? 0), 0) || 1
                       const rawPct = ((item.cantidad ?? 0) / total) * 100
                       const pct = isFinite(rawPct) ? rawPct.toFixed(0) : '0'
+
+                      const colorMap: Record<string, { bar: string; dot: string }> = {
+                        'Baja': { bar: 'bg-emerald-500', dot: 'bg-emerald-500' },
+                        'Media': { bar: 'bg-blue-600', dot: 'bg-blue-600' },
+                        'Alta': { bar: 'bg-amber-500', dot: 'bg-amber-500' },
+                        'Muy Alta': { bar: 'bg-purple-600', dot: 'bg-purple-600' },
+                      }
+                      const cStyle = colorMap[item.nombre] || { bar: 'bg-indigo-500', dot: 'bg-indigo-500' }
+
                       return (
                         <div key={item.nombre} className="space-y-1.5">
                           <div className="flex justify-between text-xs">
-                            <span className="font-semibold text-gray-800 truncate">{item.nombre}</span>
-                            <span className="text-gray-500 font-bold">{item.cantidad} ({pct}%)</span>
+                            <span className="font-bold text-gray-800 flex items-center gap-1.5">
+                              <span className={`w-2 h-2 rounded-full ${cStyle.dot}`} />
+                              Complejidad {item.nombre}
+                            </span>
+                            <span className="text-gray-600 font-bold">{item.cantidad} casos ({pct}%)</span>
                           </div>
                           <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
                             <div
-                              className={`h-full ${colors[index % colors.length]} rounded-full transition-all duration-500`}
+                              className={`h-full ${cStyle.bar} rounded-full transition-all duration-500`}
                               style={{ width: `${Math.max(Number(pct), 4)}%` }}
                             />
                           </div>

@@ -4,7 +4,7 @@ Schemas Pydantic para validación de requests y serialización de responses.
 
 from __future__ import annotations
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Literal
 from pydantic import BaseModel, EmailStr, field_validator
 
 
@@ -112,6 +112,11 @@ class ExtensionRangoOut(ExtensionRangoBase):
 # APELACION
 # ─────────────────────────────────────────────
 
+ResultadoResolucion = Literal[
+    "FUNDADO", "FUNDADO_EN_PARTE", "INFUNDADO", "IMPROCEDENTE",
+    "CARECE_DE_OBJETO", "NULIDAD", "REMISION_ORGANO_COMPETENTE",
+]
+
 class ApelacionCreate(BaseModel):
     numeroExpediente: str
     fechaIngreso: datetime
@@ -130,6 +135,8 @@ class ApelacionCreate(BaseModel):
     fechaAsignacion: Optional[datetime] = None
     estado: str = "Pendiente"
     numeroResolucion: Optional[str] = None
+    resultadoResolucion: Optional[ResultadoResolucion] = None
+    fechaResolucion: Optional[datetime] = None
     documentoAtencion: Optional[str] = None
     cargos: Optional[str] = None
     observaciones: Optional[str] = None
@@ -159,6 +166,8 @@ class ApelacionOut(BaseModel):
     fechaAsignacion: datetime
     estado: str
     numeroResolucion: Optional[str]
+    resultadoResolucion: Optional[ResultadoResolucion]
+    fechaResolucion: Optional[datetime]
     documentoAtencion: Optional[str]
     cargos: Optional[str]
     observaciones: Optional[str]

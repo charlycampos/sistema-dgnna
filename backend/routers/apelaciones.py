@@ -94,6 +94,8 @@ def crear(
         fechaAsignacion   = body.fechaAsignacion or datetime.utcnow(),
         estado            = body.estado,
         numeroResolucion  = body.numeroResolucion,
+        resultadoResolucion = body.resultadoResolucion,
+        fechaResolucion   = body.fechaResolucion,
         documentoAtencion = body.documentoAtencion,
         cargos            = body.cargos,
         observaciones     = body.observaciones,
@@ -158,6 +160,8 @@ def actualizar(
         ap.fechaAsignacion = body.fechaAsignacion
     ap.estado            = body.estado
     ap.numeroResolucion  = body.numeroResolucion
+    ap.resultadoResolucion = body.resultadoResolucion
+    ap.fechaResolucion   = body.fechaResolucion
     ap.documentoAtencion = body.documentoAtencion
     ap.cargos            = body.cargos
     ap.observaciones     = body.observaciones

@@ -88,6 +88,8 @@ class Apelacion(Base):
     fechaAsignacion   = Column("FECHAASIGNACION", DateTime, nullable=False)
     estado            = Column(String(20), default="Pendiente")  # Pendiente | Resuelto | Atendido
     numeroResolucion  = Column("NUMERORESOLUCION", String(200), nullable=True)
+    resultadoResolucion = Column("RESULTADORESOLUCION", String(40), nullable=True)
+    fechaResolucion   = Column("FECHARESOLUCION", DateTime, nullable=True)
     documentoAtencion = Column("DOCUMENTOATENCION", String(200), nullable=True)
     cargos            = Column(String(200), nullable=True)
     observaciones     = Column(String(1000), nullable=True)
@@ -481,4 +483,3 @@ class AuditoriaSistema(Base):
     usuarioRol       = Column("usuariorol", String(50), nullable=True)
     ipOrigen         = Column("iporigen", String(50), nullable=True)
     createdAt        = Column("createdat", DateTime, default=datetime.utcnow, nullable=False)
-

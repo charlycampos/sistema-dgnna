@@ -33,6 +33,8 @@ class Apelacion:
     plazoVencimiento:  Optional[datetime] = None
     nnaCar:            Optional[str] = None
     numeroResolucion:  Optional[str] = None
+    resultadoResolucion: Optional[str] = None
+    fechaResolucion:   Optional[datetime] = None
     documentoAtencion: Optional[str] = None
     cargos:            Optional[str] = None
     observaciones:     Optional[str] = None
@@ -49,11 +51,18 @@ class Apelacion:
         self.puntosComplejidad = puntos_complejidad
         self.puntosTotal       = puntos_extension + puntos_complejidad
 
-    def resolver(self, numero_resolucion: str) -> None:
+    def resolver(
+        self,
+        numero_resolucion: str,
+        resultado_resolucion: Optional[str] = None,
+        fecha_resolucion: Optional[datetime] = None,
+    ) -> None:
         """Regla de negocio: marca la apelación como resuelta."""
-        self.estado           = "Resuelto"
-        self.numeroResolucion = numero_resolucion
-        self.updatedAt        = datetime.utcnow()
+        self.estado              = "Resuelto"
+        self.numeroResolucion    = numero_resolucion
+        self.resultadoResolucion = resultado_resolucion
+        self.fechaResolucion     = fecha_resolucion
+        self.updatedAt           = datetime.utcnow()
 
     def atender(self, documento_atencion: str) -> None:
         """Regla de negocio: marca la apelación como atendida."""
