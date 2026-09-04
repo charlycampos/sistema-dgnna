@@ -170,7 +170,7 @@ export default function ReportesPage() {
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className="flex items-center gap-3 w-full md:w-auto">
-                            <Link href="/">
+                            <Link href="/apelaciones/dashboard">
                                 <Button variant="ghost" size="icon">
                                     <ArrowLeft className="h-5 w-5" />
                                 </Button>

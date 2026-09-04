@@ -48,7 +48,7 @@ export function AppSidebar() {
   const apelacionesItems = [
     {
       label: 'Dashboard',
-      href: '/',
+      href: '/apelaciones/dashboard',
       icon: <LayoutDashboard className="h-4 w-4 shrink-0" />,
     },
     {
@@ -118,7 +118,7 @@ export function AppSidebar() {
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
 
           {/* Módulo Apelaciones — solo cuando se está en rutas de Apelaciones */}
-          {(pathname === '/' || pathname.startsWith('/apelaciones') || pathname === '/configuracion') && (
+          {(pathname.startsWith('/apelaciones') || pathname === '/configuracion' || pathname === '/reportes') && (
             <>
               <p className={`px-2 pb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider transition-all duration-300 ${
                 isCollapsed ? 'hidden opacity-0 w-0 h-0 overflow-hidden' : 'opacity-100'

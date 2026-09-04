@@ -460,7 +460,7 @@ export default function AuditoriaClient({ session }: Props) {
                   <th className="py-3 px-3">Expediente / Ref.</th>
                   <th className="py-3 px-3 text-center">Acción</th>
                   <th className="py-3 px-4">Campos Modificados</th>
-                  <th className="py-3 px-4">Usuario Responsable</th>
+                  <th className="py-3 px-4">Usuario que Registró</th>
                   <th className="py-3 px-4 text-right">Comparativa</th>
                 </tr>
               </thead>
@@ -584,7 +584,7 @@ export default function AuditoriaClient({ session }: Props) {
             {/* Metadatos del Evento */}
             <div className="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               <div>
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">Usuario</span>
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">Usuario que Registró</span>
                 <span className="font-semibold text-slate-800">{modalLog.usuarioNombre}</span>
               </div>
               <div>

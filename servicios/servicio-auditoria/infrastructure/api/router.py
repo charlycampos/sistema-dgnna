@@ -290,7 +290,7 @@ def exportar_auditoria_excel(
         "Código Referencia",
         "Acción",
         "Campos Modificados",
-        "Usuario Responsable",
+        "Usuario que Registró",
         "Rol",
         "IP Origen"
     ]

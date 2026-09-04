@@ -2,7 +2,11 @@
 
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { LogOut, Scale, Globe, BookOpen, Users, ChevronRight, Lock, Landmark, CalendarDays, FileText, Eye, BarChart3, MapPin, LayoutDashboard, ShieldCheck } from 'lucide-react'
+import {
+  LogOut, Scale, Globe, BookOpen, Users, ChevronRight, Lock,
+  Landmark, CalendarDays, FileText, Eye, BarChart3, MapPin,
+  LayoutDashboard, ShieldCheck, ShieldAlert
+} from 'lucide-react'
 import type { SessionPayload } from '@/lib/auth'
 
 interface Props {
@@ -23,9 +27,18 @@ export default function MenuClient({ session }: Props) {
   const router = useRouter()
 
   const isAdmin = session.rol === 'admin'
-  const tieneRolDirectivo = session.modulos?.some(
-    modulo => modulo.rolModulo === 'directora' || modulo.rolModulo === 'director'
-  ) ?? false
+  const esDirectivo =
+    isAdmin ||
+    session.rol === 'director' ||
+    session.rol === 'directora' ||
+    Boolean(
+      session.modulos?.some(
+        modulo =>
+          modulo.modulo === 'director' ||
+          modulo.rolModulo === 'directora' ||
+          modulo.rolModulo === 'director'
+      )
+    )
 
   // Módulos estándar para administrador y especialistas
   const modulosEstandar: Modulo[] = [
@@ -36,7 +49,6 @@ export default function MenuClient({ session }: Props) {
       icono: <LayoutDashboard className="w-8 h-8" />,
       ruta: '/director',
       disponible: true,
-      soloAdmin: true,
     },
     {
       id: 'apelaciones',
@@ -52,6 +64,14 @@ export default function MenuClient({ session }: Props) {
       descripcion: 'Casos de sustracción y restitución internacional de menores',
       icono: <Globe className="w-8 h-8" />,
       ruta: '/sustracion-internacional',
+      disponible: true,
+    },
+    {
+      id: 'prevenir-proteger',
+      titulo: 'Estrategia Prevenir para Proteger',
+      descripcion: 'Registro y monitoreo de actividades territoriales y de protección',
+      icono: <ShieldAlert className="w-8 h-8" />,
+      ruta: '/prevenir-proteger',
       disponible: true,
     },
     {
@@ -120,7 +140,7 @@ export default function MenuClient({ session }: Props) {
     {
       id: 'auditoria',
       titulo: 'Módulo de Auditoría y Trazabilidad',
-      descripcion: 'Registro inmutable de modificaciones y actividades en los 7 módulos',
+      descripcion: 'Registro inmutable de modificaciones y actividades en los módulos',
       icono: <ShieldCheck className="w-8 h-8" />,
       ruta: '/auditoria',
       disponible: true,
@@ -136,13 +156,16 @@ export default function MenuClient({ session }: Props) {
     },
   ]
 
-  // El menú se deriva de los módulos asignados. Los accesos globales se
-  // mantienen explícitos: ADMIN ve todo y Gestión de Usuarios es solo ADMIN.
+  // El menú se deriva de los módulos asignados y roles directivos.
   const modulos = modulosEstandar.filter((modulo) => {
     if (isAdmin) return true
-    if (modulo.id === 'director') return tieneRolDirectivo
+    if (modulo.id === 'director') return esDirectivo
     if (modulo.soloAdmin || !modulo.disponible) return false
-    return session.modulos?.some(asignado => asignado.modulo === modulo.id) ?? false
+    return session.modulos?.some(asignado => 
+      asignado.modulo === modulo.id ||
+      (modulo.id === 'sustraccion' && asignado.modulo === 'sustracion') ||
+      (modulo.id === 'sustracion' && asignado.modulo === 'sustraccion')
+    ) ?? false
   })
 
   const handleLogout = async () => {
@@ -154,7 +177,7 @@ export default function MenuClient({ session }: Props) {
   /** true si el usuario tiene acceso a este módulo */
   const tieneAcceso = (modulo: Modulo): boolean => {
     if (isAdmin) return true
-    if (modulo.id === 'director') return tieneRolDirectivo
+    if (modulo.id === 'director') return esDirectivo
     if (modulo.soloAdmin) return false
     if (!modulo.disponible) return false
     return session.modulos?.some(m => 
@@ -167,6 +190,14 @@ export default function MenuClient({ session }: Props) {
   const handleClick = (modulo: Modulo) => {
     if (!modulo.disponible) {
       toast.info('Este módulo estará disponible próximamente')
+      return
+    }
+    if (modulo.id === 'director') {
+      if (!esDirectivo) {
+        toast.error('Solo la Dirección General o Administradores pueden acceder a esta sección')
+        return
+      }
+      if (modulo.ruta) router.push(modulo.ruta)
       return
     }
     if (modulo.soloAdmin && !isAdmin) {

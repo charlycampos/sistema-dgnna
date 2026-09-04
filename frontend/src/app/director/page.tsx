@@ -69,11 +69,11 @@ export default function DirectorPage() {
     fetch('/api/me')
       .then(r => (r.ok ? r.json() : null))
       .then(data => {
-        if (data && data.user) {
+        if (data) {
           setSession({
-            nombre: data.user.nombre || 'Dra. Directora General',
-            rol: data.user.rol || 'directora',
-            email: data.user.email,
+            nombre: data.nombre || data.user?.nombre || 'Dra. Directora General',
+            rol: data.rol || data.user?.rol || 'directora',
+            email: data.email || data.user?.email,
           })
         } else {
           setSession({

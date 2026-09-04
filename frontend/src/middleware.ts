@@ -6,7 +6,7 @@ const SECRET = new TextEncoder().encode(
   process.env.SESSION_SECRET ?? 'dgnna-sistema-dgnna-secret-2026'
 )
 const COOKIE_NAME = 'dgnna_session'
-const SESSION_MINUTES = 480 // 8 horas de sesión activa (jornada laboral)
+const SESSION_MINUTES = 480 // 8 horas de validez de token
 
 // Rutas que NO requieren autenticación
 const RUTAS_PUBLICAS = ['/login']
@@ -25,6 +25,19 @@ export async function middleware(request: NextRequest) {
 
   // Permitir rutas públicas
   if (RUTAS_PUBLICAS.includes(pathname)) {
+    if (pathname === '/login') {
+      const token = request.cookies.get(COOKIE_NAME)?.value
+      if (token) {
+        try {
+          await jwtVerify(token, SECRET)
+          const url = request.nextUrl.clone()
+          url.pathname = '/menu'
+          return NextResponse.redirect(url)
+        } catch {
+          // Token inválido o expirado, permitir acceso a /login
+        }
+      }
+    }
     return NextResponse.next()
   }
   if (PREFIJOS_PUBLICOS.some(p => pathname.startsWith(p))) {
@@ -44,9 +57,14 @@ export async function middleware(request: NextRequest) {
   try {
     const { payload } = await jwtVerify(token, SECRET)
 
-    // Renovación deslizante: cada request válido re-emite el token
-    // con 15 min más de vida. Si el usuario deja de usar el sistema,
-    // la sesión expira sola a los 15 min.
+    // Si intenta acceder a la raíz '/', redirigir al menú principal
+    if (pathname === '/') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/menu'
+      return NextResponse.redirect(url)
+    }
+
+    // Renovación deslizante con cookie de sesión (sin maxAge para que expire al cerrar navegador)
     const { exp: _exp, iat: _iat, ...datos } = payload
     const nuevoToken = await new SignJWT(datos)
       .setProtectedHeader({ alg: 'HS256' })
@@ -59,7 +77,6 @@ export async function middleware(request: NextRequest) {
       httpOnly: true,
       secure: process.env.COOKIE_SECURE === 'true',
       sameSite: 'lax',
-      maxAge: SESSION_MINUTES * 60,
       path: '/',
     })
     return response

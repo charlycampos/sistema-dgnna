@@ -47,20 +47,7 @@ def health():
     }
 
 
-def limpiar_datos_demo():
-    """Limpia cualquier dato de demostración para iniciar en blanco."""
-    db = SessionLocal()
-    try:
-        db.query(AuditoriaLogModel).delete()
-        db.commit()
-        print("[auditoria-service] Tabla de auditoría limpia y lista para registros reales.")
-    except Exception as e:
-        db.rollback()
-    finally:
-        db.close()
 
-
-limpiar_datos_demo()
 
 if __name__ == "__main__":
     import uvicorn

@@ -10,7 +10,7 @@ export default function LoginPage() {
   const [email, setEmail]         = useState('')
   const [password, setPassword]   = useState('')
   const [mostrarPass, setMostrarPass] = useState(false)
-  const [recordar, setRecordar]   = useState(true)
+  const [recordar, setRecordar]   = useState(false)
   const [loading, setLoading]     = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -25,7 +25,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, recordar }),
       })
       const data = await res.json()
 

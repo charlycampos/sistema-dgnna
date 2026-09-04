@@ -7,7 +7,7 @@ import {
   ShieldCheck, UserCheck, BookOpen, Search, Globe, KeyRound,
   Scale, FileText, CalendarDays, Eye, BarChart3, MapPin,
   ShieldAlert, Sparkles, X, EyeOff, Dices, Check, CheckCircle2,
-  Sparkle, RefreshCw
+  Sparkle, RefreshCw, LayoutDashboard
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -32,6 +32,7 @@ type ErrorCarga = {
 }
 
 const MODULOS_DISPONIBLES = [
+  { id: 'director',          label: 'Centro de Mando Directivo',    desc: 'Tablero ejecutivo Alta Dirección', icon: LayoutDashboard, color: 'text-blue-700 bg-blue-50 border-blue-200' },
   { id: 'apelaciones',       label: 'Apelaciones',                  desc: 'Recursos y expedientes',       icon: Scale,        color: 'text-indigo-600 bg-indigo-50 border-indigo-200' },
   { id: 'sustraccion',       label: 'Sustracción Internacional',    desc: 'Casos y restitución de NNA',   icon: Globe,        color: 'text-blue-600 bg-blue-50 border-blue-200' },
   { id: 'proyectos-ley',     label: 'Proyectos de Ley',             desc: 'Seguimiento legislativo',      icon: FileText,     color: 'text-amber-600 bg-amber-50 border-amber-200' },
