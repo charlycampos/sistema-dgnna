@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { ArrowLeft, Save, Trash2, FileText, CheckCircle2, Plus, User, Building, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
+import { useMe } from '@/lib/use-me'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import type { Abogado, ComplejidadJuridica, ApelacionConRelaciones, Procedencia, Revisor, CargaRevisor } from '@/types'
@@ -55,6 +56,8 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
     const router = useRouter()
     const searchParams = useSearchParams()
     const [loading, setLoading] = useState(true)
+    const { me } = useMe()
+    const isAdmin = me?.rol === 'admin'
     const [saving, setSaving] = useState(false)
     const [apelacion, setApelacion] = useState<ApelacionConRelaciones | null>(null)
     const [abogados, setAbogados] = useState<Abogado[]>([])
@@ -246,6 +249,7 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                 numeroResolucion: apelacionData.numeroResolucion || '',
                 resultadoResolucion: apelacionData.resultadoResolucion || null,
                 fechaResolucion: apelacionData.fechaResolucion ? new Date(apelacionData.fechaResolucion) : null,
+                fechaCambioResuelto: apelacionData.fechaCambioResuelto ? new Date(apelacionData.fechaCambioResuelto) : null,
                 documentoAtencion: apelacionData.documentoAtencion || '',
                 cargos: apelacionData.cargos || '',
                 observaciones: apelacionData.observaciones || '',
@@ -288,6 +292,7 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                     fechaIngreso: pendingData.fechaIngreso.toISOString(),
                     fechaAsignacion: pendingData.fechaAsignacion.toISOString(),
                     fechaResolucion: pendingData.fechaResolucion?.toISOString() ?? null,
+                    fechaCambioResuelto: pendingData.fechaCambioResuelto?.toISOString() ?? null,
                     fechaRevisor: pendingData.fechaAsignacionRevisor
                         ? new Date(pendingData.fechaAsignacionRevisor).toISOString()
                         : null,
@@ -343,14 +348,14 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
     const puntosComplejidad = complejidadSeleccionada?.puntos || 0
     const puntosTotal = puntosExtension + puntosComplejidad
 
-    const getEstadoBadgeVariant = (estado: string): 'secondary' | 'default' | 'outline' => {
+    const getEstadoBadgeVariant = (estado: string): 'secondary' | 'default' | 'outline' | 'atendido' => {
         switch (estado) {
             case 'Pendiente':
                 return 'secondary'
             case 'Resuelto':
                 return 'default'
             case 'Atendido':
-                return 'outline'
+                return 'atendido'
             case 'Observado':
                 return 'outline'
             default:
@@ -618,52 +623,69 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                     <CardHeader>
                                         <CardTitle>Asignación</CardTitle>
                                     </CardHeader>
-                                    <CardContent className="grid gap-4 md:grid-cols-2">
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Abogado Asignado</p>
-                                            <p className="font-semibold">{apelacion.abogado.nombre}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Estado</p>
-                                            <Badge variant={getEstadoBadgeVariant(apelacion.estado)}>
-                                                {apelacion.estado}
-                                            </Badge>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">Fecha Asignación</p>
-                                            <p className="font-semibold">{format(new Date(apelacion.fechaAsignacion), 'dd/MM/yyyy', { locale: es })}</p>
-                                        </div>
-                                        {apelacion.revisor && (
-                                            <div className="space-y-3">
-                                                <div>
-                                                    <p className="text-sm text-muted-foreground">Revisado por</p>
-                                                    <p className="font-semibold">{apelacion.revisor.nombre}</p>
-                                                </div>
-                                                {apelacion.fechaRevisor && (
-                                                    <div>
-                                                        <p className="text-sm text-muted-foreground">Fecha Revisor</p>
-                                                        <p className="font-semibold">{format(new Date(apelacion.fechaRevisor), 'dd/MM/yyyy', { locale: es })}</p>
-                                                    </div>
-                                                )}
+                                    <CardContent className="space-y-4">
+                                        <div className="grid gap-4 md:grid-cols-2">
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">Abogado Asignado</p>
+                                                <p className="font-semibold">{apelacion.abogado.nombre}</p>
                                             </div>
-                                        )}
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">Fecha Asignación</p>
+                                                <p className="font-semibold">{format(new Date(apelacion.fechaAsignacion), 'dd/MM/yyyy', { locale: es })}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid gap-4 md:grid-cols-2">
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">Estado</p>
+                                                <Badge variant={getEstadoBadgeVariant(apelacion.estado)}>
+                                                    {apelacion.estado}
+                                                </Badge>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">Fecha pase a Resuelto</p>
+                                                <p className="font-semibold">
+                                                    {apelacion.fechaCambioResuelto ? format(new Date(apelacion.fechaCambioResuelto), 'dd/MM/yyyy', { locale: es }) : '—'}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid gap-4 md:grid-cols-2">
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">Revisado por</p>
+                                                <p className="font-semibold">{apelacion.revisor?.nombre || '— Sin revisor —'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">Fecha Asignación Revisor</p>
+                                                <p className="font-semibold">
+                                                    {apelacion.fechaRevisor ? format(new Date(apelacion.fechaRevisor), 'dd/MM/yyyy', { locale: es }) : '—'}
+                                                </p>
+                                            </div>
+                                        </div>
                                     </CardContent>
                                 </Card>
 
-                                {/* Resolución / Atención */}
-                                {(apelacion.estado === 'Resuelto' || apelacion.estado === 'Atendido') && (
+                                {/* Resolución */}
+                                {(apelacion.numeroResolucion || apelacion.fechaResolucion || apelacion.resultadoResolucion || apelacion.estado === 'Resuelto' || apelacion.estado === 'Atendido') && (
                                     <Card>
                                         <CardHeader>
-                                            <CardTitle>Atención / Resolución</CardTitle>
+                                            <CardTitle>Resolución</CardTitle>
                                         </CardHeader>
-                                        <CardContent className="grid gap-4 md:grid-cols-3">
-
-                                            {apelacion.numeroResolucion && (
-                                                <div>
-                                                    <p className="text-sm text-muted-foreground">Nº de Resolución</p>
-                                                    <p className="font-semibold">{apelacion.numeroResolucion}</p>
-                                                </div>
-                                            )}
+                                        <CardContent className="space-y-4">
+                                            <div className="grid gap-4 md:grid-cols-2">
+                                                {apelacion.numeroResolucion && (
+                                                    <div>
+                                                        <p className="text-sm text-muted-foreground">Nº de Resolución</p>
+                                                        <p className="font-semibold">{apelacion.numeroResolucion}</p>
+                                                    </div>
+                                                )}
+                                                {apelacion.fechaResolucion && (
+                                                    <div>
+                                                        <p className="text-sm text-muted-foreground">Fecha de resolución</p>
+                                                        <p className="font-semibold">{format(new Date(apelacion.fechaResolucion), 'dd/MM/yyyy', { locale: es })}</p>
+                                                    </div>
+                                                )}
+                                            </div>
                                             {apelacion.resultadoResolucion && (
                                                 <div>
                                                     <p className="text-sm text-muted-foreground">Resultado de la resolución</p>
@@ -673,24 +695,25 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                                     </p>
                                                 </div>
                                             )}
-                                            {apelacion.fechaResolucion && (
-                                                <div>
-                                                    <p className="text-sm text-muted-foreground">Fecha de resolución</p>
-                                                    <p className="font-semibold">{format(new Date(apelacion.fechaResolucion), 'dd/MM/yyyy', { locale: es })}</p>
-                                                </div>
-                                            )}
-                                            {apelacion.documentoAtencion && (
-                                                <div>
-                                                    <p className="text-sm text-muted-foreground">Doc. Atención</p>
-                                                    <p className="font-semibold">{apelacion.documentoAtencion}</p>
-                                                </div>
-                                            )}
-                                            {apelacion.cargos && (
-                                                <div>
-                                                    <p className="text-sm text-muted-foreground">Cargos</p>
-                                                    <p className="font-semibold">{apelacion.cargos}</p>
-                                                </div>
-                                            )}
+                                        </CardContent>
+                                    </Card>
+                                )}
+
+                                {/* Notificación */}
+                                {(apelacion.documentoAtencion || apelacion.cargos || apelacion.estado === 'Atendido') && (
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>Notificación</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="grid gap-4 md:grid-cols-2">
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">Documento Atención</p>
+                                                <p className="font-semibold">{apelacion.documentoAtencion || '—'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-muted-foreground">Cargos</p>
+                                                <p className="font-semibold">{apelacion.cargos || '—'}</p>
+                                            </div>
                                         </CardContent>
                                     </Card>
                                 )}
@@ -1245,6 +1268,7 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                             <div className="space-y-4">
                                                 <h3 className="text-lg font-semibold">Asignación</h3>
 
+                                                {/* Fila 1: Abogado y Fecha de Asignación */}
                                                 <div className="grid gap-4 md:grid-cols-2">
                                                     <FormField
                                                         control={form.control}
@@ -1290,6 +1314,7 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                                     />
                                                 </div>
 
+                                                {/* Fila 2: Estado y Fecha pase a Resuelto */}
                                                 <div className="grid gap-4 md:grid-cols-2">
                                                     <FormField
                                                         control={form.control}
@@ -1297,7 +1322,16 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                                         render={({ field }) => (
                                                             <FormItem>
                                                                 <FormLabel>Estado *</FormLabel>
-                                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                                <Select
+                                                                    onValueChange={(val) => {
+                                                                        field.onChange(val);
+                                                                        // Si pasa a Resuelto y no tenía fecha pase a resuelto, sugerir fecha actual
+                                                                        if (val === 'Resuelto' && !form.getValues('fechaCambioResuelto')) {
+                                                                            form.setValue('fechaCambioResuelto', new Date(), { shouldValidate: true });
+                                                                        }
+                                                                    }}
+                                                                    value={field.value}
+                                                                >
                                                                     <FormControl>
                                                                         <SelectTrigger>
                                                                             <SelectValue />
@@ -1315,6 +1349,30 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                                         )}
                                                     />
 
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="fechaCambioResuelto"
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Fecha pase a Resuelto</FormLabel>
+                                                                <FormControl>
+                                                                    <Input
+                                                                        type="date"
+                                                                        value={dateToValue(field.value)}
+                                                                        onChange={(e) => field.onChange(valueToDate(e.target.value))}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormDescription className="text-[11px]">
+                                                                    Fecha en que el profesional concluyó la atención (opcional).
+                                                                </FormDescription>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                </div>
+
+                                                {/* Fila 3: Revisado por y Fecha Asignación Revisor */}
+                                                <div className="grid gap-4 md:grid-cols-2">
                                                     <FormField
                                                         control={form.control}
                                                         name="revisorId"
@@ -1336,8 +1394,10 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                                                                 { shouldValidate: true }
                                                                             );
                                                                         } else {
-                                                                            // Revisor diferente: nueva asignación hoy
-                                                                            form.setValue('fechaAsignacionRevisor', new Date(), { shouldValidate: true });
+                                                                            // Revisor diferente: sugerir fecha pase a resuelto si existe, sino hoy
+                                                                            const fPaseResuelto = form.getValues('fechaCambioResuelto');
+                                                                            const fechaSugerida = fPaseResuelto ? new Date(fPaseResuelto) : new Date();
+                                                                            form.setValue('fechaAsignacionRevisor', fechaSugerida, { shouldValidate: true });
                                                                         }
                                                                     }}
                                                                     value={field.value ?? '__ninguno__'}
@@ -1366,47 +1426,65 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                                     />
 
                                                     <FormField
-                                                    	control={form.control}
-                                                    	name="fechaAsignacionRevisor"
-                                                    	render={({ field }) => {
-                                                    		const hasRevisor = !!form.watch('revisorId');
-                                                    		const displayVal = field.value 
-                                                    			? (field.value instanceof Date 
-                                                    				? field.value.toISOString().split('T')[0] 
-                                                    				: typeof field.value === 'string' 
-                                                    					? (field.value as string).split('T')[0] 
-                                                    					: '')
-                                                    			: '';
-                                                    		
-                                                    		return (
-                                                    			<FormItem>
-                                                    				<FormLabel>Fecha Asignación Revisor</FormLabel>
-                                                    				<FormControl>
-                                                    					<Input
-                                                    						type="date"
-                                                    						disabled={true}
-                                                    						value={displayVal}
-                                                    						onChange={(e) => {
-                                                    							const d = e.target.value ? new Date(e.target.value + 'T00:00:00') : null;
-                                                    							field.onChange(d);
-                                                    						}}
-                                                    					/>
-                                                    				</FormControl>
-                                                    				<FormMessage />
-                                                    			</FormItem>
-                                                    		);
-                                                    	}}
+                                                        control={form.control}
+                                                        name="fechaAsignacionRevisor"
+                                                        render={({ field }) => {
+                                                            const fResuelto = form.watch('fechaCambioResuelto');
+                                                            return (
+                                                                <FormItem>
+                                                                    <div className="flex items-center justify-between">
+                                                                        <FormLabel>Fecha Asignación Revisor</FormLabel>
+                                                                        {fResuelto && (
+                                                                            <div className="flex items-center gap-1">
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        form.setValue('fechaAsignacionRevisor', new Date(fResuelto), { shouldValidate: true });
+                                                                                    }}
+                                                                                    className="text-[10px] font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-1.5 py-0.5 rounded transition-colors"
+                                                                                    title="Asignar la misma fecha que pase a Resuelto"
+                                                                                >
+                                                                                    Mismo día
+                                                                                </button>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        const d = new Date(fResuelto);
+                                                                                        d.setDate(d.getDate() + 1);
+                                                                                        form.setValue('fechaAsignacionRevisor', d, { shouldValidate: true });
+                                                                                    }}
+                                                                                    className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded transition-colors"
+                                                                                    title="Asignar al día siguiente del pase a Resuelto"
+                                                                                >
+                                                                                    +1 día
+                                                                                </button>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            type="date"
+                                                                            value={dateToValue(field.value)}
+                                                                            onChange={(e) => field.onChange(valueToDate(e.target.value))}
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormDescription className="text-[11px]">
+                                                                        Fecha en que se derivó al revisor (mismo día o día siguiente).
+                                                                    </FormDescription>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            );
+                                                        }}
                                                     />
                                                 </div>
                                             </div>
 
                                             {/* Resolución */}
-                                            {(estado === 'Resuelto' || estado === 'Atendido') && (
+                                            {(estado === 'Resuelto' || estado === 'Atendido' || form.watch('numeroResolucion') || form.watch('fechaResolucion') || form.watch('resultadoResolucion')) && (
                                                 <div className="space-y-4">
                                                     <h3 className="text-lg font-semibold">Resolución</h3>
 
-                                                    <div className="grid gap-4 md:grid-cols-3">
-
+                                                    <div className="grid gap-4 md:grid-cols-2">
                                                         <FormField
                                                             control={form.control}
                                                             name="numeroResolucion"
@@ -1468,6 +1546,13 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                                             </FormItem>
                                                         )}
                                                     />
+                                                </div>
+                                            )}
+
+                                            {/* Notificación */}
+                                            {(estado === 'Atendido' || form.watch('documentoAtencion') || form.watch('cargos')) && (
+                                                <div className="space-y-4">
+                                                    <h3 className="text-lg font-semibold">Notificación</h3>
 
                                                     <div className="grid gap-4 md:grid-cols-2">
                                                         <FormField
@@ -1505,7 +1590,6 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                                             )}
                                                         />
                                                     </div>
-
                                                 </div>
                                             )}
 

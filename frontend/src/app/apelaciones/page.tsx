@@ -172,11 +172,11 @@ export default function ApelacionesPage() {
 
     const hayFiltrosActivos = searchTerm || estadoFilter !== 'todos' || abogadoFilter !== 'todos' || fechaDesde || fechaHasta
 
-    const getEstadoBadgeVariant = (estado: string): 'secondary' | 'default' | 'outline' => {
+    const getEstadoBadgeVariant = (estado: string): 'secondary' | 'default' | 'outline' | 'atendido' => {
         switch (estado) {
             case 'Pendiente': return 'secondary'
             case 'Resuelto': return 'default'
-            case 'Atendido': return 'outline'
+            case 'Atendido': return 'atendido'
             case 'Observado': return 'outline'
             default: return 'default'
         }

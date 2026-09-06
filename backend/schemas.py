@@ -115,6 +115,7 @@ class ExtensionRangoOut(ExtensionRangoBase):
 ResultadoResolucion = Literal[
     "FUNDADO", "FUNDADO_EN_PARTE", "INFUNDADO", "IMPROCEDENTE",
     "CARECE_DE_OBJETO", "NULIDAD", "REMISION_ORGANO_COMPETENTE",
+    "CESE_PARCIAL_FUNCIONES",
 ]
 
 class ApelacionCreate(BaseModel):
@@ -137,6 +138,8 @@ class ApelacionCreate(BaseModel):
     numeroResolucion: Optional[str] = None
     resultadoResolucion: Optional[ResultadoResolucion] = None
     fechaResolucion: Optional[datetime] = None
+    # Controlado por servidor; se ignora en altas y actualizaciones.
+    fechaCambioResuelto: Optional[datetime] = None
     documentoAtencion: Optional[str] = None
     cargos: Optional[str] = None
     observaciones: Optional[str] = None
@@ -168,6 +171,7 @@ class ApelacionOut(BaseModel):
     numeroResolucion: Optional[str]
     resultadoResolucion: Optional[ResultadoResolucion]
     fechaResolucion: Optional[datetime]
+    fechaCambioResuelto: Optional[datetime] = None
     documentoAtencion: Optional[str]
     cargos: Optional[str]
     observaciones: Optional[str]

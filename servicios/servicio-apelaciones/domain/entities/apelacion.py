@@ -35,6 +35,7 @@ class Apelacion:
     numeroResolucion:  Optional[str] = None
     resultadoResolucion: Optional[str] = None
     fechaResolucion:   Optional[datetime] = None
+    fechaCambioResuelto: Optional[datetime] = None
     documentoAtencion: Optional[str] = None
     cargos:            Optional[str] = None
     observaciones:     Optional[str] = None
@@ -58,6 +59,8 @@ class Apelacion:
         fecha_resolucion: Optional[datetime] = None,
     ) -> None:
         """Regla de negocio: marca la apelación como resuelta."""
+        if self.fechaCambioResuelto is None and self.estado != "Resuelto":
+            self.fechaCambioResuelto = datetime.utcnow()
         self.estado              = "Resuelto"
         self.numeroResolucion    = numero_resolucion
         self.resultadoResolucion = resultado_resolucion

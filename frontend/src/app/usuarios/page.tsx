@@ -65,7 +65,8 @@ function RolBadge({ rol, modulos }: { rol: string; modulos: ModuloPermiso[] }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {modulos.map(m => {
-        const modDef = MODULOS_DISPONIBLES.find(d => d.id === m.modulo)
+        const modIdNorm = m.modulo === 'sustracion' ? 'sustraccion' : m.modulo
+        const modDef = MODULOS_DISPONIBLES.find(d => d.id === modIdNorm)
         const label = modDef ? modDef.label : m.modulo
         const esRegistrador = m.rolModulo === 'registrador'
         return (
@@ -185,9 +186,10 @@ export default function UsuariosPage() {
   // Modificar rol de módulo individual en creación
   const toggleRolModuloCrear = (moduloId: string, rol: string) => {
     setForm(prev => {
-      const filtrados = prev.modulos.filter(m => m.modulo !== moduloId)
+      const isSustraccion = moduloId === 'sustraccion' || moduloId === 'sustracion'
+      const filtrados = prev.modulos.filter(m => isSustraccion ? (m.modulo !== 'sustraccion' && m.modulo !== 'sustracion') : m.modulo !== moduloId)
       if (rol) {
-        filtrados.push({ modulo: moduloId, rolModulo: rol })
+        filtrados.push({ modulo: isSustraccion ? 'sustraccion' : moduloId, rolModulo: rol })
       }
       return { ...prev, modulos: filtrados }
     })
@@ -207,9 +209,10 @@ export default function UsuariosPage() {
   // Modificar rol de módulo individual en edición
   const toggleRolModuloEditar = (moduloId: string, rol: string) => {
     if (!modalEditar) return
-    const filtrados = (modalEditar.modulos || []).filter(m => m.modulo !== moduloId)
+    const isSustraccion = moduloId === 'sustraccion' || moduloId === 'sustracion'
+    const filtrados = (modalEditar.modulos || []).filter(m => isSustraccion ? (m.modulo !== 'sustraccion' && m.modulo !== 'sustracion') : m.modulo !== moduloId)
     if (rol) {
-      filtrados.push({ modulo: moduloId, rolModulo: rol })
+      filtrados.push({ modulo: isSustraccion ? 'sustraccion' : moduloId, rolModulo: rol })
     }
     setModalEditar({ ...modalEditar, modulos: filtrados })
   }
@@ -949,7 +952,7 @@ export default function UsuariosPage() {
                         {/* Lista de Módulos con Botoneras de 1-Clic */}
                         <div className="space-y-2 max-h-[48vh] overflow-y-auto pr-1">
                           {MODULOS_DISPONIBLES.map(mod => {
-                            const asignado = (modalEditar.modulos || []).find(m => m.modulo === mod.id)
+                            const asignado = (modalEditar.modulos || []).find(m => m.modulo === mod.id || (mod.id === 'sustraccion' && m.modulo === 'sustracion'))
                             const rolActual = asignado?.rolModulo || ''
 
                             return (

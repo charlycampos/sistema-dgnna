@@ -6,6 +6,7 @@ from pydantic import BaseModel
 ResultadoResolucion = Literal[
     "FUNDADO", "FUNDADO_EN_PARTE", "INFUNDADO", "IMPROCEDENTE",
     "CARECE_DE_OBJETO", "NULIDAD", "REMISION_ORGANO_COMPETENTE",
+    "CESE_PARCIAL_FUNCIONES",
 ]
 
 
@@ -70,6 +71,9 @@ class ApelacionCreate(BaseModel):
     numeroResolucion:  Optional[str] = None
     resultadoResolucion: Optional[ResultadoResolucion] = None
     fechaResolucion:   Optional[datetime] = None
+    # Campo controlado por el servidor. Se acepta por compatibilidad con PUT
+    # de formulario completo, pero el caso de uso ignora el valor recibido.
+    fechaCambioResuelto: Optional[datetime] = None
     documentoAtencion: Optional[str] = None
     cargos:            Optional[str] = None
     observaciones:     Optional[str] = None
@@ -138,6 +142,7 @@ class ApelacionOut(BaseModel):
     numeroResolucion:  Optional[str] = None
     resultadoResolucion: Optional[ResultadoResolucion] = None
     fechaResolucion:   Optional[datetime] = None
+    fechaCambioResuelto: Optional[datetime] = None
     documentoAtencion: Optional[str] = None
     cargos:            Optional[str] = None
     observaciones:     Optional[str] = None

@@ -13,6 +13,7 @@ RESULTADOS_VALIDOS = (
     "CARECE_DE_OBJETO",
     "NULIDAD",
     "REMISION_ORGANO_COMPETENTE",
+    "CESE_PARCIAL_FUNCIONES",
 )
 
 
@@ -46,15 +47,20 @@ def aplicar_migracion() -> None:
                 )
             )
         }
-        if "CK_AP_RESULTADO_RESOLUCION" not in restricciones:
-            valores = ", ".join(f"'{resultado}'" for resultado in RESULTADOS_VALIDOS)
+        # La restriccion puede existir con un catalogo anterior. Se reemplaza
+        # dentro de la misma transaccion para que sucesivas ejecuciones sean idempotentes.
+        if "CK_AP_RESULTADO_RESOLUCION" in restricciones:
             connection.execute(
-                text(
-                    "ALTER TABLE apelaciones ADD CONSTRAINT "
-                    "ck_ap_resultado_resolucion CHECK "
-                    f"(resultadoresolucion IS NULL OR resultadoresolucion IN ({valores}))"
-                )
+                text("ALTER TABLE apelaciones DROP CONSTRAINT ck_ap_resultado_resolucion")
             )
+        valores = ", ".join(f"'{resultado}'" for resultado in RESULTADOS_VALIDOS)
+        connection.execute(
+            text(
+                "ALTER TABLE apelaciones ADD CONSTRAINT "
+                "ck_ap_resultado_resolucion CHECK "
+                f"(resultadoresolucion IS NULL OR resultadoresolucion IN ({valores}))"
+            )
+        )
 
     print("Migración de resultado de resolución aplicada correctamente.")
 

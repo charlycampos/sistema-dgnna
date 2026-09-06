@@ -15,6 +15,7 @@ export const RESULTADOS_RESOLUCION = [
     { value: "CARECE_DE_OBJETO", label: "Carece de objeto emitir pronunciamiento" },
     { value: "NULIDAD", label: "Declara la nulidad" },
     { value: "REMISION_ORGANO_COMPETENTE", label: "Remisión al órgano competente" },
+    { value: "CESE_PARCIAL_FUNCIONES", label: "Cese parcial de sus funciones" },
 ] as const;
 
 export const apelacionBaseSchema = z.object({
@@ -54,6 +55,7 @@ export const apelacionBaseSchema = z.object({
         ...typeof RESULTADOS_RESOLUCION[number]["value"][],
     ]).optional().nullable(),
     fechaResolucion: z.date().optional().nullable(),
+    fechaCambioResuelto: z.date().optional().nullable(),
     documentoAtencion: z.string().optional(),
     cargos: z.string().optional(),
     observaciones: z.string().optional(),

@@ -27,12 +27,7 @@ def run_migrations():
     migraciones = [
         "ALTER TABLE apelaciones ADD (resultadoResolucion VARCHAR2(40))",
         "ALTER TABLE apelaciones ADD (fechaResolucion TIMESTAMP)",
-        """ALTER TABLE apelaciones ADD CONSTRAINT ck_ap_resultado_resolucion CHECK (
-            resultadoResolucion IS NULL OR resultadoResolucion IN (
-                'FUNDADO', 'FUNDADO_EN_PARTE', 'INFUNDADO', 'IMPROCEDENTE',
-                'CARECE_DE_OBJETO', 'NULIDAD', 'REMISION_ORGANO_COMPETENTE'
-            )
-        )""",
+        "ALTER TABLE apelaciones ADD (fechaCambioResuelto TIMESTAMP)",
         "ALTER TABLE reservas_sala ADD (estado VARCHAR2(20) DEFAULT 'Programado' NOT NULL)",
         # casos_sustracion — campos nuevos
         "ALTER TABLE casos_sustracion ADD (nnaSexo VARCHAR2(10))",
@@ -97,6 +92,36 @@ def run_migrations():
                 else:
                     print(f"[migration] ERROR inesperado: {e}")
                     traceback.print_exc()
+
+        # Oracle no permite modificar directamente un CHECK. Se reemplaza luego
+        # de crear las columnas, admitiendo tanto instalaciones nuevas como existentes.
+        if engine.dialect.name == "oracle":
+            constraint_name = "CK_AP_RESULTADO_RESOLUCION"
+            existe = conn.execute(
+                text(
+                    "SELECT COUNT(*) FROM user_constraints "
+                    "WHERE table_name = 'APELACIONES' AND constraint_name = :nombre"
+                ),
+                {"nombre": constraint_name},
+            ).scalar()
+            if existe:
+                conn.execute(
+                    text(
+                        "ALTER TABLE apelaciones DROP CONSTRAINT "
+                        "ck_ap_resultado_resolucion"
+                    )
+                )
+            conn.execute(
+                text(
+                    "ALTER TABLE apelaciones ADD CONSTRAINT "
+                    "ck_ap_resultado_resolucion CHECK ("
+                    "resultadoResolucion IS NULL OR resultadoResolucion IN ("
+                    "'FUNDADO', 'FUNDADO_EN_PARTE', 'INFUNDADO', 'IMPROCEDENTE', "
+                    "'CARECE_DE_OBJETO', 'NULIDAD', 'REMISION_ORGANO_COMPETENTE', "
+                    "'CESE_PARCIAL_FUNCIONES'))"
+                )
+            )
+            conn.commit()
 
 run_migrations()
 

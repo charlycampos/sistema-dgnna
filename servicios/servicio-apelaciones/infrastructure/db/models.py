@@ -123,6 +123,7 @@ class ApelacionModel(Base):
     numeroResolucion  = Column("numeroresolucion",  String(200), nullable=True)
     resultadoResolucion = Column("resultadoresolucion", String(40), nullable=True)
     fechaResolucion   = Column("fecharesolucion",   DateTime, nullable=True)
+    fechaCambioResuelto = Column("fechacambioresuelto", DateTime, nullable=True)
     documentoAtencion = Column("documentoatencion", String(200), nullable=True)
     cargos            = Column("cargos",            String(200), nullable=True)
     observaciones     = Column("observaciones",     String(1000), nullable=True)

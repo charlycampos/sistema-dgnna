@@ -96,6 +96,7 @@ def crear(
         numeroResolucion  = body.numeroResolucion,
         resultadoResolucion = body.resultadoResolucion,
         fechaResolucion   = body.fechaResolucion,
+        fechaCambioResuelto = body.fechaCambioResuelto or (body.fechaResolucion or datetime.utcnow() if body.estado in ("Resuelto", "Atendido") else None),
         documentoAtencion = body.documentoAtencion,
         cargos            = body.cargos,
         observaciones     = body.observaciones,
@@ -158,6 +159,13 @@ def actualizar(
     ap.revisorId         = body.revisorId
     if body.fechaAsignacion:
         ap.fechaAsignacion = body.fechaAsignacion
+    if body.fechaCambioResuelto is not None:
+        ap.fechaCambioResuelto = body.fechaCambioResuelto
+    elif (
+        ap.fechaCambioResuelto is None
+        and body.estado in ("Resuelto", "Atendido")
+    ):
+        ap.fechaCambioResuelto = body.fechaResolucion or datetime.utcnow()
     ap.estado            = body.estado
     ap.numeroResolucion  = body.numeroResolucion
     ap.resultadoResolucion = body.resultadoResolucion

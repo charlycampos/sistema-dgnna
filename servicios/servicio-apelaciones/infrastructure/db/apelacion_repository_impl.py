@@ -66,6 +66,7 @@ class ApelacionRepositoryImpl(ApelacionRepository):
         model.numeroResolucion  = apelacion.numeroResolucion
         model.resultadoResolucion = apelacion.resultadoResolucion
         model.fechaResolucion   = apelacion.fechaResolucion
+        model.fechaCambioResuelto = apelacion.fechaCambioResuelto
         model.documentoAtencion = apelacion.documentoAtencion
         model.cargos            = apelacion.cargos
         model.observaciones     = apelacion.observaciones
@@ -165,6 +166,7 @@ class ApelacionRepositoryImpl(ApelacionRepository):
             numeroResolucion  = m.numeroResolucion,
             resultadoResolucion = m.resultadoResolucion,
             fechaResolucion   = m.fechaResolucion,
+            fechaCambioResuelto = m.fechaCambioResuelto,
             documentoAtencion = m.documentoAtencion,
             cargos            = m.cargos,
             observaciones     = m.observaciones,
@@ -200,6 +202,7 @@ class ApelacionRepositoryImpl(ApelacionRepository):
             numeroResolucion  = e.numeroResolucion,
             resultadoResolucion = e.resultadoResolucion,
             fechaResolucion   = e.fechaResolucion,
+            fechaCambioResuelto = e.fechaCambioResuelto,
             documentoAtencion = e.documentoAtencion,
             cargos            = e.cargos,
             observaciones     = e.observaciones,

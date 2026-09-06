@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import (
     Column, String, Integer, Boolean, DateTime, Float,
-    ForeignKey, UniqueConstraint
+    ForeignKey, UniqueConstraint, Text
 )
 from sqlalchemy.orm import relationship
 from database import Base
@@ -90,6 +90,7 @@ class Apelacion(Base):
     numeroResolucion  = Column("NUMERORESOLUCION", String(200), nullable=True)
     resultadoResolucion = Column("RESULTADORESOLUCION", String(40), nullable=True)
     fechaResolucion   = Column("FECHARESOLUCION", DateTime, nullable=True)
+    fechaCambioResuelto = Column("FECHACAMBIORESUELTO", DateTime, nullable=True)
     documentoAtencion = Column("DOCUMENTOATENCION", String(200), nullable=True)
     cargos            = Column(String(200), nullable=True)
     observaciones     = Column(String(1000), nullable=True)

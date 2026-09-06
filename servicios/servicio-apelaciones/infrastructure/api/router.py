@@ -70,7 +70,10 @@ def crear(body: ApelacionCreate, db: Session = Depends(get_db)):
             codigo_referencia=body.numeroExpediente,
             accion="CREAR",
             campos_cambiados=", ".join(body.model_dump().keys()),
-            valores_nuevos=body.model_dump(),
+            valores_nuevos={
+                **body.model_dump(exclude={"fechaCambioResuelto"}),
+                "fechaCambioResuelto": entidad.fechaCambioResuelto,
+            },
             usuario_nombre="Especialista Apelaciones"
         )
         return res
@@ -100,7 +103,10 @@ def actualizar(id: str, body: ApelacionUpdate, db: Session = Depends(get_db)):
             accion="MODIFICAR",
             campos_cambiados=", ".join(body.model_dump().keys()),
             valores_previos=previos,
-            valores_nuevos=body.model_dump(),
+            valores_nuevos={
+                **body.model_dump(exclude={"fechaCambioResuelto"}),
+                "fechaCambioResuelto": entidad.fechaCambioResuelto,
+            },
             usuario_nombre="Especialista Apelaciones"
         )
         return res

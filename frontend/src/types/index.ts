@@ -86,6 +86,8 @@ export interface ApelacionConRelaciones {
   numeroResolucion: string | null
   resultadoResolucion?: ResultadoResolucion | null
   fechaResolucion?: Date | string | null
+  /** Fecha automática de la primera transición del expediente al estado Resuelto. */
+  fechaCambioResuelto?: Date | string | null
   documentoAtencion: string | null
   cargos: string | null
   observaciones: string | null
@@ -130,6 +132,7 @@ export interface ApelacionFormData {
   numeroResolucion?: string
   resultadoResolucion?: ResultadoResolucion | null
   fechaResolucion?: Date | null
+  fechaCambioResuelto?: Date | null
   documentoAtencion?: string
   cargos?: string
   observaciones?: string
@@ -143,6 +146,7 @@ export type ResultadoResolucion =
   | 'CARECE_DE_OBJETO'
   | 'NULIDAD'
   | 'REMISION_ORGANO_COMPETENTE'
+  | 'CESE_PARCIAL_FUNCIONES'
 
 // Para estadísticas del dashboard
 export interface EstadisticasDashboard {

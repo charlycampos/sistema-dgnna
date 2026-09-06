@@ -36,6 +36,7 @@ export function descargarExcelApelaciones(apelaciones: ApelacionConRelaciones[])
         'Abogado': a.abogado?.nombre || '',
         'Fecha Asignación': format(new Date(a.fechaAsignacion), 'dd/MM/yyyy'),
         'Estado': a.estado,
+        'Fecha pase a Resuelto': a.fechaCambioResuelto ? format(new Date(a.fechaCambioResuelto), 'dd/MM/yyyy') : '',
         'Puntos Total': a.puntosTotal,
         'Revisado por': a.revisor?.nombre || '',
         'Fecha Asignación Revisor': a.fechaRevisor ? format(new Date(a.fechaRevisor), 'dd/MM/yyyy') : '',
@@ -73,6 +74,7 @@ export function descargarExcelApelaciones(apelaciones: ApelacionConRelaciones[])
         { wch: 18 },  // Abogado
         { wch: 15 },  // Fecha Asignación
         { wch: 12 },  // Estado
+        { wch: 20 },  // Fecha pase a Resuelto
         { wch: 12 },  // Puntos Total
         { wch: 22 },  // Revisado por
         { wch: 20 },  // Fecha Asignación Revisor

@@ -67,6 +67,7 @@ CREATE TABLE apelaciones_db.apelaciones (
     numeroresolucion  VARCHAR2(200),
     resultadoresolucion VARCHAR2(40),
     fecharesolucion   TIMESTAMP,
+    fechacambioresuelto TIMESTAMP,
     documentoatencion VARCHAR2(200),
     cargos            VARCHAR2(200),
     observaciones     VARCHAR2(1000),
@@ -77,7 +78,8 @@ CREATE TABLE apelaciones_db.apelaciones (
     CONSTRAINT ck_ap_resultado_resolucion CHECK (
         resultadoresolucion IS NULL OR resultadoresolucion IN (
             'FUNDADO', 'FUNDADO_EN_PARTE', 'INFUNDADO', 'IMPROCEDENTE',
-            'CARECE_DE_OBJETO', 'NULIDAD', 'REMISION_ORGANO_COMPETENTE'
+            'CARECE_DE_OBJETO', 'NULIDAD', 'REMISION_ORGANO_COMPETENTE',
+            'CESE_PARCIAL_FUNCIONES'
         )
     )
 );

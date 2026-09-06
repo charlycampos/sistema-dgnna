@@ -18,6 +18,7 @@ import {
   Download,
   LogOut,
   ChevronRight,
+  ChevronDown,
   ShieldAlert,
   Building2,
   Users2,
@@ -30,6 +31,9 @@ import {
   Inbox,
   UserCheck,
   Filter,
+  Activity,
+  TimerReset,
+  Database,
 } from 'lucide-react'
 import type { EstadisticasDashboard, ApelacionConRelaciones, Abogado } from '@/types'
 
@@ -53,6 +57,9 @@ interface CargaRevisorItem {
 
 export default function DirectorPage() {
   const router = useRouter()
+  const fechaReferencia = new Date()
+  const anioReferencia = fechaReferencia.getFullYear()
+  const mesReferencia = fechaReferencia.getMonth()
   const [seccion, setSeccion] = useState<SeccionId>('resumen')
   const [periodo, setPeriodo] = useState<'mes' | 'trimestre' | 'ano'>('ano')
   const [session, setSession] = useState<UsuarioSession | null>(null)
@@ -63,6 +70,8 @@ export default function DirectorPage() {
   const [abogadosList, setAbogadosList] = useState<Abogado[]>([])
   const [cargaRevisores, setCargaRevisores] = useState<CargaRevisorItem[]>([])
   const [loadingStats, setLoadingStats] = useState(true)
+  const [complejidadResoluciones, setComplejidadResoluciones] = useState('todas')
+  const [vistaApelaciones, setVistaApelaciones] = useState<'gestion' | 'resoluciones'>('gestion')
 
   // Cargar sesión del usuario
   useEffect(() => {
@@ -119,8 +128,8 @@ export default function DirectorPage() {
     if (!rawApelaciones || rawApelaciones.length === 0) return statsApelaciones
 
     // Tomamos como referencia el año de la data (2026) y mes actual (Agosto = mes 7 en JS 0-index)
-    const anioActual = 2026
-    const mesActual = 7 // Agosto
+    const anioActual = anioReferencia
+    const mesActual = mesReferencia
 
     let desde: Date
     let hasta: Date
@@ -221,14 +230,14 @@ export default function DirectorPage() {
       casosPorComplejidad,
       casosPorProcedencia,
     }
-  }, [rawApelaciones, abogadosList, periodo, statsApelaciones])
+  }, [rawApelaciones, abogadosList, periodo, statsApelaciones, anioReferencia, mesReferencia])
 
   // Recalcular carga de revisores para el período seleccionado
   const revisoresFiltrados = useMemo(() => {
     if (!rawApelaciones || rawApelaciones.length === 0 || cargaRevisores.length === 0) return cargaRevisores
 
-    const anioActual = 2026
-    const mesActual = 7
+    const anioActual = anioReferencia
+    const mesActual = mesReferencia
 
     let desde: Date
     let hasta: Date
@@ -261,7 +270,134 @@ export default function DirectorPage() {
         casosAtendidos: casosRev.filter(a => a.estado === 'Atendido').length,
       }
     })
-  }, [rawApelaciones, cargaRevisores, periodo])
+  }, [rawApelaciones, cargaRevisores, periodo, anioReferencia, mesReferencia])
+
+  const analiticaResoluciones = useMemo(() => {
+    const anioActual = anioReferencia
+    const mesActual = mesReferencia
+    let desde: Date
+    let hasta: Date
+    if (periodo === 'mes') {
+      desde = new Date(anioActual, mesActual, 1)
+      hasta = new Date(anioActual, mesActual + 1, 0, 23, 59, 59)
+    } else if (periodo === 'trimestre') {
+      const q = Math.floor(mesActual / 3)
+      desde = new Date(anioActual, q * 3, 1)
+      hasta = new Date(anioActual, (q + 1) * 3, 0, 23, 59, 59)
+    } else {
+      desde = new Date(anioActual, 0, 1)
+      hasta = new Date(anioActual, 11, 31, 23, 59, 59)
+    }
+
+    const porComplejidad = (a: ApelacionConRelaciones) =>
+      complejidadResoluciones === 'todas' || a.complejidadId === complejidadResoluciones
+
+    // Fecha efectiva de resolución: prioridad 1: fechaResolucion, prioridad 2: fechaCambioResuelto, prioridad 3: updatedAt
+    const getFechaResolucionEfectiva = (a: ApelacionConRelaciones): Date | null => {
+      if (a.fechaResolucion) {
+        const d = new Date(a.fechaResolucion)
+        if (!isNaN(d.getTime())) return d
+      }
+      if (a.fechaCambioResuelto) {
+        const d = new Date(a.fechaCambioResuelto)
+        if (!isNaN(d.getTime())) return d
+      }
+      if (['Resuelto', 'Atendido'].includes(a.estado) && a.updatedAt) {
+        const d = new Date(a.updatedAt)
+        if (!isNaN(d.getTime())) return d
+      }
+      return null
+    }
+
+    // Casos resueltos cuya fecha de resolución cae en el período seleccionado
+    const resueltosPeriodo = rawApelaciones.filter(a => {
+      if (!porComplejidad(a)) return false
+      if (!['Resuelto', 'Atendido'].includes(a.estado) && !a.fechaResolucion) return false
+      const f = getFechaResolucionEfectiva(a)
+      if (!f) return false
+      return f >= desde && f <= hasta
+    })
+
+    const mediana = (valores: number[]) => {
+      if (!valores.length) return 0
+      const ordenados = [...valores].sort((a, b) => a - b)
+      const centro = Math.floor(ordenados.length / 2)
+      return ordenados.length % 2 ? ordenados[centro] : (ordenados[centro - 1] + ordenados[centro]) / 2
+    }
+
+    // Tiempos medidos: fechaResolucionEfectiva - fechaAsignacion
+    const tiempos = resueltosPeriodo.flatMap(a => {
+      const fRes = getFechaResolucionEfectiva(a)
+      if (!fRes || !a.fechaAsignacion) return []
+      const asignacion = new Date(a.fechaAsignacion)
+      if (isNaN(asignacion.getTime())) return []
+      const inicioAsignacion = Date.UTC(asignacion.getFullYear(), asignacion.getMonth(), asignacion.getDate())
+      const inicioResuelto = Date.UTC(fRes.getFullYear(), fRes.getMonth(), fRes.getDate())
+      const dias = Math.round((inicioResuelto - inicioAsignacion) / 86400000)
+      return isNaN(dias) || dias < 0 ? [] : [{ ...a, dias }]
+    })
+
+    const porAbogado = new Map<string, { nombre: string; dias: number[] }>()
+    tiempos.forEach(a => {
+      const key = a.abogadoId || 'sin-asignar'
+      const actual = porAbogado.get(key) || { nombre: a.abogado?.nombre || 'Sin profesional', dias: [] }
+      actual.dias.push(a.dias)
+      porAbogado.set(key, actual)
+    })
+    const profesionales = Array.from(porAbogado.values()).map(item => ({
+      nombre: item.nombre,
+      mediana: mediana(item.dias),
+      promedio: item.dias.reduce((s, d) => s + d, 0) / item.dias.length,
+      total: item.dias.length,
+    })).sort((a, b) => a.mediana - b.mediana)
+
+    const primerMes = periodo === 'mes' ? mesActual : periodo === 'trimestre' ? Math.floor(mesActual / 3) * 3 : 0
+    const ultimoMes = periodo === 'mes' ? mesActual : periodo === 'trimestre' ? primerMes + 2 : 11
+    const meses = Array.from({ length: ultimoMes - primerMes + 1 }, (_, indice) => {
+      const mes = primerMes + indice
+      return {
+        mes: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'][mes],
+        cantidad: resueltosPeriodo.filter(a => {
+          const f = getFechaResolucionEfectiva(a)
+          return f && f.getMonth() === mes
+        }).length,
+      }
+    })
+
+    const etiquetas: Record<string, string> = {
+      FUNDADO: 'Fundado', FUNDADO_EN_PARTE: 'Fundado en parte', INFUNDADO: 'Infundado',
+      IMPROCEDENTE: 'Improcedente', CARECE_DE_OBJETO: 'Carece de objeto emitir pronunciamiento',
+      NULIDAD: 'Declara la nulidad', REMISION_ORGANO_COMPETENTE: 'Remisión al órgano competente',
+      CESE_PARCIAL_FUNCIONES: 'Cese parcial de sus funciones',
+    }
+    const resultadosPeriodo = resueltosPeriodo.filter(a => a.resultadoResolucion)
+    const resultados = new Map<string, number>()
+    resultadosPeriodo.forEach(a => {
+      const etiqueta = a.resultadoResolucion ? (etiquetas[a.resultadoResolucion] || a.resultadoResolucion) : 'Sin resultado registrado'
+      resultados.set(etiqueta, (resultados.get(etiqueta) || 0) + 1)
+    })
+    const distribucion = Array.from(resultados, ([nombre, cantidad]) => ({ nombre, cantidad })).sort((a, b) => b.cantidad - a.cantidad)
+    const baseCobertura = resueltosPeriodo.length
+    const porcentaje = (n: number) => baseCobertura ? Math.round(n * 100 / baseCobertura) : 0
+    return {
+      total: resueltosPeriodo.length,
+      totalMedidos: tiempos.length,
+      medianaGlobal: mediana(tiempos.map(t => t.dias)),
+      coberturaResultado: porcentaje(resultadosPeriodo.length),
+      coberturaFechaResolucion: porcentaje(resueltosPeriodo.filter(a => a.fechaResolucion).length),
+      coberturaCambio: porcentaje(resueltosPeriodo.filter(a => a.fechaCambioResuelto).length),
+      baseCobertura,
+      profesionales,
+      meses,
+      distribucion,
+      totalResultados: resultadosPeriodo.length,
+    }
+  }, [rawApelaciones, periodo, complejidadResoluciones, anioReferencia, mesReferencia])
+
+  const complejidadesResoluciones = useMemo(() => {
+    const mapa = new Map(rawApelaciones.map(a => [a.complejidadId, a.complejidad?.nombre || 'Sin complejidad']))
+    return Array.from(mapa, ([id, nombre]) => ({ id, nombre })).filter(item => item.id)
+  }, [rawApelaciones])
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -275,7 +411,7 @@ export default function DirectorPage() {
     { id: 'sustracion', label: 'Sustracción Internacional', icon: <Globe className="w-5 h-5" />, badge: '2 Alertas', badgeColor: 'bg-red-100 text-red-700 border border-red-200' },
     {
       id: 'apelaciones',
-      label: 'Apelaciones',
+      label: 'Gestión de Apelaciones',
       icon: <Scale className="w-5 h-5" />,
       badge: (statsFiltradas?.casosConPlazoProximo ?? 0) > 0 ? `${statsFiltradas?.casosConPlazoProximo} Alertas` : undefined,
       badgeColor: 'bg-amber-100 text-amber-800 border border-amber-200',
@@ -287,10 +423,12 @@ export default function DirectorPage() {
   ]
 
   // Texto descriptivo del período activo
+  const nombreMes = new Intl.DateTimeFormat('es-PE', { month: 'long' }).format(fechaReferencia)
+  const trimestreActual = Math.floor(mesReferencia / 3) + 1
   const labelPeriodo = {
-    mes: 'Mes Actual (Agosto 2026)',
-    trimestre: 'III Trimestre (Jul - Set 2026)',
-    ano: 'Año Fiscal 2026 Completo',
+    mes: `Mes actual (${nombreMes.charAt(0).toUpperCase()}${nombreMes.slice(1)} ${anioReferencia})`,
+    trimestre: `${trimestreActual}.º trimestre ${anioReferencia}`,
+    ano: `Año fiscal ${anioReferencia} completo`,
   }[periodo]
 
   return (
@@ -436,7 +574,7 @@ export default function DirectorPage() {
                     : 'hover:text-slate-900 hover:bg-slate-200/50'
                 }`}
               >
-                Año 2026
+                Año {anioReferencia}
               </button>
             </div>
 
@@ -759,10 +897,55 @@ export default function DirectorPage() {
           )}
 
           {/* ══════════════════════════════════════════════════════════
-              VISTA 3: APELACIONES (Filtrado Dinámico según Período)
+              VISTA 3: APELACIONES (Gestión Operativa y Analítica)
           ══════════════════════════════════════════════════════════ */}
           {seccion === 'apelaciones' && (
             <div className="space-y-6">
+
+              {/* Pestañas / Secciones Internas de Apelaciones */}
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                <div className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setVistaApelaciones('gestion')}
+                    className={`rounded-lg px-4 py-2 text-xs font-bold transition-all ${
+                      vistaApelaciones === 'gestion'
+                        ? 'font-black bg-white text-blue-700 shadow-sm'
+                        : 'text-slate-600 hover:text-blue-700 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    ⚖️ Gestión Operativa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVistaApelaciones('resoluciones')}
+                    className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold transition-all ${
+                      vistaApelaciones === 'resoluciones'
+                        ? 'font-black bg-white text-indigo-700 shadow-sm'
+                        : 'text-slate-600 hover:text-indigo-700 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    <span>📈 Analítica de Resoluciones</span>
+                    {analiticaResoluciones.total > 0 && (
+                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                        vistaApelaciones === 'resoluciones'
+                          ? 'bg-indigo-100 text-indigo-800'
+                          : 'bg-slate-200 text-slate-700'
+                      }`}>
+                        {analiticaResoluciones.total}
+                      </span>
+                    )}
+                  </button>
+                </div>
+                <span className="text-xs text-slate-500 font-medium hidden sm:inline">
+                  {vistaApelaciones === 'gestion'
+                    ? 'Supervisión de expedientes activos, plazos de ley y capacidad operativa'
+                    : 'Tiempos desde la asignación legal hasta la emisión de la resolución directoral'}
+                </span>
+              </div>
+
+              {vistaApelaciones === 'gestion' && (
+                <div className="space-y-6">
 
               {/* Banner de Alerta de Plazos si hay casos próximos a vencer */}
               {(statsFiltradas?.casosConPlazoProximo ?? 0) > 0 && (
@@ -1075,6 +1258,172 @@ export default function DirectorPage() {
                   )}
                 </div>
               </div>
+
+              </div>
+            )}
+
+            {/* SUB-PESTAÑA 2: ANALÍTICA DE RESOLUCIONES (Tiempos y Calidad) */}
+            {vistaApelaciones === 'resoluciones' && (
+              <section className="space-y-5" aria-labelledby="analitica-resoluciones-title">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                        <TrendingUp className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h2 id="analitica-resoluciones-title" className="font-black text-lg text-slate-900">
+                          Analítica de Resoluciones y Tiempos de Respuesta
+                        </h2>
+                        <p className="text-xs text-slate-500">
+                          Medición de tiempos desde la fecha de asignación hasta la fecha oficial de la resolución
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <label className="text-xs font-bold text-slate-600">
+                    Complejidad jurídica
+                    <select
+                      value={complejidadResoluciones}
+                      onChange={event => setComplejidadResoluciones(event.target.value)}
+                      className="mt-1 block min-w-56 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+                    >
+                      <option value="todas">Todas las complejidades</option>
+                      {complejidadesResoluciones.map(item => (
+                        <option key={item.id} value={item.id}>{item.nombre}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Expedientes Resueltos</p>
+                    <p className="text-3xl font-black text-blue-600 mt-1">{analiticaResoluciones.total}</p>
+                    <p className="text-xs text-slate-500 mt-1">Con resolución emitida o pase a resuelto en {labelPeriodo}</p>
+                  </div>
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Mediana hasta Resuelto</p>
+                    <p className="text-3xl font-black text-indigo-600 mt-1">
+                      {analiticaResoluciones.totalMedidos ? `${analiticaResoluciones.medianaGlobal} días` : '—'}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">Fecha de resolución menos fecha de asignación · {analiticaResoluciones.totalMedidos} medidos</p>
+                  </div>
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Resultado Registrado</p>
+                    <p className="text-3xl font-black text-emerald-600 mt-1">{analiticaResoluciones.coberturaResultado}%</p>
+                    <p className="text-xs text-slate-500 mt-1">Sobre {analiticaResoluciones.baseCobertura} expedientes resueltos en el período</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-100 mb-4">
+                      <div>
+                        <h3 className="font-extrabold text-sm text-slate-900">Tiempo de resolución por profesional</h3>
+                        <p className="text-xs text-slate-500">Mediana principal, promedio y expedientes evaluados</p>
+                      </div>
+                      <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full">
+                        Días calendario
+                      </span>
+                    </div>
+                    {analiticaResoluciones.profesionales.length ? (
+                      <div className="space-y-4">
+                        {analiticaResoluciones.profesionales.map(item => {
+                          const maximo = Math.max(...analiticaResoluciones.profesionales.map(p => p.mediana), 1)
+                          return (
+                            <div key={item.nombre}>
+                              <div className="flex items-center justify-between gap-3 text-xs mb-1.5">
+                                <span className="font-bold text-slate-700 truncate">{item.nombre}</span>
+                                <span className="font-black text-slate-900 whitespace-nowrap">{item.mediana} días</span>
+                              </div>
+                              <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-indigo-600 rounded-full" style={{ width: `${Math.max(item.mediana * 100 / maximo, 3)}%` }} />
+                              </div>
+                              <p className="text-[10px] text-slate-500 mt-1">Promedio {item.promedio.toFixed(1)} días · {item.total} expediente{item.total === 1 ? '' : 's'}</p>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400 text-center py-10">Aún no existen resoluciones registradas en este período.</p>
+                    )}
+                  </div>
+
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <h3 className="font-extrabold text-sm text-slate-900">Expedientes resueltos por mes</h3>
+                    <p className="text-xs text-slate-500 pb-3 border-b border-slate-100 mb-4">Basado en la fecha oficial de resolución directoral</p>
+                    <div className="h-52 flex items-end gap-2" role="img" aria-label="Expedientes resueltos por mes">
+                      {analiticaResoluciones.meses.map(item => {
+                        const maximo = Math.max(...analiticaResoluciones.meses.map(m => m.cantidad), 1)
+                        return (
+                          <div key={item.mes} className="flex-1 h-full flex flex-col justify-end items-center gap-1 min-w-0">
+                            <span className="text-[10px] font-black text-slate-700">{item.cantidad || ''}</span>
+                            <div
+                              className="w-full max-w-8 bg-blue-600 rounded-t-md min-h-0"
+                              style={{ height: item.cantidad ? `${Math.max(item.cantidad * 82 / maximo, 5)}%` : 0 }}
+                              title={`${item.mes}: ${item.cantidad} expedientes`}
+                            />
+                            <span className="text-[10px] text-slate-500">{item.mes}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <h3 className="font-extrabold text-sm text-slate-900">Distribución de resultados</h3>
+                    <p className="text-xs text-slate-500 pb-3 border-b border-slate-100 mb-4">Pronunciamientos registrados en las resoluciones del período</p>
+                    {analiticaResoluciones.distribucion.length ? (
+                      <div className="space-y-3">
+                        {analiticaResoluciones.distribucion.map(item => {
+                          const total = analiticaResoluciones.totalResultados || 1
+                          const porcentaje = Math.round(item.cantidad * 100 / total)
+                          return (
+                            <div key={item.nombre}>
+                              <div className="flex justify-between gap-3 text-xs font-bold mb-1">
+                                <span className="text-slate-700">{item.nombre}</span>
+                                <span className="text-slate-900 whitespace-nowrap">{item.cantidad} ({porcentaje}%)</span>
+                              </div>
+                              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                <div className="h-full bg-blue-600 rounded-full" style={{ width: `${Math.max(porcentaje, 3)}%` }} />
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400 text-center py-10">No hay resultados de resolución registrados en este período.</p>
+                    )}
+                  </div>
+
+                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <h3 className="font-extrabold text-sm text-slate-900">Cobertura de información</h3>
+                    <p className="text-xs text-slate-500 pb-3 border-b border-slate-100 mb-4">Calidad y registro de campos en expedientes resueltos del período</p>
+                    <div className="space-y-5">
+                      {[
+                        { nombre: 'Resultado registrado', valor: analiticaResoluciones.coberturaResultado },
+                        { nombre: 'Fecha de resolución registrada', valor: analiticaResoluciones.coberturaFechaResolucion },
+                        { nombre: 'Fecha de pase a Resuelto', valor: analiticaResoluciones.coberturaCambio },
+                      ].map(item => (
+                        <div key={item.nombre}>
+                          <div className="flex justify-between text-xs font-bold mb-1.5">
+                            <span className="text-slate-700">{item.nombre}</span>
+                            <span className="text-slate-900">{item.valor}%</span>
+                          </div>
+                          <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-emerald-600 rounded-full" style={{ width: `${item.valor}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-5 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                      Los expedientes con fecha de resolución o pase a resuelto se incluyen en el cálculo de tiempos.
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
 
             </div>
           )}
