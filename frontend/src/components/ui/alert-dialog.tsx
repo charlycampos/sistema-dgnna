@@ -3,6 +3,12 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
+interface AlertDialogContextType {
+    onClose?: () => void
+}
+
+const AlertDialogContext = React.createContext<AlertDialogContextType>({})
+
 interface AlertDialogProps {
     open?: boolean
     onOpenChange?: (open: boolean) => void
@@ -12,18 +18,20 @@ interface AlertDialogProps {
 const AlertDialog = ({ open, onOpenChange, children }: AlertDialogProps) => {
     if (!open) return null
     return (
-        <div
-            className="fixed inset-0 z-50 flex items-center justify-center"
-            aria-modal="true"
-            role="alertdialog"
-        >
-            {/* Backdrop */}
+        <AlertDialogContext.Provider value={{ onClose: () => onOpenChange?.(false) }}>
             <div
-                className="absolute inset-0 bg-black/50"
-                onClick={() => onOpenChange?.(false)}
-            />
-            {children}
-        </div>
+                className="fixed inset-0 z-50 flex items-center justify-center"
+                aria-modal="true"
+                role="alertdialog"
+            >
+                {/* Backdrop */}
+                <div
+                    className="absolute inset-0 bg-black/50"
+                    onClick={() => onOpenChange?.(false)}
+                />
+                {children}
+            </div>
+        </AlertDialogContext.Provider>
     )
 }
 
@@ -116,16 +124,26 @@ AlertDialogAction.displayName = 'AlertDialogAction'
 const AlertDialogCancel = React.forwardRef<
     HTMLButtonElement,
     React.ButtonHTMLAttributes<HTMLButtonElement>
->(({ className, ...props }, ref) => (
-    <button
-        ref={ref}
-        className={cn(
-            'inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none transition-colors mt-2 sm:mt-0',
-            className
-        )}
-        {...props}
-    />
-))
+>(({ className, onClick, ...props }, ref) => {
+    const { onClose } = React.useContext(AlertDialogContext)
+    return (
+        <button
+            ref={ref}
+            type="button"
+            onClick={(e) => {
+                onClick?.(e)
+                if (!e.defaultPrevented) {
+                    onClose?.()
+                }
+            }}
+            className={cn(
+                'inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none transition-colors mt-2 sm:mt-0',
+                className
+            )}
+            {...props}
+        />
+    )
+})
 AlertDialogCancel.displayName = 'AlertDialogCancel'
 
 // Trigger — no se usa en este proyecto (el modal se controla con open/onOpenChange)

@@ -23,7 +23,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { ArrowLeft, Save, Trash2, FileText, CheckCircle2, Plus, User, Building, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, FileText, CheckCircle2, Plus, User, Building, AlertTriangle, UserCheck, Search, Send } from 'lucide-react'
 import Link from 'next/link'
 import { useMe } from '@/lib/use-me'
 import { format } from 'date-fns'
@@ -31,6 +31,7 @@ import { es } from 'date-fns/locale'
 import type { Abogado, ComplejidadJuridica, ApelacionConRelaciones, Procedencia, Revisor, CargaRevisor } from '@/types'
 import type { z } from 'zod'
 import { Appellant, serializeAppellants, deserializeAppellants, NnaCarItem, serializeNnaCar, deserializeNnaCar } from '@/lib/utils'
+import { ModalAccionesApelacion, TipoModalAccion } from '@/components/modal-acciones-apelacion'
 
 const dateToValue = (v: unknown): string => {
     if (v instanceof Date && !isNaN(v.getTime())) return v.toISOString().split('T')[0]
@@ -56,6 +57,7 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
     const router = useRouter()
     const searchParams = useSearchParams()
     const [loading, setLoading] = useState(true)
+    const [modalAccion, setModalAccion] = useState<TipoModalAccion>(null)
     const { me } = useMe()
     const isAdmin = me?.rol === 'admin'
     const [saving, setSaving] = useState(false)
@@ -222,10 +224,10 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                 setTipoNna(loadedNnas[0].tipo)
             }
 
-            setAbogados(abogadosData.filter((a: Abogado) => a.activo || a.id === apelacionData.abogadoId))
-            setComplejidades(complejidadesData.filter((c: ComplejidadJuridica) => c.activo || c.id === apelacionData.complejidadId))
-            setProcedencias(procedenciasData.filter((p: Procedencia) => p.activo || p.nombre === apelacionData.procedencia))
-            setRevisores(Array.isArray(revisoresData) ? revisoresData.filter((r: Revisor) => r.activo || r.id === apelacionData.revisorId) : [])
+            setAbogados(abogadosData.filter((a: Abogado) => Boolean(a.activo) || (Boolean(apelacionData.abogadoId) && a.id === apelacionData.abogadoId)))
+            setComplejidades(complejidadesData.filter((c: ComplejidadJuridica) => Boolean(c.activo) || c.id === apelacionData.complejidadId))
+            setProcedencias(procedenciasData.filter((p: Procedencia) => Boolean(p.activo) || p.nombre === apelacionData.procedencia))
+            setRevisores(Array.isArray(revisoresData) ? revisoresData.filter((r: Revisor) => Boolean(r.activo) || (Boolean(apelacionData.revisorId) && r.id === apelacionData.revisorId)) : [])
             setCargaRevisores(Array.isArray(revisorCargaData) ? revisorCargaData : [])
 
             // Cargar datos en el formulario
@@ -435,9 +437,73 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                 </Badge>
                             </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             {!isEditing ? (
                                 <>
+                                    {/* Botones de Acción Rápida */}
+                                    {apelacion.estado === 'Pendiente' && !apelacion.revisorId && (
+                                        <>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="text-xs text-blue-700 bg-blue-50/50 hover:bg-blue-100 hover:text-blue-800 border-blue-200"
+                                                onClick={() => setModalAccion('abogado')}
+                                                title="Cambiar Abogado Responsable"
+                                            >
+                                                <UserCheck className="h-4 w-4 mr-1.5" />
+                                                Cambiar Abogado
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="text-xs text-purple-700 bg-purple-50/50 hover:bg-purple-100 hover:text-purple-800 border-purple-200"
+                                                onClick={() => setModalAccion('revisor')}
+                                                title="Pasar a Revisor (Derivar borrador)"
+                                            >
+                                                <Search className="h-4 w-4 mr-1.5" />
+                                                Pasar a Revisor
+                                            </Button>
+                                        </>
+                                    )}
+
+                                    {apelacion.estado === 'Pendiente' && !!apelacion.revisorId && (
+                                        <>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="text-xs text-blue-700 bg-blue-50/50 hover:bg-blue-100 hover:text-blue-800 border-blue-200 font-semibold"
+                                                onClick={() => setModalAccion('resuelto')}
+                                                title="Pasar a Resuelto (Resolución emitida)"
+                                            >
+                                                <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                                                Pasar a Resuelto
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="text-xs text-purple-700 bg-purple-50/50 hover:bg-purple-100 hover:text-purple-800 border-purple-200"
+                                                onClick={() => setModalAccion('revisor')}
+                                                title="Cambiar Revisor"
+                                            >
+                                                <Search className="h-4 w-4 mr-1.5" />
+                                                Cambiar Revisor
+                                            </Button>
+                                        </>
+                                    )}
+
+                                    {apelacion.estado === 'Resuelto' && (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-xs text-emerald-700 bg-emerald-50/50 hover:bg-emerald-100 hover:text-emerald-800 border-emerald-200 font-semibold"
+                                            onClick={() => setModalAccion('atendido')}
+                                            title="Pasar a Atendido (Notificar y archivar)"
+                                        >
+                                            <Send className="h-4 w-4 mr-1.5" />
+                                            Pasar a Atendido
+                                        </Button>
+                                    )}
+
                                     <Button onClick={() => setIsEditing(true)}>Editar</Button>
                                     <Button variant="destructive" onClick={handleDelete}>
                                         <Trash2 className="mr-2 h-4 w-4" />
@@ -700,7 +766,7 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                 )}
 
                                 {/* Notificación */}
-                                {(apelacion.documentoAtencion || apelacion.cargos || apelacion.estado === 'Atendido') && (
+                                {(apelacion.documentoAtencion || apelacion.cargos || apelacion.estado === 'Resuelto' || apelacion.estado === 'Atendido') && (
                                     <Card>
                                         <CardHeader>
                                             <CardTitle>Notificación</CardTitle>
@@ -1325,10 +1391,6 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                                                 <Select
                                                                     onValueChange={(val) => {
                                                                         field.onChange(val);
-                                                                        // Si pasa a Resuelto y no tenía fecha pase a resuelto, sugerir fecha actual
-                                                                        if (val === 'Resuelto' && !form.getValues('fechaCambioResuelto')) {
-                                                                            form.setValue('fechaCambioResuelto', new Date(), { shouldValidate: true });
-                                                                        }
                                                                     }}
                                                                     value={field.value}
                                                                 >
@@ -1550,7 +1612,7 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                             )}
 
                                             {/* Notificación */}
-                                            {(estado === 'Atendido' || form.watch('documentoAtencion') || form.watch('cargos')) && (
+                                            {(estado === 'Resuelto' || estado === 'Atendido' || form.watch('documentoAtencion') || form.watch('cargos')) && (
                                                 <div className="space-y-4">
                                                     <h3 className="text-lg font-semibold">Notificación</h3>
 
@@ -1774,6 +1836,18 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+
+        {/* Modal de Acciones Contextuales y Ficha Rápida */}
+        <ModalAccionesApelacion
+            tipoModal={modalAccion}
+            apelacion={apelacion}
+            isOpen={modalAccion !== null}
+            onClose={() => setModalAccion(null)}
+            onSuccess={fetchData}
+            abogados={abogados}
+            revisores={revisores}
+            cargaRevisores={cargaRevisores}
+        />
         </>
     )
 }

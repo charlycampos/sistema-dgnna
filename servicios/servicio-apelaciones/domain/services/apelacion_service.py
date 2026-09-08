@@ -60,10 +60,7 @@ class ApelacionService:
             revisorId         = datos.get("revisorId"),
             fechaRevisor      = (datos.get("fechaRevisor") or datetime.utcnow()) if datos.get("revisorId") else None,
         )
-        if datos.get("fechaCambioResuelto") is not None:
-            apelacion.fechaCambioResuelto = datos["fechaCambioResuelto"]
-        elif apelacion.estado in ("Resuelto", "Atendido"):
-            apelacion.fechaCambioResuelto = datos.get("fechaResolucion") or datetime.utcnow()
+        apelacion.fechaCambioResuelto = datos.get("fechaCambioResuelto")
         apelacion.calcular_puntos(pts_ext, pts_comp)
         return self._apelaciones.guardar(apelacion)
 
@@ -86,13 +83,8 @@ class ApelacionService:
         apelacion.abogadoId         = datos["abogadoId"]
         estado_anterior = apelacion.estado
         estado_nuevo = datos.get("estado", estado_anterior)
-        if datos.get("fechaCambioResuelto") is not None:
-            apelacion.fechaCambioResuelto = datos["fechaCambioResuelto"]
-        elif (
-            apelacion.fechaCambioResuelto is None
-            and estado_nuevo in ("Resuelto", "Atendido")
-        ):
-            apelacion.fechaCambioResuelto = datos.get("fechaResolucion") or datetime.utcnow()
+        # Fecha pase a Resuelto: 100% manual e independiente, sin sobreescribir con fechaResolucion
+        apelacion.fechaCambioResuelto = datos.get("fechaCambioResuelto")
         apelacion.estado            = estado_nuevo
         apelacion.numeroResolucion  = datos.get("numeroResolucion")
         apelacion.resultadoResolucion = datos.get("resultadoResolucion")

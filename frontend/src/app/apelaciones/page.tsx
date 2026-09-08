@@ -14,8 +14,8 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ApelacionConRelaciones, Abogado } from '@/types'
-import { Search, Filter, Eye, Pencil, Download, X, Menu, Plus, Minus } from 'lucide-react'
+import { ApelacionConRelaciones, Abogado, Revisor } from '@/types'
+import { Search, Filter, Eye, Pencil, Download, X, Menu, Plus, Minus, UserCheck, CheckCircle2, Send, Scale } from 'lucide-react'
 import Link from 'next/link'
 import { AppSidebar } from '@/components/app-sidebar'
 import { format } from 'date-fns'
@@ -23,6 +23,7 @@ import { es } from 'date-fns/locale'
 import { descargarExcelApelaciones } from '@/lib/export-excel'
 import { toast } from 'sonner'
 import { useMe } from '@/lib/use-me'
+import { ModalAccionesApelacion, TipoModalAccion } from '@/components/modal-acciones-apelacion'
 
 export default function ApelacionesPage() {
     const router = useRouter()
@@ -35,9 +36,23 @@ export default function ApelacionesPage() {
     const [fechaDesde, setFechaDesde] = useState<string>('')
     const [fechaHasta, setFechaHasta] = useState<string>('')
     const [abogados, setAbogados] = useState<Abogado[]>([])
+    const [revisores, setRevisores] = useState<Revisor[]>([])
+    const [cargaRevisores, setCargaRevisores] = useState<{ revisorId: string; totalCasos: number }[]>([])
+    const [modalAccion, setModalAccion] = useState<TipoModalAccion>(null)
+    const [selectedApelacion, setSelectedApelacion] = useState<ApelacionConRelaciones | null>(null)
     const { canWrite, loading: meLoading, me, hasAccess } = useMe()
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
     const [expandedRowId, setExpandedRowId] = useState<string | null>(null)
+
+    const abrirModalAccion = (tipo: TipoModalAccion, ap: ApelacionConRelaciones) => {
+        setSelectedApelacion(ap)
+        setModalAccion(tipo)
+    }
+
+    const cerrarModalAccion = () => {
+        setModalAccion(null)
+        setSelectedApelacion(null)
+    }
 
     const toggleRow = (id: string) => {
         setExpandedRowId(prev => prev === id ? null : id)
@@ -68,12 +83,16 @@ export default function ApelacionesPage() {
 
     const fetchData = async () => {
         try {
-            const [apelacionesRes, abogadosRes] = await Promise.all([
+            const [apelacionesRes, abogadosRes, revisoresRes, revisorCargaRes] = await Promise.all([
                 fetch('/api/apelaciones'),
                 fetch('/api/abogados'),
+                fetch('/api/revisor'),
+                fetch('/api/revisor/carga'),
             ])
             const apelacionesData = await apelacionesRes.json()
             const abogadosData = await abogadosRes.json()
+            const revisoresData = await revisoresRes.json()
+            const revisorCargaData = await revisorCargaRes.json()
 
             if (!apelacionesRes.ok) {
                 console.error('Error del backend:', apelacionesData)
@@ -93,7 +112,9 @@ export default function ApelacionesPage() {
                 setApelaciones(listaOrdenada)
                 setFilteredApelaciones(listaOrdenada)
             }
-            setAbogados(Array.isArray(abogadosData) ? abogadosData : [])
+            setAbogados(Array.isArray(abogadosData) ? abogadosData.filter((a: Abogado) => Boolean(a.activo)) : [])
+            setRevisores(Array.isArray(revisoresData) ? revisoresData.filter((r: Revisor) => Boolean(r.activo)) : [])
+            setCargaRevisores(Array.isArray(revisorCargaData) ? revisorCargaData : [])
         } catch (error) {
             console.error('Error al cargar datos:', error)
             toast.error('No se pudo conectar con el servidor. ¿Está corriendo el backend?')
@@ -459,18 +480,90 @@ export default function ApelacionesPage() {
                                                                 </Badge>
                                                             </td>
                                                             <td className="px-4 py-3 text-sm">
-                                                                <div className="flex gap-1">
-                                                                    <Link href={`/apelaciones/${apelacion.id}`}>
-                                                                        <Button variant="ghost" size="sm" title="Ver detalle">
-                                                                            <Eye className="h-4 w-4" />
-                                                                        </Button>
-                                                                    </Link>
+                                                                <div className="flex items-center gap-1">
+                                                                    {/* 👁️ Ficha rápida del caso */}
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        size="sm" 
+                                                                        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted"
+                                                                        title="Ver Ficha / Datos del Caso"
+                                                                        onClick={() => abrirModalAccion('ficha', apelacion)}
+                                                                    >
+                                                                        <Eye className="h-4 w-4" />
+                                                                    </Button>
+
                                                                     {canWrite('apelaciones') && (
-                                                                        <Link href={`/apelaciones/${apelacion.id}?edit=true`}>
-                                                                            <Button variant="ghost" size="sm" title="Editar">
-                                                                                <Pencil className="h-4 w-4" />
-                                                                            </Button>
-                                                                        </Link>
+                                                                        <>
+                                                                            {/* Pendiente: Reasignar Abogado */}
+                                                                            {apelacion.estado === 'Pendiente' && (
+                                                                                <Button
+                                                                                    variant="outline"
+                                                                                    size="sm"
+                                                                                    className="h-8 w-8 p-0 text-blue-700 bg-blue-50/70 hover:bg-blue-100 hover:text-blue-800 border-blue-200"
+                                                                                    title="Cambiar Abogado Responsable"
+                                                                                    onClick={() => abrirModalAccion('abogado', apelacion)}
+                                                                                >
+                                                                                    <UserCheck className="h-4 w-4" />
+                                                                                </Button>
+                                                                            )}
+
+                                                                            {/* Pendiente (sin revisor): Pasar a Revisor */}
+                                                                            {apelacion.estado === 'Pendiente' && !apelacion.revisorId && (
+                                                                                <Button
+                                                                                    variant="outline"
+                                                                                    size="sm"
+                                                                                    className="h-8 w-8 p-0 text-purple-700 bg-purple-50/70 hover:bg-purple-100 hover:text-purple-800 border-purple-200"
+                                                                                    title="Pasar a Revisor (Derivar proyecto)"
+                                                                                    onClick={() => abrirModalAccion('revisor', apelacion)}
+                                                                                >
+                                                                                    <Search className="h-4 w-4" />
+                                                                                </Button>
+                                                                            )}
+
+                                                                            {/* Pendiente (con revisor): Pasar a Resuelto & Cambiar Revisor */}
+                                                                            {apelacion.estado === 'Pendiente' && !!apelacion.revisorId && (
+                                                                                <>
+                                                                                    <Button
+                                                                                        variant="outline"
+                                                                                        size="sm"
+                                                                                        className="h-8 w-8 p-0 text-blue-700 bg-blue-50/70 hover:bg-blue-100 hover:text-blue-800 border-blue-200"
+                                                                                        title="Pasar a Resuelto (Registrar Resolución Oficial)"
+                                                                                        onClick={() => abrirModalAccion('resuelto', apelacion)}
+                                                                                    >
+                                                                                        <Scale className="h-4 w-4" />
+                                                                                    </Button>
+                                                                                    <Button
+                                                                                        variant="outline"
+                                                                                        size="sm"
+                                                                                        className="h-8 w-8 p-0 text-purple-700 bg-purple-50/70 hover:bg-purple-100 hover:text-purple-800 border-purple-200"
+                                                                                        title="Cambiar Revisor Asignado"
+                                                                                        onClick={() => abrirModalAccion('revisor', apelacion)}
+                                                                                    >
+                                                                                        <Search className="h-4 w-4" />
+                                                                                    </Button>
+                                                                                </>
+                                                                            )}
+
+                                                                            {/* Resuelto: Pasar a Atendido */}
+                                                                            {apelacion.estado === 'Resuelto' && (
+                                                                                <Button
+                                                                                    variant="outline"
+                                                                                    size="sm"
+                                                                                    className="h-8 w-8 p-0 text-emerald-700 bg-emerald-50/70 hover:bg-emerald-100 hover:text-emerald-800 border-emerald-200"
+                                                                                    title="Pasar a Atendido (Notificar y archivar)"
+                                                                                    onClick={() => abrirModalAccion('atendido', apelacion)}
+                                                                                >
+                                                                                    <Send className="h-4 w-4" />
+                                                                                </Button>
+                                                                            )}
+
+                                                                            {/* Editar formulario completo */}
+                                                                            <Link href={`/apelaciones/${apelacion.id}?edit=true`}>
+                                                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="Editar Expediente Completo">
+                                                                                    <Pencil className="h-4 w-4" />
+                                                                                </Button>
+                                                                            </Link>
+                                                                        </>
                                                                     )}
                                                                 </div>
                                                             </td>
@@ -550,6 +643,18 @@ export default function ApelacionesPage() {
                     </Card>
                 </main>
             </div>
+
+            {/* Modal de Acciones Contextuales y Ficha Rápida */}
+            <ModalAccionesApelacion
+                tipoModal={modalAccion}
+                apelacion={selectedApelacion}
+                isOpen={modalAccion !== null}
+                onClose={cerrarModalAccion}
+                onSuccess={fetchData}
+                abogados={abogados}
+                revisores={revisores}
+                cargaRevisores={cargaRevisores}
+            />
         </div>
     )
 }

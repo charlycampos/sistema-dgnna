@@ -1,6 +1,6 @@
 # 📋 Proceso de Gestión y Ciclo de Vida de Apelaciones — DGNNA
 
-Este documento describe el flujo operativo de una apelación desde su ingreso hasta su archivo definitivo (Atendido), los roles involucrados, los datos requeridos en cada fase y la propuesta de **Acciones Rápidas por Estados con Modales Asistidos**.
+Este documento define la secuencia operativa del trámite de una apelación en el Sistema DGNNA, el cuadro de estados y botones de acción rápida en la tabla, y el **diseño detallado de cada modal interactivo**.
 
 ---
 
@@ -9,118 +9,247 @@ Este documento describe el flujo operativo de una apelación desde su ingreso ha
 ```mermaid
 flowchart TD
     classDef inicio fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0369a1;
-    classDef etapa fill:#f8fafc,stroke:#64748b,stroke-width:1px,color:#0f172a;
-    classDef modal fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#92400e;
+    classDef pendiente fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#92400e;
+    classDef modal fill:#fffbeb,stroke:#b45309,stroke-width:1.5px,color:#78350f;
     classDef resuelto fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1d4ed8;
     classDef atendido fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#15803d;
 
-    A([📥 1. Registro Inicial]) :::inicio -->|Asignación automática a Abogado| B[Estado: PENDIENTE]
-    
-    B -->|Si se requiere reasignar| M1["👤 Modal: Cambiar Abogado\n- Seleccionar nuevo Abogado\n- Fecha de Asignación"] :::modal
-    M1 --> B
-    
-    B -->|Abogado culmina proyecto| M2["🔍 Modal: Pasar a Revisor\n- Fecha pase a Resuelto\n- Revisado por (Revisor)\n- Fecha Asignación Revisor [Mismo día / +1 día]"] :::modal
-    
-    M2 --> C[En Revisión / Control de Calidad]
-    
-    C -->|Aprobado por Revisor| M3["⚖️ Modal: Pasar a Resuelto\n- Nº de Resolución\n- Fecha de Resolución\n- Resultado de Resolución"] :::modal
-    
-    M3 --> D[Estado: RESUELTO] :::resuelto
-    
-    D -->|Notificado a las partes| M4["📬 Modal: Pasar a Atendido\n- Documento Atención (Oficio SGD)\n- Cargos (Pendiente / Recibidos)\n- Observaciones finales"] :::modal
-    
-    M4 --> E([✅ Estado: ATENDIDO]) :::atendido
+    A([📥 Registro Inicial]) :::inicio -->|Asignación automática| B[Estado: PENDIENTE\nAbogado elabora proyecto] :::pendiente
+
+    B -.->|Opcional| M1["👤 Modal: Cambiar Abogado\n- Abogado Asignado *\n- Fecha de Asignación *"] :::modal
+    M1 -.-> B
+
+    B -->|Se deriva al revisor| M2["🔍 Modal: Pasar a Revisor\n- Fecha pase a Resuelto\n- Revisado por *\n- Fecha Asignación Revisor * [Mismo día / +1 día]"] :::modal
+
+    M2 --> C[Estado: PENDIENTE\nCon Revisor asignado / En revisión] :::pendiente
+
+    C -->|Borrador aprobado / Resolución emitida| M3["⚖️ Modal: Pasar a Resuelto\n- Estado: Resuelto\n- Fecha pase a Resuelto *\n- Nº de Resolución *\n- Fecha de resolución *\n- Resultado de la resolución *"] :::resuelto
+
+    M3 --> D[Estado: RESUELTO\nResolución Oficial Expedida] :::resuelto
+
+    D -->|Resolución notificada a las partes| M4["📬 Modal: Pasar a Atendido\n- Estado: Atendido\n- Documento Atención (Oficio SGD) *\n- Cargos (Pendiente / Recibidos) *"] :::modal
+
+    M4 --> E([✅ Estado: ATENDIDO\nExpediente Notificado y Concluido]) :::atendido
 ```
 
 ---
 
-## 👥 2. Etapas del Proceso, Roles y Casillas Exactas
+## 🎯 2. Cuadro Oficial de Botones en la Columna «Acciones»
 
-A continuación se detalla cada etapa con **todas las casillas correspondientes** según el formulario oficial del sistema:
-
----
-
-### 🟢 Etapa 1: Registro Inicial (Automático)
-* **Actor:** Registrador / Mesa de Partes (vía `/apelaciones/nueva`).
-* **Regla:** El sistema asigna automáticamente al abogado según el balance equitativo de carga o conexidad.
-* **Casillas:** Datos del expediente, procedencia, folios, complejidad, apelantes, NNA/CAR, fecha ingreso MIMP, fecha ingreso DGNNA, plazo vencimiento, materia/asunto y abogado asignado automáticamente.
-* **Estado inicial:** `Pendiente`.
-
----
-
-### 👤 Modal 1: «Cambiar / Reasignar Abogado»
-* **Cuándo se usa:** Inmediatamente después del registro o durante la tramitación inicial para reasignar a otro profesional si es necesario.
-* **Cabecera del Modal (Datos del Caso para verificar):**
-  * Nº Expediente | Apelante(s) | NNA / Institución (CAR) | Procedencia | Complejidad y Folios.
-* **Casillas de la sección Asignación:**
-  1. **Abogado Asignado \*** (Selector con lista de abogados y carga de expedientes).
-  2. **Fecha de Asignación \*** (Fecha editable, por defecto la fecha actual).
-  3. **Observaciones** (Opcional, motivo del cambio o reasignación).
-
----
-
-### 🔍 Modal 2: «Asignar a Revisor / Pase a Revisor»
-* **Cuándo se usa:** Cuando el abogado asignado termina su labor y el caso pasa a revisión interna de control de calidad/jefatura.
-* **Cabecera del Modal (Datos del Caso):**
-  * Nº Expediente | Apelante(s) | Abogado Asignado | Fecha de Asignación original | Días en trámite.
-* **Casillas de esta sección:**
-  1. **Fecha pase a Resuelto** (Fecha en que el abogado concluyó su atención / entregó el proyecto).
-  2. **Revisado por** (Selector de revisores disponibles con su carga de casos actual).
-  3. **Fecha Asignación Revisor** (Fecha en que se deriva al revisor, con botones rápidos `[Mismo día]` y `[+1 día]`).
-  4. **Observaciones** (Notas o alcances para el revisor).
-
----
-
-### ⚖️ Modal 3: «Pasar a Resuelto» (Resolución Emitida)
-* **Cuándo se usa:** Cuando el proyecto de resolución ha sido revisado, aprobado y se cuenta con la resolución oficial.
-* **Cabecera del Modal (Datos del Caso):**
-  * Nº Expediente | Abogado | Revisor | Fechas de entrega y revisión.
-* **Casillas de la sección Resolución:**
-  1. **Estado \*** (Se fija en `Resuelto`).
-  2. **Fecha pase a Resuelto** (Confirmación de fecha de pase a resuelto).
-  3. **Nº de Resolución** (ej. *Resolución Directoral N° 0123-2026-MIMP-DGNNA*).
-  4. **Fecha de resolución** (Fecha oficial de emisión de la resolución).
-  5. **Resultado de la resolución** (Selector oficial: *Fundado*, *Infundado*, *Improcedente*, *Nulidad de Oficio*, *Desistimiento*, *Caducidad*, *Inadmisible*, etc.).
-  6. **Observaciones** (Opcional).
-
----
-
-### 📬 Modal 4: «Pasar a Atendido» (Notificación y Archivo)
-* **Cuándo se usa:** Cuando la resolución ya fue notificada a las partes interesadas y se culmina el expediente.
-* **Cabecera del Modal (Datos del Caso):**
-  * Nº Expediente | Nº de Resolución emitida | Resultado de la Resolución.
-* **Casillas de la sección Notificación:**
-  1. **Estado \*** (Se fija en `Atendido`).
-  2. **Documento Atención** (Nº de Oficio o Memorando SGD con el que se cursó la resolución).
-  3. **Cargos** (Selector de estado: `Pendiente` o `Recibidos`).
-  4. **Observaciones** (Anotaciones finales del cierre o archivo).
-
----
-
-### 👁️ Modal 0: «Ficha Rápida del Caso»
-* **Cuándo se usa:** En cualquier momento desde la tabla para comprobar si se está actuando sobre el expediente correcto sin tener que navegar a otra página ni perder los filtros.
-* **Datos mostrados:**
-  * **Cabecera:** Nº Expediente, Estado actual con su color distintivo, Abogado y Revisor.
-  * **Datos Generales:** Fecha Ingreso MIMP/DGNNA, Procedencia, Documento, Asunto.
-  * **Partes Procesales:** Apelantes con tipo y documento; NNA / CAR con edades.
-  * **Triaje:** Folios, Complejidad, Puntos calculados.
-  * **Resolución & Notificación:** Datos registrados si ya los tuviera.
-
----
-
-## 🎯 Resumen de Botones en la Columna «Acciones»
-
-| Estado del Expediente | Acciones Rápidas en la Tabla |
+| Si el expediente está en: | Botones visibles en Acciones (Solo Iconos con Tooltip): |
 | :--- | :--- |
-| **`Pendiente`** (sin revisor) | 👁️ Ver Ficha &bull; 👤 Cambiar Abogado &bull; 🔍 **Pasar a Revisor** &bull; ✏️ Editar |
-| **`Pendiente`** (con revisor asignado) | 👁️ Ver Ficha &bull; ⚖️ **Pasar a Resuelto** &bull; 🔍 Reasignar Revisor &bull; ✏️ Editar |
-| **`Resuelto`** | 👁️ Ver Ficha &bull; 📬 **Pasar a Atendido** &bull; ✏️ Editar |
-| **`Atendido`** | 👁️ Ver Ficha &bull; ✏️ Editar |
-
+| **`Pendiente` (sin revisor)** | 👁️ `[Eye]` (Ver Datos) &bull; 👤 `[UserCheck]` (Cambiar Abogado) &bull; 🔍 `[Search]` (Pasar a Revisor) &bull; ✏️ `[Pencil]` (Editar) |
+| **`Pendiente` (con revisor)** | 👁️ `[Eye]` (Ver Datos) &bull; 👤 `[UserCheck]` (Cambiar Abogado) &bull; ⚖️ `[Scale]` (Pasar a Resuelto) &bull; 🔍 `[Search]` (Cambiar Revisor) &bull; ✏️ `[Pencil]` (Editar) |
+| **`Resuelto`** | 👁️ `[Eye]` (Ver Datos) &bull; 📬 `[Send]` (Pasar a Atendido) &bull; ✏️ `[Pencil]` (Editar) |
+| **`Atendido`** | 👁️ `[Eye]` (Ver Datos) &bull; ✏️ `[Pencil]` (Editar) |
 
 ---
 
-## 🎯 Beneficios para el Registrador
-1. **No más formularios gigantes:** El registrador no tiene que abrir la pantalla de edición completa de 6 pestañas para solo asignar un revisor o registrar la resolución.
-2. **Cero equivocaciones:** Cada modal muestra el resumen superior de ese expediente para certificar que se está trabajando sobre el caso correcto.
-3. **Flujo secuencial natural:** Registro ➔ Asignar ➔ Proyecto Resuelto ➔ Notificado / Atendido.
+## 🎨 3. Diseños de Cada Modal (Mockups Visuales y Casillas)
+
+Todos los modales cuentan con una **Tarjeta de Datos del Caso** en la parte superior para que el registrador verifique de inmediato el expediente sobre el que está actuando sin tener que ir a otra pantalla.
+
+---
+
+### 👁️ MODAL 0: «Ficha Rápida: Datos del Caso»
+* **Acceso:** Botón 👁️ (en cualquier estado).
+* **Propósito:** Inspección completa del caso en una sola ventana emergente rápida.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 👁️ Ficha del Expediente: 0142-2026-DGNNA                    [Estado: PENDIENTE] │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 📌 DATOS GENERALES                                                          │
+│   • Procedencia: UPE Lima Centro         • Fecha Ingreso DGNNA: 10/02/2026  │
+│   • Documento: Oficio 452-2026-UPE       • Plazo Vencimiento: 25/03/2026    │
+│   • Asunto: Impugnación de medida de protección provisional de acogimiento. │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 👥 PARTES PROCESALES                                                        │
+│   • Apelante(s): Juan Carlos Pérez Quispe (DNI 45892147) - Padre             │
+│   • NNA / CAR:   M.P.Q. (8 años), J.P.Q. (5 años)                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ ⚖️ COMPLEJIDAD JURÍDICA                                                     │
+│   • Complejidad Jurídica: Alta                                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ ⚖️ ESTADO DE ASIGNACIÓN                                                     │
+│   • Abogado Asignado: Abog. Claudia Torres (Asignado: 11/02/2026)          │
+│   • Revisor:          Abog. Martín Ramos   (Derivado: 18/02/2026)          │
+│   • Pase a Resuelto:  18/02/2026                                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 📜 RESOLUCIÓN / NOTIFICACIÓN (Si aplica)                                    │
+│   • Resolución: RD N° 0089-2026-MIMP-DGNNA (22/02/2026) - FUNDADO EN PARTE  │
+│   • Documento Atención: Oficio 120-2026-DGNNA | Cargos: RECIBIDOS           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                              [Cerrar Ficha] │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 👤 MODAL 1: «Cambiar / Reasignar Abogado»
+* **Acceso:** Botón 👤 (En estado `Pendiente`).
+* **Propósito:** Reasignar el caso a otro profesional y ajustar su fecha de asignación.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 👤 Reasignar Abogado Responsable                                            │
+│ Modificar el abogado a cargo de la elaboración del proyecto de resolución.  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 📋 Resumen del Caso:                                                        │
+│   Expediente: 0142-2026-DGNNA | Apelante: Juan Carlos Pérez Quispe         │
+│   NNA: M.P.Q. (8 años) | Complejidad Jurídica: Alta                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Abogado Asignado *                                                         │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ [Abog. Roberto Carlos Salazar (Carga actual: 12 casos - 48 pts)     ▼]│  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  Fecha de Asignación *                                                      │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ [ 15/02/2026                                                        📅]│  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  Observaciones / Motivo de Reasignación (Opcional)                          │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ Redistribución por licencia médica del titular anterior...            │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                [Cancelar]  [💾 Guardar Abogado]│
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 🔍 MODAL 2: «Pasar a Revisor»
+* **Acceso:** Botón 🔍 (En estado `Pendiente` - pasa o cambia de revisor).
+* **Propósito:** Registrar que el abogado culminó su proyecto y derivarlo al revisor asignado.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 🔍 Derivar a Revisor (Control de Calidad)                                  │
+│ Asignar el revisor que validará el borrador del proyecto de resolución.     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 📋 Resumen del Caso:                                                        │
+│   Expediente: 0142-2026-DGNNA | Elaborado por: Abog. Claudia Torres         │
+│   Apelante: Juan Carlos Pérez Quispe | NNA: M.P.Q. (8 años)                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Fecha pase a Resuelto (Fecha entrega del borrador)                         │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ [ 20/02/2026                                                        📅]│  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│  ℹ️ Fecha en que el profesional concluyó la atención y entregó el proyecto. │
+│                                                                             │
+│  Revisado por *                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ [Abog. Martín Ramos Córdova (Carga: 4 casos en revisión)            ▼]│  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  Fecha Asignación Revisor *           [Atajos: Mismo día | +1 día]          │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ [ 21/02/2026                                                        📅]│  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│  ℹ️ Fecha en que se derivó el expediente al revisor para su visación.       │
+│                                                                             │
+│  Observaciones para el Revisor (Opcional)                                   │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ Proyecto con especial énfasis en informe psicológico anexo a fojas 45.│  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                [Cancelar]  [💾 Asignar Revisor]│
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### ⚖️ MODAL 3: «Pasar a Resuelto»
+* **Acceso:** Botón ⚖️ (En estado `Pendiente (con revisor)`).
+* **Propósito:** Registrar la resolución oficial emitida tras la revisión y cambiar de estado a `Resuelto`.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ⚖️ Pasar a Resuelto (Resolución Oficial)                                     │
+│ Registrar los datos de la resolución oficial emitida por la Dirección.     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 📋 Resumen del Caso:                                                        │
+│   Expediente: 0142-2026-DGNNA | Abogado: Claudia Torres | Revisor: M. Ramos │
+│   Apelante: Juan Carlos Pérez Quispe | NNA: M.P.Q. (8 años)                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Nuevo Estado:                                                              │
+│  [🔵 RESUELTO] (Se actualizará automáticamente)                             │
+│                                                                             │
+│  ┌───────────────────────────────────┬───────────────────────────────────┐  │
+│  │ Nº de Resolución *                │ Fecha de resolución *             │  │
+│  │ [RD N° 0089-2026-MIMP-DGNNA     ] │ [ 24/02/2026                   📅] │  │
+│  └───────────────────────────────────┴───────────────────────────────────┘  │
+│                                                                             │
+│  Resultado de la resolución *                                               │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ [Fundado en parte                                                   ▼]│  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│  Opciones: Fundado | Fundado en parte | Infundado | Improcedente | Nulidad   │
+│            de Oficio | Desistimiento | Caducidad | Inadmisible              │
+│                                                                             │
+│  Fecha pase a Resuelto (Confirmación)                                       │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ [ 20/02/2026                                                        📅]│  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  Observaciones (Opcional)                                                   │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ Se dispone reevaluación por parte del equipo multidisciplinario...    │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                              [Cancelar]  [💾 Pasar a Resuelto]│
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 📬 MODAL 4: «Pasar a Atendido»
+* **Acceso:** Botón 📬 (En estado `Resuelto`).
+* **Propósito:** Notificar la resolución a las partes y culminar el trámite (estado `Atendido` - Verde).
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 📬 Pasar a Atendido (Cierre y Notificación)                                 │
+│ Registrar el oficio de atención y cargos de notificación a los involucrados.│
+├─────────────────────────────────────────────────────────────────────────────┤
+│ 📋 Resumen del Caso:                                                        │
+│   Expediente: 0142-2026-DGNNA | Resolución: RD N° 0089-2026-MIMP-DGNNA     │
+│   Sentido: FUNDADO EN PARTE | Apelante: Juan Carlos Pérez Quispe            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Nuevo Estado:                                                              │
+│  [🟢 ATENDIDO] (Se actualizará automáticamente a verde)                     │
+│                                                                             │
+│  ┌───────────────────────────────────┬───────────────────────────────────┐  │
+│  │ Documento Atención *              │ Cargos de Notificación *          │  │
+│  │ [Oficio N° 0120-2026-MIMP-DGNNA ] │ [Recibidos                      ▼]│  │
+│  └───────────────────────────────────┴───────────────────────────────────┘  │
+│                                        Opciones: Pendiente | Recibidos      │
+│                                                                             │
+│  Observaciones Finales / Archivo (Opcional)                                 │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │ Notificado a UPE Lima Centro y al apelante con cédula SGD 88921.      │  │
+│  │ Expediente devuelto a su archivo de origen.                           │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                              [Cancelar]  [💾 Pasar a Atendido]│
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🚀 4. Ventajas Ergonómicas y Operativas
+
+1. **Agilidad Extrema (1 Clic):** No se entra a la página de edición completa de 6 pestañas salvo para correcciones profundas de fondo (como agregar otro NNA o cambiar folios).
+2. **Contexto Visible Inmediato:** Cada modal muestra arriba el número de expediente, los nombres del apelante y del NNA, garantizando que el usuario jamás se equivoque de fila.
+3. **Botones Contextuales Inteligentes:** La tabla solo muestra los botones que tienen sentido para el estado actual de cada caso.
+4. **Validación Segura:** Todas las casillas se sincronizan mediante la API estándar (`PUT /api/apelaciones/[id]`) respetando las validaciones y los recálculos automáticos de carga.
