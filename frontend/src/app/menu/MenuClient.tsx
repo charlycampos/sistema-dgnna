@@ -129,6 +129,14 @@ export default function MenuClient({ session }: Props) {
       disponible: true,
     },
     {
+      id: 'tableros-direcciones',
+      titulo: 'Tableros Direcciones de Línea',
+      descripcion: 'Monitoreo analítico y tableros de gestión estratégica (DSLD, DPNNA, DPE, DA)',
+      icono: <LayoutDashboard className="w-8 h-8" />,
+      ruta: '/tableros-direcciones',
+      disponible: true,
+    },
+    {
       id: 'usuarios',
       titulo: 'Gestión de Usuarios',
       descripcion: 'Administración de cuentas y permisos del sistema',
@@ -159,7 +167,7 @@ export default function MenuClient({ session }: Props) {
   // El menú se deriva de los módulos asignados y roles directivos.
   const modulos = modulosEstandar.filter((modulo) => {
     if (isAdmin) return true
-    if (modulo.id === 'director') return esDirectivo
+    if (modulo.id === 'director' || modulo.id === 'tableros-direcciones') return esDirectivo
     if (modulo.soloAdmin || !modulo.disponible) return false
     return session.modulos?.some(asignado => 
       asignado.modulo === modulo.id ||
@@ -177,7 +185,7 @@ export default function MenuClient({ session }: Props) {
   /** true si el usuario tiene acceso a este módulo */
   const tieneAcceso = (modulo: Modulo): boolean => {
     if (isAdmin) return true
-    if (modulo.id === 'director') return esDirectivo
+    if (modulo.id === 'director' || modulo.id === 'tableros-direcciones') return esDirectivo
     if (modulo.soloAdmin) return false
     if (!modulo.disponible) return false
     return session.modulos?.some(m => 

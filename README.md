@@ -13,9 +13,10 @@ Plataforma web modular de alta disponibilidad para la Dirección General de Niñ
 8. **Intervenciones Preventivas y de Protección (Estrategia Prevenir / Proteger)**.
 9. **Módulo de Auditoría y Trazabilidad Global** (Historial inmutable, comparador Diff de campos y reportes Excel).
 10. **Consulta Normativa y Asistente RAG Multi-LLM** (ChatGPT, Gemini, Claude anclado en 398 artículos de DL 1297 y Reglamento).
-11. **Autenticación Unificada y Control de Accesos por Módulo (RBAC)**.
-12. **API Gateway Central**.
-13. **Frontend Unificado Next.js 16 / React 19**.
+11. **Tableros de Control de Direcciones de Línea** (Monitoreo analítico y Power BI de DSLD, DPNNA, DPE y DA).
+12. **Autenticación Unificada y Control de Accesos por Módulo (RBAC)**.
+13. **API Gateway Central**.
+14. **Frontend Unificado Next.js 16 / React 19**.
 
 ---
 
@@ -33,7 +34,7 @@ Para consultar el mapa topológico completo y los diagramas Mermaid, revisa el a
 
 ## 🚀 Puesta en Marcha Rápida (Docker)
 
-1. **Levantar todo el ecosistema (13 contenedores):**
+1. **Levantar todo el ecosistema:**
    ```powershell
    docker compose up -d
    ```
@@ -45,6 +46,7 @@ Para consultar el mapa topológico completo y los diagramas Mermaid, revisa el a
 
 3. **Acceso Web:**
    * **Aplicación Principal:** [http://localhost:3000](http://localhost:3000)
+   * **Tableros Direcciones de Línea (DSLD / Power BI):** [http://localhost:3000/tableros-direcciones](http://localhost:3000/tableros-direcciones)
    * **Módulo de Consulta Normativa:** [http://localhost:3000/normativa](http://localhost:3000/normativa)
    * **Módulo de Auditoría:** [http://localhost:3000/auditoria](http://localhost:3000/auditoria)
    * **API Gateway Health:** [http://localhost:8000/health](http://localhost:8000/health)

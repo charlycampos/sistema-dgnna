@@ -29,6 +29,7 @@ SERVICES = {
     "auditoria":       os.getenv("AUDITORIA_SERVICE_URL",       "http://localhost:8009"),
     "prevenir-proteger": os.getenv("PREVENIR_PROTEGER_SERVICE_URL", "http://localhost:8010"),
     "normativa":       os.getenv("NORMATIVA_SERVICE_URL",       "http://localhost:8011"),
+    "tableros":        os.getenv("TABLEROS_SERVICE_URL",        "http://localhost:8012"),
 }
 
 SECRET_KEY = os.getenv("SESSION_SECRET", "dgnna-sistema-dgnna-secret-2026")
@@ -60,6 +61,7 @@ ROUTE_MAP = [
     ("/api/auditoria",      "auditoria"),
     ("/api/prevenir-proteger", "prevenir-proteger"),
     ("/api/normativa",      "normativa"),
+    ("/api/tableros",       "tableros"),
 ]
 
 app = FastAPI(

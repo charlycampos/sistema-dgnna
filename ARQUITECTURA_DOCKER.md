@@ -29,6 +29,7 @@ flowchart TD
             S_Prev["9. prevenir-service\n:8010"]
             S_Audit["10. auditoria-service\n:8009"]
             S_Norm["11. normativa-service\n:8011 (RAG Multi-LLM)"]
+            S_Tabl["12. tableros-service\n:8012 (Power BI / Direcciones)"]
         end
     end
 
@@ -46,6 +47,7 @@ flowchart TD
         DB_Prev[("PREVENIR_DB")]
         DB_Audit[("AUDITORIA_DB")]
         DB_Norm[("NORMATIVA_DB")]
+        DB_Tabl[("TABLEROS_DB")]
     end
 
     User -->|HTTP Requests| Frontend
@@ -62,6 +64,7 @@ flowchart TD
     Gateway -->|/api/prevenir-proteger| S_Prev
     Gateway -->|/api/auditoria| S_Audit
     Gateway -->|/api/normativa| S_Norm
+    Gateway -->|/api/tableros| S_Tabl
 
     %% Hooks de auditoría en segundo plano
     S_Sust -.->|Auditoría Async POST| S_Audit
@@ -114,13 +117,14 @@ flowchart TD
 | **11** | `auditoria-service` | `auditoria-service-1` | **8009** | 8009 | `AUDITORIA_DB` | Registro inmutable de actividades, trazabilidad y visor forense |
 | **12** | `prevenir-service` | `dgnna-prevenir-service-1` | **8010** | 8010 | `PREVENIR_DB` | Servicios de prevención y protección a nivel distrital y regional |
 | **13** | `normativa-service` | `normativa-service-1` | **8011** | 8011 | `NORMATIVA_DB` | Consulta normativa y Asistente RAG Multi-LLM (ChatGPT, Gemini, Claude) anclado al DL 1297 y Reglamento |
+| **14** | `tableros-service` | `dgnna-tableros-service-1` | **8012** | 8012 | `TABLEROS_DB` | Tableros analíticos y métricas de Direcciones de Línea (DSLD, DPNNA, DPE, DA) |
 
 ---
 
 ## 🌐 3. ¿Cómo funciona la Comunicación en Docker?
 
 ### A. Red Interna Bridge (`dgnna-net`)
-* Todos los 12 contenedores conviven dentro de una misma red privada virtual llamada **`dgnna-net`**.
+* Todos los contenedores conviven dentro de una misma red privada virtual llamada **`dgnna-net`**.
 * **Resolución Automática de Nombres (DNS Interno):**  
   Un contenedor no necesita saber la IP de otro; utiliza directamente el nombre del servicio:
   * El Frontend se comunica con el Gateway usando: `http://gateway:8000`.
@@ -145,6 +149,8 @@ ROUTE_MAP = [
     ("/api/mapa",              "mapa-service:8008"),
     ("/api/auditoria",         "auditoria-service:8009"),
     ("/api/prevenir-proteger", "prevenir-service:8010"),
+    ("/api/normativa",         "normativa-service:8011"),
+    ("/api/tableros",          "tableros-service:8012"),
 ]
 ```
 

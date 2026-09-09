@@ -50,6 +50,7 @@ services:
       - AUDITORIA_SERVICE_URL=http://auditoria-service:8009
       - PREVENIR_PROTEGER_SERVICE_URL=http://prevenir-service:8010
       - NORMATIVA_SERVICE_URL=http://normativa-service:8011
+      - TABLEROS_SERVICE_URL=http://tableros-service:8012
     networks:
       - dgnna-net
 
@@ -282,5 +283,27 @@ services:
       - "host.docker.internal:host-gateway"
     networks:
       - dgnna-net
+
+  # ─────────────────────────────────────────────────────────────
+  # 14. MICROSERVICIO: TABLEROS DE DIRECCIONES DE LÍNEA
+  # ─────────────────────────────────────────────────────────────
+  tableros-service:
+    container_name: dgnna-tableros-service-1
+    build:
+      context: ./servicios/servicio-tableros
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    mem_limit: 256m
+    ports:
+      - "8012:8012"
+    environment:
+      - PORT=8012
+      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - DATABASE_URL=${DATABASE_URL_TABLEROS:-oracle+oracledb://tableros_db:Tableros2026@host.docker.internal:1521/?service_name=XEPDB1}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - dgnna-net
+
 
 

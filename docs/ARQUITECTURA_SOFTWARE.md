@@ -154,12 +154,13 @@ flowchart TD
             MA["mapa-service<br/>:8008"]
             PR["prevenir-service<br/>:8010"]
             NO["normativa-service<br/>:8011"]
+            TB["tableros-service<br/>:8012"]
         end
 
         AD["<b>auditoria-service</b><br/>FastAPI · :8009<br/><i>Registro transversal de trazabilidad</i>"]
     end
 
-    ORA[("<b>Oracle Database XE 21c</b><br/>PDB XEPDB1<br/>11 esquemas dedicados")]
+    ORA[("<b>Oracle Database XE 21c</b><br/>PDB XEPDB1<br/>12 esquemas dedicados")]
 
     Nav -->|"HTTPS :3000"| FE
     Nav -->|"HTTPS :8000 (API)"| GW
@@ -175,6 +176,7 @@ flowchart TD
     GW --> MA
     GW --> PR
     GW --> NO
+    GW --> TB
     GW --> AD
 
     AP -.->|"evento asíncrono"| AD
@@ -193,6 +195,7 @@ flowchart TD
     MA --> ORA
     PR --> ORA
     NO --> ORA
+    TB --> ORA
     AD --> ORA
 ```
 
@@ -213,6 +216,7 @@ flowchart TD
 | `prevenir-service` | FastAPI, SQLAlchemy | Registro de actividades de la estrategia Prevenir para Proteger. | Productivo |
 | `auditoria-service` | FastAPI, SQLAlchemy | Recibe y almacena los eventos de trazabilidad emitidos por los demás servicios; expone el visor y los reportes. | Productivo |
 | `normativa-service` | FastAPI, SQLAlchemy, NumPy, `pypdf`, SDK de OpenAI / Anthropic / Google | Búsqueda determinista sobre el corpus normativo y asistente RAG Multi-LLM opcional. | Productivo |
+| `tableros-service` | FastAPI, SQLAlchemy, Power BI Embedded | Gestión de catálogo, métricas y tableros analíticos de las Direcciones de Línea (DSLD, DPNNA, DPE, DA). | Productivo (Frontend) / En despliegue |
 
 ### 3.3. Patrón común de los microservicios
 
