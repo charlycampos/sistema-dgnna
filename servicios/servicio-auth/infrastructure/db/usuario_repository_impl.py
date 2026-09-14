@@ -30,6 +30,7 @@ class UsuarioRepositoryImpl(UsuarioRepository):
             email        = usuario.email,
             passwordHash = usuario.passwordHash,
             rol          = usuario.rol,
+            direccion    = usuario.direccion,
             activo       = usuario.activo,
         )
         self._db.add(model)
@@ -61,6 +62,7 @@ class UsuarioRepositoryImpl(UsuarioRepository):
         model.email        = usuario.email
         model.passwordHash = usuario.passwordHash
         model.rol          = usuario.rol
+        model.direccion    = usuario.direccion
         model.activo       = usuario.activo
         model.updatedAt    = datetime.utcnow()
 
@@ -98,6 +100,7 @@ class UsuarioRepositoryImpl(UsuarioRepository):
             email        = m.email,
             passwordHash = m.passwordHash,
             rol          = m.rol,
+            direccion    = getattr(m, "direccion", None),
             activo       = m.activo,
             createdAt    = m.createdAt,
             updatedAt    = m.updatedAt,

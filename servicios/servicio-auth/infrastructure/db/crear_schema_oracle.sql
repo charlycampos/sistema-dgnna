@@ -34,3 +34,21 @@ CREATE TABLE auth_db.usuario_modulos (
 
 -- VERIFICAR
 SELECT table_name FROM all_tables WHERE owner = 'AUTH_DB' ORDER BY 1;
+
+-- ============================================================
+-- PASO 5 (2026-09-14): columna direccion en usuarios, agregada
+-- después del despliegue inicial. Idempotente.
+-- ============================================================
+DECLARE
+  v_existe NUMBER;
+BEGIN
+  -- Este script se ejecuta como SYSTEM (ver cabecera), por eso se consulta
+  -- ALL_TAB_COLUMNS con el propietario explícito en vez de USER_TAB_COLUMNS.
+  SELECT COUNT(*) INTO v_existe
+    FROM all_tab_columns
+   WHERE owner = 'AUTH_DB' AND table_name = 'USUARIOS' AND column_name = 'DIRECCION';
+  IF v_existe = 0 THEN
+    EXECUTE IMMEDIATE 'ALTER TABLE auth_db.usuarios ADD direccion VARCHAR2(30)';
+  END IF;
+END;
+/

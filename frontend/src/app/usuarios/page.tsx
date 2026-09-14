@@ -21,6 +21,7 @@ interface Usuario {
   nombre: string
   email: string
   rol: string          // 'admin' | 'usuario'
+  direccion?: string | null   // DPE | DA | DSLD | DPNNA | DGNNA | '' | null
   activo: boolean
   createdAt: string
   modulos: ModuloPermiso[]
@@ -45,6 +46,18 @@ const MODULOS_DISPONIBLES = [
   { id: 'auditoria',         label: 'Auditoría y Trazabilidad',     desc: 'Historial inmutable',          icon: ShieldCheck,  color: 'text-slate-700 bg-slate-100 border-slate-300' },
   { id: 'fortalecimiento',   label: 'Fortalecimiento Capacidades',  desc: 'Capacitaciones DGNNA',         icon: BookOpen,     color: 'text-teal-600 bg-teal-50 border-teal-200' },
   { id: 'prevenir-proteger', label: 'Prevenir para Proteger',       desc: 'Alertas y protección',         icon: ShieldAlert,  color: 'text-red-600 bg-red-50 border-red-200' },
+  { id: 'ayuda-memoria',     label: 'Ayuda Memoria',                desc: 'Formularios, revisión y sellado', icon: FileText,  color: 'text-sky-600 bg-sky-50 border-sky-200' },
+]
+
+// Direcciones de línea DGNNA para el selector del formulario de usuario.
+// '' representa "sin dirección asignada" (personal de despacho, admins, etc.).
+const DIRECCIONES_DGNNA: { value: string; label: string }[] = [
+  { value: '',      label: 'Sin dirección asignada' },
+  { value: 'DPE',   label: 'DPE — Protección Especial' },
+  { value: 'DA',    label: 'DA — Adopciones' },
+  { value: 'DSLD',  label: 'DSLD — Sistemas Locales' },
+  { value: 'DPNNA', label: 'DPNNA — Promoción y Participación' },
+  { value: 'DGNNA', label: 'DGNNA — Despacho / Dirección General' },
 ]
 
 function RolBadge({ rol, modulos }: { rol: string; modulos: ModuloPermiso[] }) {
@@ -94,6 +107,7 @@ type FormNuevo = {
   nombre: string
   email: string
   password: string
+  direccion: string
   esAdmin: boolean
   modulos: { modulo: string; rolModulo: string }[]
 }
@@ -115,6 +129,7 @@ export default function UsuariosPage() {
     nombre: '',
     email: '',
     password: '',
+    direccion: '',
     esAdmin: false,
     modulos: []
   }
@@ -230,6 +245,7 @@ export default function UsuariosPage() {
           email: form.email.trim().toLowerCase(),
           password: form.password,
           rol: form.esAdmin ? 'admin' : 'usuario',
+          direccion: form.direccion,
           modulos: form.esAdmin ? [] : form.modulos,
         }),
       })
@@ -255,6 +271,7 @@ export default function UsuariosPage() {
           nombre: modalEditar.nombre.trim(),
           email: modalEditar.email.trim().toLowerCase(),
           rol: modalEditar.rol,
+          direccion: modalEditar.direccion ?? '',
           modulos: modalEditar.rol !== 'admin' ? modalEditar.modulos : [],
         }),
       })
@@ -545,6 +562,25 @@ export default function UsuariosPage() {
                           onChange={e => setForm({ ...form, email: e.target.value })}
                           className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-slate-900 font-medium"
                         />
+                      </div>
+
+                      {/* Dirección de línea */}
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                          Dirección de Línea
+                        </label>
+                        <select
+                          value={form.direccion}
+                          onChange={e => setForm({ ...form, direccion: e.target.value })}
+                          className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-slate-900 font-medium"
+                        >
+                          {DIRECCIONES_DGNNA.map(d => (
+                            <option key={d.value || 'ninguna'} value={d.value}>{d.label}</option>
+                          ))}
+                        </select>
+                        <p className="text-[10px] text-slate-400 mt-1">
+                          Determina qué documentos de su dirección puede ver y editar en módulos como Ayuda Memoria.
+                        </p>
                       </div>
 
                       {/* Contraseña con ojito y generador */}
@@ -846,6 +882,21 @@ export default function UsuariosPage() {
                           onChange={e => setModalEditar({ ...modalEditar, email: e.target.value })}
                           className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-slate-900 font-medium"
                         />
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                          Dirección de Línea
+                        </label>
+                        <select
+                          value={modalEditar.direccion ?? ''}
+                          onChange={e => setModalEditar({ ...modalEditar, direccion: e.target.value })}
+                          className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-slate-900 font-medium"
+                        >
+                          {DIRECCIONES_DGNNA.map(d => (
+                            <option key={d.value || 'ninguna'} value={d.value}>{d.label}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
 

@@ -18,6 +18,7 @@ class Usuario:
     email:        str
     passwordHash: str
     rol:          str = "usuario"   # admin | usuario
+    direccion:    Optional[str] = None  # DPE | DA | DSLD | DPNNA | DGNNA
     activo:       bool = True
     id:           str = field(default_factory=lambda: str(uuid.uuid4()))
     modulos:      List[UsuarioModulo] = field(default_factory=list)

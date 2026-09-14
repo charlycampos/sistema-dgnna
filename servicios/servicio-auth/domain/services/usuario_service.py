@@ -27,11 +27,13 @@ class UsuarioService:
             raise ValueError("Ya existe un usuario con ese email")
 
         rol = "admin" if datos.get("rol") == "admin" else "usuario"
+        direccion = (datos.get("direccion") or "").strip().upper() or None
         usuario = Usuario(
             nombre       = datos["nombre"].strip(),
             email        = email,
             passwordHash = AuthService.hash_password(datos["password"]),
             rol          = rol,
+            direccion    = direccion,
             activo       = True,
         )
 
@@ -58,6 +60,9 @@ class UsuarioService:
             usuario.passwordHash = AuthService.hash_password(datos["password"])
         if datos.get("rol") is not None:
             usuario.rol = "admin" if datos["rol"] == "admin" else "usuario"
+        if "direccion" in datos:
+            direccion = (datos.get("direccion") or "").strip().upper() or None
+            usuario.direccion = direccion
         if datos.get("activo") is not None:
             usuario.activo = datos["activo"]
 

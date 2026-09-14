@@ -16,6 +16,9 @@ class UsuarioModel(Base):
     email        = Column("email",        String(200), nullable=False, unique=True)
     passwordHash = Column("passwordhash", String(200), nullable=False)
     rol          = Column("rol",          String(20), default="usuario")
+    # Dirección de línea DGNNA a la que pertenece (DPE | DA | DSLD | DPNNA | DGNNA),
+    # nula para cuentas que no pertenecen a una dirección específica.
+    direccion    = Column("direccion",    String(30), nullable=True)
     activo       = Column("activo",       Boolean, default=True)
     createdAt    = Column("createdat",    DateTime, default=datetime.utcnow)
     updatedAt    = Column("updatedat",    DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

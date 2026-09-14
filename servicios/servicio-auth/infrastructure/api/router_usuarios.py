@@ -69,6 +69,7 @@ def _usuario_out(u) -> dict:
         "nombre":    u.nombre,
         "email":     u.email,
         "rol":       u.rol,
+        "direccion": u.direccion,
         "activo":    u.activo,
         "modulos":   [{"modulo": m.modulo, "rolModulo": m.rolModulo} for m in u.modulos],
         "createdAt": u.createdAt,
