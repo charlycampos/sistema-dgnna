@@ -484,3 +484,4 @@ class AuditoriaSistema(Base):
     usuarioRol       = Column("usuariorol", String(50), nullable=True)
     ipOrigen         = Column("iporigen", String(50), nullable=True)
     createdAt        = Column("createdat", DateTime, default=datetime.utcnow, nullable=False)
+

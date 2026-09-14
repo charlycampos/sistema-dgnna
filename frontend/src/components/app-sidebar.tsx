@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Scale, LayoutDashboard, Inbox, Settings, LayoutGrid, LogOut, FileSearch, BarChart3, Upload, TrendingUp, PieChart, MapPin, ShieldCheck } from 'lucide-react'
+import { Scale, LayoutDashboard, Inbox, Settings, LayoutGrid, LogOut, FileSearch, BarChart3, Upload, TrendingUp, PieChart, MapPin, ShieldCheck, Building2 } from 'lucide-react'
 import { useMe } from '@/lib/use-me'
 
 export function AppSidebar() {
@@ -178,6 +178,7 @@ export function AppSidebar() {
                 <MapPin className="h-3 w-3" /> Mapa Interactivo
               </p>
               <NavLink href="/mapa" icon={<MapPin className="h-4 w-4 shrink-0" />} label="Cobertura territorial" />
+              <NavLink href="/mapa/servicios" icon={<Building2 className="h-4 w-4 shrink-0" />} label="Servicios" />
             </>
           )}
 

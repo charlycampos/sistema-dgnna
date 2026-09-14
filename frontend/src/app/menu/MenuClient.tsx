@@ -137,6 +137,14 @@ export default function MenuClient({ session }: Props) {
       disponible: true,
     },
     {
+      id: 'ayuda-memoria',
+      titulo: 'Módulo Ayuda Memoria',
+      descripcion: 'Generación descentralizada de reportes temáticos por dirección y seguimiento de casos',
+      icono: <FileText className="w-8 h-8 text-sky-600" />,
+      ruta: '/ayuda-memoria',
+      disponible: true,
+    },
+    {
       id: 'usuarios',
       titulo: 'Gestión de Usuarios',
       descripcion: 'Administración de cuentas y permisos del sistema',

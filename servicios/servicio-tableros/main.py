@@ -3,6 +3,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from infrastructure.db.database import engine, Base
 from infrastructure.db import models  # noqa
 from infrastructure.api.router import router
@@ -31,7 +32,13 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "servicio": "tableros-direcciones"}
+    with engine.connect() as connection:
+        connection.execute(text("SELECT 1 FROM DUAL" if engine.dialect.name == "oracle" else "SELECT 1"))
+    return {
+        "status": "ok",
+        "servicio": "tableros-direcciones",
+        "database": engine.dialect.name,
+    }
 
 if __name__ == "__main__":
     import uvicorn

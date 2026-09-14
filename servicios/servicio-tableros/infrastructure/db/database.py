@@ -1,4 +1,4 @@
-﻿import os
+import os
 import logging
 from sqlalchemy import create_engine, event
 from sqlalchemy.ext.declarative import declarative_base
@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 logger = logging.getLogger("tableros_db")
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tableros.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/tableros.db")
 
 def crear_engine_seguro():
     global DATABASE_URL
@@ -19,9 +19,15 @@ def crear_engine_seguro():
                 pass
             return eng
         except Exception as e:
-            logger.warning(f"No se pudo conectar a Oracle ({e}). Usando SQLite fallback.")
-            DATABASE_URL = "sqlite:///./tableros.db"
+            if os.getenv("ALLOW_SQLITE_FALLBACK", "false").lower() != "true":
+                logger.error("No se pudo conectar a Oracle; el fallback SQLite está deshabilitado.")
+                raise
+            logger.warning(f"No se pudo conectar a Oracle ({e}). Usando SQLite fallback explícito.")
+            os.makedirs("./data", exist_ok=True)
+            DATABASE_URL = "sqlite:///./data/tableros.db"
     
+    if DATABASE_URL.startswith("sqlite"):
+        os.makedirs("./data", exist_ok=True)
     return create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {})
 
 engine = crear_engine_seguro()
@@ -40,5 +46,8 @@ def get_db():
     db = SessionLocal()
     try:
         yield db
+    except Exception:
+        db.rollback()
+        raise
     finally:
         db.close()

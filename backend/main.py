@@ -11,8 +11,14 @@ from sqlalchemy import text, inspect
 from database import engine, Base
 from routers import auth, abogados, complejidad, extension, apelaciones, usuarios, dashboard, reportes, sala_reuniones, sustracion, revisores, proyectos_ley, transparencia, apelantes, poi_pp117, auditoria
 
-# Crear tablas si no existen
-Base.metadata.create_all(bind=engine)
+# Crear tablas si no existen (en Oracle ignora si ya existen)
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    # ORA-00955 = name already used
+    if "00955" not in str(e):
+        print(f"[create_all] advertencia: {e}")
+
 
 # ── Migraciones incrementales ─────────────────────────────────────
 # create_all no modifica columnas en tablas ya existentes.
@@ -96,32 +102,35 @@ def run_migrations():
         # Oracle no permite modificar directamente un CHECK. Se reemplaza luego
         # de crear las columnas, admitiendo tanto instalaciones nuevas como existentes.
         if engine.dialect.name == "oracle":
-            constraint_name = "CK_AP_RESULTADO_RESOLUCION"
-            existe = conn.execute(
-                text(
-                    "SELECT COUNT(*) FROM user_constraints "
-                    "WHERE table_name = 'APELACIONES' AND constraint_name = :nombre"
-                ),
-                {"nombre": constraint_name},
-            ).scalar()
-            if existe:
+            try:
+                constraint_name = "CK_AP_RESULTADO_RESOLUCION"
+                existe = conn.execute(
+                    text(
+                        "SELECT COUNT(*) FROM user_constraints "
+                        "WHERE table_name = 'APELACIONES' AND constraint_name = :nombre"
+                    ),
+                    {"nombre": constraint_name},
+                ).scalar()
+                if existe:
+                    conn.execute(
+                        text(
+                            "ALTER TABLE apelaciones DROP CONSTRAINT "
+                            "ck_ap_resultado_resolucion"
+                        )
+                    )
                 conn.execute(
                     text(
-                        "ALTER TABLE apelaciones DROP CONSTRAINT "
-                        "ck_ap_resultado_resolucion"
+                        "ALTER TABLE apelaciones ADD CONSTRAINT "
+                        "ck_ap_resultado_resolucion CHECK ("
+                        "resultadoResolucion IS NULL OR resultadoResolucion IN ("
+                        "'FUNDADO', 'FUNDADO_EN_PARTE', 'INFUNDADO', 'IMPROCEDENTE', "
+                        "'CARECE_DE_OBJETO', 'NULIDAD', 'REMISION_ORGANO_COMPETENTE', "
+                        "'CESE_PARCIAL_FUNCIONES'))"
                     )
                 )
-            conn.execute(
-                text(
-                    "ALTER TABLE apelaciones ADD CONSTRAINT "
-                    "ck_ap_resultado_resolucion CHECK ("
-                    "resultadoResolucion IS NULL OR resultadoResolucion IN ("
-                    "'FUNDADO', 'FUNDADO_EN_PARTE', 'INFUNDADO', 'IMPROCEDENTE', "
-                    "'CARECE_DE_OBJETO', 'NULIDAD', 'REMISION_ORGANO_COMPETENTE', "
-                    "'CESE_PARCIAL_FUNCIONES'))"
-                )
-            )
-            conn.commit()
+                conn.commit()
+            except Exception as e_ck:
+                print(f"[migration] constraint apelaciones aviso: {e_ck}")
 
 run_migrations()
 

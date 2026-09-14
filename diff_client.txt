@@ -1,0 +1,1003 @@
+﻿diff --git a/frontend/src/app/tableros-direcciones/TablerosDireccionesClient.tsx b/frontend/src/app/tableros-direcciones/TablerosDireccionesClient.tsx
+index dcddc45..57dffca 100644
+--- a/frontend/src/app/tableros-direcciones/TablerosDireccionesClient.tsx
++++ b/frontend/src/app/tableros-direcciones/TablerosDireccionesClient.tsx
+@@ -26,11 +26,8 @@ import {
+   Share2,
+   Check,
+   X,
+-  SlidersHorizontal,
+   RefreshCw,
+   Home,
+-  BarChart3,
+-  Sparkles
+ } from 'lucide-react'
+ import type { SessionPayload } from '@/lib/auth'
+ 
+@@ -38,7 +35,7 @@ interface Props {
+   session: SessionPayload
+ }
+ 
+-export type DireccionCodigo = 'DSLD' | 'DPNNA' | 'DPE' | 'DA'
++export type DireccionCodigo = 'DSLD' | 'DPNNA' | 'DPE' | 'DA' | 'PREVENIR'
+ 
+ export interface TableroItem {
+   id: string
+@@ -55,6 +52,20 @@ export interface TableroItem {
+   esPersonalizado?: boolean
+ }
+ 
++interface TableroApiItem {
++  id: string
++  titulo: string
++  nombre_completo_tooltip?: string | null
++  subtitulo?: string | null
++  codigo_direccion: DireccionCodigo
++  tipo?: TableroItem['tipo'] | null
++  url_embed?: string | null
++  descripcion?: string | null
++  responsable?: string | null
++  estado?: TableroItem['estado'] | null
++  es_personalizado?: boolean | null
++}
++
+ interface DireccionConfig {
+   codigo: DireccionCodigo
+   nombreCorto: string
+@@ -127,138 +138,26 @@ const DIRECCIONES_DATA: Record<DireccionCodigo, DireccionConfig> = {
+       lightBg: 'bg-rose-50/50',
+     },
+   },
+-}
+-
+-const TABLEROS_BASE: TableroItem[] = [
+-  // DSLD
+-  {
+-    id: 'dsld-general-v3',
+-    titulo: 'Tablero General DSLD (V3)',
+-    subtitulo: 'Monitoreo consolidado de defensor├¡as y servicios distritales',
+-    direccion: 'DSLD',
+-    tipo: 'powerbi',
+-    urlEmbed:
+-      'https://app.powerbi.com/view?r=eyJrIjoiZDljNTIzNDctNTg2Yy00MWFjLWE4M2ItYzQ1NDc5MTZjMjg1IiwidCI6IjY4MTljNDYzLTVkZWItNDA3MC1hY2I2LTlmZGQzY2FhZTk4NCJ9',
+-    descripcion:
+-      'Cuadro de mando interactivo en Power BI para el seguimiento operativo de las Defensor├¡as Municipales del Ni├▒o, Ni├▒a y Adolescente (DEMUNA) a nivel nacional.',
+-    actualizacion: 'Actualizaci├│n en tiempo real (Power BI Service)',
+-    estado: 'activo',
+-    responsable: 'Equipo de Informaci├│n y Estad├¡stica DSLD',
+-  },
+-  {
+-    id: 'dsld-acreditacion',
+-    titulo: 'Casos de RDF reportados',
+-    nombreCompletoTooltip: 'Casos de Riesgo por desprotecci├│n familiar',
+-    subtitulo: 'Procedimientos por riesgo en DEMUNAs acreditadas',
+-    direccion: 'DSLD',
+-    tipo: 'proximamente',
+-    descripcion:
+-      'Reporte consolidado y casu├¡stica de casos de riesgo de desprotecci├│n familiar (RDF) atendidos por las DEMUNAs a nivel nacional.',
+-    estado: 'desarrollo',
+-    responsable: 'Equipo T├®cnico DSLD',
+-  },
+-
+-  // DPNNA
+-  {
+-    id: 'dpnna-politicas',
+-    titulo: 'Seguimiento de Pol├¡ticas y Planes Nacionales',
+-    subtitulo: 'Metas PNAIA y compromisos intersectoriales',
+-    direccion: 'DPNNA',
+-    tipo: 'proximamente',
+-    descripcion:
+-      'Indicadores de seguimiento del Plan Nacional de Acci├│n por la Infancia y la Adolescencia (PNAIA) e hitos estrat├®gicos.',
+-    estado: 'planificado',
+-    responsable: 'Direcci├│n de Pol├¡ticas de NNA',
+-  },
+-  {
+-    id: 'dpnna-cconna',
+-    titulo: 'Participaci├│n Infantil y Red CCONNA',
+-    subtitulo: 'Monitoreo territorial del Consejo Consultivo de NNA',
+-    direccion: 'DPNNA',
+-    tipo: 'proximamente',
+-    descripcion:
+-      'Registro y representatividad territorial de los Consejos Consultivos de Ni├▒as, Ni├▒os y Adolescentes a nivel nacional.',
+-    estado: 'planificado',
+-    responsable: 'Equipo de Participaci├│n Protag├│nica DPNNA',
+-  },
+-  {
+-    id: 'dpnna-encuestas-nacionales',
+-    titulo: 'Situaci├│n de la ni├▒ez y adolescencia (Encuestas Nacionales)',
+-    nombreCompletoTooltip: 'Situaci├│n de la ni├▒ez y adolescencia (Encuestas Nacionales)',
+-    subtitulo: 'Indicadores sociodemogr├íficos oficiales (ENAHO, ENDES, ENAPRES)',
+-    direccion: 'DPNNA',
+-    tipo: 'proximamente',
+-    descripcion:
+-      'Monitoreo y an├ílisis de las condiciones de vida, salud, educaci├│n y desarrollo de ni├▒as, ni├▒os y adolescentes a partir de fuentes de encuestas nacionales.',
+-    estado: 'desarrollo',
+-    responsable: 'Direcci├│n de Pol├¡ticas de NNA',
+-  },
+-  {
+-    id: 'dpnna-registros-administrativos',
+-    titulo: 'Situaci├│n de la ni├▒ez y adolescencia (Registros administrativos)',
+-    nombreCompletoTooltip: 'Situaci├│n de la ni├▒ez y adolescencia (Registros administrativos)',
+-    subtitulo: 'Anal├¡tica sectorial basada en registros del Estado',
+-    direccion: 'DPNNA',
+-    tipo: 'proximamente',
+-    descripcion:
+-      'Consolidaci├│n y seguimiento de informaci├│n operativa e institucional proveniente de registros administrativos sectoriales e interinstitucionales.',
+-    estado: 'desarrollo',
+-    responsable: 'Direcci├│n de Pol├¡ticas de NNA',
+-  },
+-
+-  // DPE
+-  {
+-    id: 'dpe-upe-nacional',
+-    titulo: 'Monitoreo de Casos y Respuestas UPE',
+-    subtitulo: 'Procedimientos por desprotecci├│n familiar',
+-    direccion: 'DPE',
+-    tipo: 'proximamente',
+-    descripcion:
+-      'Carga operativa de las Unidades de Protecci├│n Especial (UPE), tipos de acogimiento residencial/familiar y plazos de atenci├│n.',
+-    estado: 'desarrollo',
+-    responsable: 'Coordinaci├│n Nacional UPE - DPE',
+-  },
+-  {
+-    id: 'dpe-medidas-urgentes',
+-    titulo: 'Medidas de Protecci├│n Provisionales',
+-    subtitulo: 'Trazabilidad y cese de medidas urgentes',
+-    direccion: 'DPE',
+-    tipo: 'proximamente',
+-    descripcion:
+-      'Control de dictado de medidas de protecci├│n provisionales, derivaciones judiciales y reintegraciones al n├║cleo familiar.',
+-    estado: 'planificado',
+-    responsable: 'Equipo Legal DPE',
+-  },
+-
+-  // DA
+-  {
+-    id: 'da-solicitantes-aptos',
+-    titulo: 'Familias Declaradas Aptas y Procesos',
+-    subtitulo: 'Registro Nacional de Adopciones',
+-    direccion: 'DA',
+-    tipo: 'proximamente',
+-    descripcion:
+-      'Estad├¡sticas de solicitantes con idoneidad aprobada, tiempos promedio de espera y perfiles de adoptantes.',
+-    estado: 'desarrollo',
+-    responsable: 'Direcci├│n de Adopciones',
+-  },
+-  {
+-    id: 'da-integraciones',
+-    titulo: 'Designaciones e Integraciones Familiares',
+-    subtitulo: 'Adopciones regulares y especiales concluidas',
+-    direccion: 'DA',
+-    tipo: 'proximamente',
+-    descripcion:
+-      'Monitoreo de integraciones familiares efectivas, adopciones prioritarias de grupos de hermanos o NNA con necesidades m├®dicas especiales.',
+-    estado: 'planificado',
+-    responsable: 'Equipo Psicosocial DA',
++  PREVENIR: {
++    codigo: 'PREVENIR',
++    nombreCorto: 'PREVENIR',
++    nombreCompleto: 'Estrategia Prevenir para Proteger',
++    descripcion: 'Monitoreo multisectorial e intergubernamental para la prevenci├│n de la violencia sexual en NNA (D.S. N┬░ 008-2024-MIMP).',
++    icono: ShieldAlert,
++    color: {
++      bg: 'bg-purple-600',
++      text: 'text-purple-700',
++      badgeBg: 'bg-purple-50 text-purple-700 border-purple-200',
++      border: 'border-purple-500',
++      lightBg: 'bg-purple-50/50',
++    },
+   },
+-]
++}
+ 
+-const STORAGE_KEY = 'dgnna_tableros_direcciones_v4'
+ 
+ export default function TablerosDireccionesClient({ session }: Props) {
+-  const [tablerosList, setTablerosList] = useState<TableroItem[]>(TABLEROS_BASE)
++  const [tablerosList, setTablerosList] = useState<TableroItem[]>([])
++  const [catalogoCargado, setCatalogoCargado] = useState(false)
+   const [tableroActivoId, setTableroActivoId] = useState<string | null>(null)
+   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+   const [seccionesAbiertas, setSeccionesAbiertas] = useState<Record<DireccionCodigo, boolean>>({
+@@ -266,12 +165,15 @@ export default function TablerosDireccionesClient({ session }: Props) {
+     DPNNA: false,
+     DPE: false,
+     DA: false,
++    PREVENIR: false,
+   })
+   const [cargandoIframe, setCargandoIframe] = useState(true)
+   const [iframeKey, setIframeKey] = useState(1)
+   const [busqueda, setBusqueda] = useState('')
+   const [isFullscreen, setIsFullscreen] = useState(false)
+   const [copiado, setCopiado] = useState(false)
++  const [guardando, setGuardando] = useState(false)
++  const [errorIframe, setErrorIframe] = useState(false)
+ 
+   // Estado del Modal de Administraci├│n / Nuevo Tablero
+   const [modalAbierto, setModalAbierto] = useState(false)
+@@ -285,6 +187,8 @@ export default function TablerosDireccionesClient({ session }: Props) {
+   const [formEstado, setFormEstado] = useState<'activo' | 'desarrollo' | 'planificado'>('activo')
+ 
+   const contenedorRef = useRef<HTMLDivElement>(null)
++  const modalRef = useRef<HTMLDivElement>(null)
++  const cerrarModalRef = useRef<HTMLButtonElement>(null)
+ 
+   const puedeGestionar =
+     session.rol === 'admin' ||
+@@ -302,30 +206,25 @@ export default function TablerosDireccionesClient({ session }: Props) {
+       const res = await fetch('/api/tableros')
+       if (res.ok) {
+         const data = await res.json()
+-        if (Array.isArray(data) && data.length > 0) {
+-          const remotos: TableroItem[] = data.map((d: any) => {
+-            const baseMatch = TABLEROS_BASE.find(b => b.id === d.id)
++        if (Array.isArray(data)) {
++          const remotos: TableroItem[] = (data as TableroApiItem[]).map(d => {
+             return {
+               id: d.id,
+               titulo: d.titulo,
+               nombreCompletoTooltip:
+-                baseMatch?.nombreCompletoTooltip ||
+-                d.nombre_completo_tooltip ||
+-                (d.id === 'dsld-acreditacion' ? 'Casos de Riesgo por desprotecci├│n familiar' : undefined),
++                d.nombre_completo_tooltip || undefined,
+               subtitulo: d.subtitulo || '',
+               direccion: d.codigo_direccion as DireccionCodigo,
+-              tipo: (d.tipo || 'powerbi') as any,
++              tipo: d.tipo || 'powerbi',
+               urlEmbed: d.url_embed || undefined,
+               descripcion: d.descripcion || '',
+               responsable: d.responsable || undefined,
+-              estado: (d.estado || 'activo') as any,
++              estado: d.estado || 'activo',
+               esPersonalizado: d.es_personalizado ?? false,
+             }
+           })
+           setTablerosList(remotos)
+-          try {
+-            localStorage.setItem(STORAGE_KEY, JSON.stringify(remotos))
+-          } catch {}
++          setCatalogoCargado(true)
+           if (mostrarToast) {
+             toast.success('Tableros sincronizados con el servidor')
+           }
+@@ -340,20 +239,8 @@ export default function TablerosDireccionesClient({ session }: Props) {
+     return null
+   }
+ 
+-  // Cargar tableros (1. Fallback inmediato desde localStorage, 2. Datos frescos desde backend)
++  // El backend es la ├║nica fuente autoritativa del cat├ílogo.
+   useEffect(() => {
+-    try {
+-      const guardados = localStorage.getItem(STORAGE_KEY)
+-      if (guardados) {
+-        const parsed = JSON.parse(guardados) as TableroItem[]
+-        if (Array.isArray(parsed) && parsed.length > 0) {
+-          setTablerosList(parsed)
+-        }
+-      }
+-    } catch {
+-      // Usar base
+-    }
+-
+     cargarTablerosDesdeBackend()
+ 
+     // Leer par├ímetro ?id= de la URL si existe
+@@ -366,24 +253,22 @@ export default function TablerosDireccionesClient({ session }: Props) {
+     }
+   }, [])
+ 
+-  // Guardar en localStorage cuando cambie la lista
+-  const guardarEnStorage = (nuevaLista: TableroItem[]) => {
+-    setTablerosList(nuevaLista)
+-    try {
+-      localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevaLista))
+-    } catch {
+-      // Ignorar errores de cuota
+-    }
+-  }
+-
+   const tableroActivo = useMemo(() => {
+     if (!tableroActivoId) return null
+     return tablerosList.find(t => t.id === tableroActivoId) || null
+   }, [tablerosList, tableroActivoId])
+ 
++  useEffect(() => {
++    if (catalogoCargado && tableroActivoId && !tablerosList.some(t => t.id === tableroActivoId)) {
++      setTableroActivoId(null)
++    }
++  }, [catalogoCargado, tableroActivoId, tablerosList])
++
+   const statsDirecciones = useMemo(() => {
+-    const codigos: DireccionCodigo[] = ['DSLD', 'DPNNA', 'DPE', 'DA']
+-    const enLinea = codigos.filter(c => tablerosList.some(t => t.direccion === c && t.tipo === 'powerbi')).length
++    const codigos: DireccionCodigo[] = ['DSLD', 'DPNNA', 'DPE', 'DA', 'PREVENIR']
++    const enLinea = codigos.filter(c =>
++      tablerosList.some(t => t.direccion === c && t.tipo === 'powerbi' && t.estado === 'activo' && Boolean(t.urlEmbed))
++    ).length
+     return {
+       enLinea,
+       enModelado: codigos.length - enLinea,
+@@ -399,6 +284,7 @@ export default function TablerosDireccionesClient({ session }: Props) {
+   const seleccionarTablero = (item: TableroItem) => {
+     setTableroActivoId(item.id)
+     setCargandoIframe(true)
++    setErrorIframe(false)
+   }
+ 
+   const irAInicio = () => {
+@@ -406,6 +292,7 @@ export default function TablerosDireccionesClient({ session }: Props) {
+   }
+ 
+   const recargarIframe = () => {
++    setErrorIframe(false)
+     setCargandoIframe(true)
+     setIframeKey(k => k + 1)
+     toast.success('Visualizaci├│n recargada')
+@@ -426,16 +313,60 @@ export default function TablerosDireccionesClient({ session }: Props) {
+     }
+   }
+ 
+-  const compartirEnlace = () => {
++  const compartirEnlace = async () => {
+     if (typeof window !== 'undefined' && tableroActivo) {
+       const url = `${window.location.origin}${window.location.pathname}?id=${tableroActivo.id}`
+-      navigator.clipboard.writeText(url)
+-      setCopiado(true)
+-      toast.success('Enlace del tablero copiado al portapapeles')
+-      setTimeout(() => setCopiado(false), 2500)
++      try {
++        await navigator.clipboard.writeText(url)
++        setCopiado(true)
++        toast.success('Enlace del tablero copiado al portapapeles')
++        setTimeout(() => setCopiado(false), 2500)
++      } catch {
++        toast.error('No se pudo copiar el enlace. Revisa los permisos del navegador.')
++      }
+     }
+   }
+ 
++  useEffect(() => {
++    if (!modalAbierto) return
++    const elementoPrevio = document.activeElement as HTMLElement | null
++    cerrarModalRef.current?.focus()
++    const onKeyDown = (event: KeyboardEvent) => {
++      if (event.key === 'Escape') {
++        setModalAbierto(false)
++        return
++      }
++      if (event.key !== 'Tab' || !modalRef.current) return
++      const focos = Array.from(
++        modalRef.current.querySelectorAll<HTMLElement>('button:not([disabled]), input, textarea, select, [href], [tabindex]:not([tabindex="-1"])')
++      )
++      if (!focos.length) return
++      const primero = focos[0]
++      const ultimo = focos[focos.length - 1]
++      if (event.shiftKey && document.activeElement === primero) {
++        event.preventDefault()
++        ultimo.focus()
++      } else if (!event.shiftKey && document.activeElement === ultimo) {
++        event.preventDefault()
++        primero.focus()
++      }
++    }
++    document.addEventListener('keydown', onKeyDown)
++    return () => {
++      document.removeEventListener('keydown', onKeyDown)
++      elementoPrevio?.focus()
++    }
++  }, [modalAbierto])
++
++  useEffect(() => {
++    if (!cargandoIframe) return
++    const timeout = window.setTimeout(() => {
++      setCargandoIframe(false)
++      setErrorIframe(true)
++    }, 20000)
++    return () => window.clearTimeout(timeout)
++  }, [cargandoIframe, iframeKey, tableroActivoId])
++
+   useEffect(() => {
+     const handleFsChange = () => {
+       setIsFullscreen(Boolean(document.fullscreenElement))
+@@ -481,6 +412,17 @@ export default function TablerosDireccionesClient({ session }: Props) {
+     return limpio
+   }
+ 
++  const esUrlPowerBiValida = (url: string): boolean => {
++    if (!url) return true
++    try {
++      const parsed = new URL(url)
++      return parsed.protocol === 'https:' &&
++        (parsed.hostname === 'app.powerbi.com' || parsed.hostname === 'embedded.powerbi.com')
++    } catch {
++      return false
++    }
++  }
++
+   // Guardar Tablero (Nuevo o Editado)
+   const guardarTablero = async (e: React.FormEvent) => {
+     e.preventDefault()
+@@ -490,12 +432,17 @@ export default function TablerosDireccionesClient({ session }: Props) {
+     }
+ 
+     const urlEmbedExtraida = procesarUrlIframe(formIframeInput)
++    if (!esUrlPowerBiValida(urlEmbedExtraida)) {
++      toast.error('Ingresa una URL HTTPS v├ílida del dominio powerbi.com')
++      return
++    }
+     const esPowerBi = Boolean(urlEmbedExtraida)
+ 
++    setGuardando(true)
+     try {
+       if (tableroEnEdicion) {
+         // Sincronizar en backend
+-        await fetch(`/api/tableros/${tableroEnEdicion.id}`, {
++        const res = await fetch(`/api/tableros/${tableroEnEdicion.id}`, {
+           method: 'PUT',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({
+@@ -509,24 +456,8 @@ export default function TablerosDireccionesClient({ session }: Props) {
+             estado: formEstado,
+           }),
+         })
++        if (!res.ok) throw new Error(`No se pudo actualizar el tablero (${res.status})`)
+ 
+-        const actualizados = tablerosList.map(t => {
+-          if (t.id === tableroEnEdicion.id) {
+-            return {
+-              ...t,
+-              titulo: formTitulo.trim(),
+-              subtitulo: formSubtitulo.trim(),
+-              direccion: formDireccion,
+-              tipo: esPowerBi ? ('powerbi' as const) : ('proximamente' as const),
+-              urlEmbed: urlEmbedExtraida || undefined,
+-              descripcion: formDescripcion.trim(),
+-              responsable: formResponsable.trim(),
+-              estado: formEstado,
+-            }
+-          }
+-          return t
+-        })
+-        guardarEnStorage(actualizados)
+         toast.success('Tablero actualizado correctamente')
+         await cargarTablerosDesdeBackend()
+       } else {
+@@ -547,70 +478,48 @@ export default function TablerosDireccionesClient({ session }: Props) {
+             estado: formEstado,
+           }),
+         })
++        if (!res.ok) throw new Error(`No se pudo registrar el tablero (${res.status})`)
+ 
+         let idCreado = nuevoId
+-        if (res && res.ok) {
+-          try {
+-            const creado = await res.json()
+-            if (creado && creado.id) {
+-              idCreado = creado.id
+-            }
+-          } catch {}
++        try {
++          const creado = await res.json()
++          if (creado && creado.id) idCreado = creado.id
++        } catch {
++          throw new Error('El servidor devolvi├│ una respuesta inv├ílida')
+         }
+ 
+-        const nuevoItem: TableroItem = {
+-          id: idCreado,
+-          titulo: formTitulo.trim(),
+-          subtitulo: formSubtitulo.trim() || 'Tablero anal├¡tico institucional',
+-          direccion: formDireccion,
+-          tipo: esPowerBi ? 'powerbi' : 'proximamente',
+-          urlEmbed: urlEmbedExtraida || undefined,
+-          descripcion: formDescripcion.trim() || 'Reporte de seguimiento de gesti├│n para la direcci├│n de l├¡nea.',
+-          actualizacion: 'Actualizado recientemente',
+-          estado: formEstado,
+-          responsable: formResponsable.trim() || session.nombre || 'Especialista DGNNA',
+-          esPersonalizado: true,
+-        }
+-        const nuevaLista = [...tablerosList, nuevoItem]
+-        guardarEnStorage(nuevaLista)
+         setTableroActivoId(idCreado)
+         toast.success('Nuevo tablero registrado con ├®xito')
+         await cargarTablerosDesdeBackend()
+       }
+-    } catch {
+-      toast.error('Hubo un inconveniente al guardar')
++      setModalAbierto(false)
++      setCargandoIframe(true)
++    } catch (error) {
++      toast.error(error instanceof Error ? error.message : 'Hubo un inconveniente al guardar')
++    } finally {
++      setGuardando(false)
+     }
+-
+-    setModalAbierto(false)
+-    setCargandoIframe(true)
+   }
+ 
+   // Eliminar Tablero
+   const eliminarTablero = async (id: string) => {
+     if (confirm('┬┐Est├ís seguro de eliminar este tablero de la lista?')) {
+       try {
+-        await fetch(`/api/tableros/${id}`, { method: 'DELETE' })
+-      } catch {}
++        const res = await fetch(`/api/tableros/${id}`, { method: 'DELETE' })
++        if (!res.ok) throw new Error(`No se pudo eliminar el tablero (${res.status})`)
++      } catch (error) {
++        toast.error(error instanceof Error ? error.message : 'No se pudo eliminar el tablero')
++        return
++      }
+ 
+-      const filtrados = tablerosList.filter(t => t.id !== id)
+-      guardarEnStorage(filtrados)
+       if (tableroActivoId === id) {
+-        setTableroActivoId(filtrados[0]?.id || 'dsld-general-v3')
++        setTableroActivoId(null)
+       }
+       toast.success('Tablero eliminado')
+       await cargarTablerosDesdeBackend()
+     }
+   }
+ 
+-  // Restaurar Cat├ílogo por Defecto
+-  const restaurarCatalogo = () => {
+-    if (confirm('┬┐Deseas restablecer los tableros al cat├ílogo original oficial?')) {
+-      guardarEnStorage(TABLEROS_BASE)
+-      setTableroActivoId('dsld-general-v3')
+-      toast.success('Cat├ílogo oficial restablecido')
+-    }
+-  }
+-
+   // Filtrado de tableros por b├║squeda si existe
+   const tablerosPorDireccion = (dir: DireccionCodigo) => {
+     return tablerosList.filter(t => {
+@@ -622,12 +531,12 @@ export default function TablerosDireccionesClient({ session }: Props) {
+   }
+ 
+   return (
+-    <div className="flex h-screen w-screen bg-[#F8FAFC] text-slate-800 font-sans overflow-hidden">
++    <div className="flex h-screen w-full bg-[#F8FAFC] text-slate-800 font-sans overflow-hidden">
+       {/* ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+           1. MEN├Ü LATERAL IZQUIERDO (SIDEBAR POR DIRECCIONES)
+       ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
+       <aside
+-        className={`bg-white border-r border-slate-200/90 shadow-sm flex flex-col flex-shrink-0 transition-all duration-300 z-30 ${
++        className={`bg-white border-r border-slate-200/90 shadow-sm hidden md:flex flex-col flex-shrink-0 transition-all duration-300 z-30 ${
+           sidebarCollapsed ? 'w-20' : 'w-80'
+         }`}
+       >
+@@ -656,9 +565,11 @@ export default function TablerosDireccionesClient({ session }: Props) {
+           )}
+ 
+           <button
++            type="button"
+             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+             title={sidebarCollapsed ? 'Expandir men├║ lateral' : 'Colapsar men├║ lateral'}
++            aria-label={sidebarCollapsed ? 'Expandir men├║ lateral' : 'Colapsar men├║ lateral'}
+           >
+             {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+           </button>
+@@ -697,6 +608,7 @@ export default function TablerosDireccionesClient({ session }: Props) {
+               <div className="relative flex-1">
+                 <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                 <input
++                  aria-label="Buscar tablero o tema"
+                   type="text"
+                   value={busqueda}
+                   onChange={e => setBusqueda(e.target.value)}
+@@ -708,6 +620,7 @@ export default function TablerosDireccionesClient({ session }: Props) {
+                 type="button"
+                 onClick={() => cargarTablerosDesdeBackend(true)}
+                 title="Sincronizar tableros con el servidor central"
++                aria-label="Sincronizar tableros con el servidor central"
+                 className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:text-blue-600 transition-colors flex-shrink-0 shadow-2xs"
+               >
+                 <RefreshCw className="w-3.5 h-3.5" />
+@@ -728,13 +641,13 @@ export default function TablerosDireccionesClient({ session }: Props) {
+ 
+         {/* Lista de Direcciones y Tableros */}
+         <div className="flex-1 overflow-y-auto px-3 py-2 space-y-3 custom-scrollbar">
+-          {(['DSLD', 'DPNNA', 'DPE', 'DA'] as DireccionCodigo[]).map(codigo => {
++          {(['DSLD', 'DPNNA', 'DPE', 'DA', 'PREVENIR'] as DireccionCodigo[]).map(codigo => {
+             const dir = DIRECCIONES_DATA[codigo]
+             const DirIcon = dir.icono
+             const tableros = tablerosPorDireccion(codigo)
+             const estaAbierta = Boolean(busqueda.trim()) || seccionesAbiertas[codigo]
+             const tieneActivo = tableros.some(t => t.id === tableroActivoId)
+-            const tienePbi = tableros.some(t => t.tipo === 'powerbi')
++            const tienePbi = tableros.some(t => t.tipo === 'powerbi' && t.estado === 'activo' && Boolean(t.urlEmbed))
+ 
+             if (sidebarCollapsed) {
+               return (
+@@ -771,6 +684,8 @@ export default function TablerosDireccionesClient({ session }: Props) {
+                 {/* Header de la Direcci├│n (Acorde├│n) */}
+                 <button
+                   onClick={() => toggleSeccion(codigo)}
++                  aria-expanded={estaAbierta}
++                  aria-controls={`tableros-${codigo}`}
+                   className="w-full px-3 py-2.5 flex items-center justify-between text-left hover:bg-slate-50/80 transition-colors"
+                 >
+                   <div className="flex items-center gap-2.5 min-w-0">
+@@ -802,7 +717,7 @@ export default function TablerosDireccionesClient({ session }: Props) {
+ 
+                 {/* Sub-items de Tableros */}
+                 {estaAbierta && (
+-                  <div className="px-2 pb-2 pt-1 space-y-1 border-t border-slate-100/80">
++                  <div id={`tableros-${codigo}`} className="px-2 pb-2 pt-1 space-y-1 border-t border-slate-100/80">
+                     {tableros.map(item => {
+                       const isSelected = item.id === tableroActivoId
+ 
+@@ -870,13 +785,14 @@ export default function TablerosDireccionesClient({ session }: Props) {
+ 
+                           {/* Acciones de edici├│n r├ípida en hover */}
+                           {puedeGestionar && (
+-                            <div className="absolute right-1.5 top-2 hidden group-hover:flex items-center gap-1 z-10">
++                            <div className="absolute right-1.5 top-2 flex sm:hidden sm:group-hover:flex sm:group-focus-within:flex items-center gap-1 z-10">
+                               <button
+                                 onClick={e => {
+                                   e.stopPropagation()
+                                   abrirModalEditar(item)
+                                 }}
+                                 title="Editar tablero"
++                                aria-label={`Editar ${item.titulo}`}
+                                 className={`p-1 rounded-md transition-colors ${
+                                   isSelected
+                                     ? 'bg-blue-700 text-white hover:bg-blue-800'
+@@ -885,18 +801,17 @@ export default function TablerosDireccionesClient({ session }: Props) {
+                               >
+                                 <Edit3 className="w-3 h-3" />
+                               </button>
+-                              {item.esPersonalizado && (
+-                                <button
+-                                  onClick={e => {
+-                                    e.stopPropagation()
+-                                    eliminarTablero(item.id)
+-                                  }}
+-                                  title="Eliminar tablero"
+-                                  className="p-1 rounded-md bg-white text-red-600 hover:bg-red-50 shadow-2xs border border-red-200 transition-colors"
+-                                >
+-                                  <Trash2 className="w-3 h-3" />
+-                                </button>
+-                              )}
++                              <button
++                                onClick={e => {
++                                  e.stopPropagation()
++                                  eliminarTablero(item.id)
++                                }}
++                                title="Eliminar tablero"
++                                aria-label={`Eliminar ${item.titulo}`}
++                                className="p-1 rounded-md bg-white text-red-600 hover:bg-red-50 shadow-2xs border border-red-200 transition-colors"
++                              >
++                                <Trash2 className="w-3 h-3" />
++                              </button>
+                             </div>
+                           )}
+                         </div>
+@@ -923,15 +838,6 @@ export default function TablerosDireccionesClient({ session }: Props) {
+                 </div>
+               </div>
+ 
+-              {puedeGestionar && (
+-                <button
+-                  onClick={restaurarCatalogo}
+-                  title="Restaurar cat├ílogo oficial"
+-                  className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition-colors"
+-                >
+-                  <RefreshCw className="w-3.5 h-3.5" />
+-                </button>
+-              )}
+             </div>
+           ) : (
+             <div className="flex justify-center">
+@@ -950,6 +856,29 @@ export default function TablerosDireccionesClient({ session }: Props) {
+         ref={contenedorRef}
+         className="flex-1 flex flex-col min-w-0 h-screen bg-[#F8FAFC] overflow-hidden"
+       >
++        <div className="md:hidden flex-shrink-0 border-b border-slate-200 bg-white p-3">
++          <label htmlFor="selector-tablero-movil" className="sr-only">Seleccionar tablero</label>
++          <select
++            id="selector-tablero-movil"
++            value={tableroActivoId || ''}
++            onChange={event => {
++              const seleccionado = tablerosList.find(t => t.id === event.target.value)
++              if (seleccionado) seleccionarTablero(seleccionado)
++              else irAInicio()
++            }}
++            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
++          >
++            <option value="">Inicio / Selecciona un tablero</option>
++            {(['DSLD', 'DPNNA', 'DPE', 'DA', 'PREVENIR'] as DireccionCodigo[]).map(codigo => {
++              const items = tablerosPorDireccion(codigo)
++              return items.length > 0 ? (
++                <optgroup key={codigo} label={`${codigo} ÔÇö ${DIRECCIONES_DATA[codigo].nombreCompleto}`}>
++                  {items.map(item => <option key={item.id} value={item.id}>{item.titulo}</option>)}
++                </optgroup>
++              ) : null
++            })}
++          </select>
++        </div>
+         {/* ÔöÇÔöÇ CASO A: PANTALLA DE INICIO (HOME / BIENVENIDA COMPACTA Y SOBRIA) ÔöÇÔöÇ */}
+         {!tableroActivo || !direccionConfig ? (
+           <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[#F8FAFC]">
+@@ -969,7 +898,7 @@ export default function TablerosDireccionesClient({ session }: Props) {
+                     </span>
+                   </div>
+                   <p className="text-[11px] text-slate-500 truncate">
+-                    Monitoreo y seguimiento estrat├®gico de las cuatro Direcciones de L├¡nea
++                    Monitoreo de cuatro Direcciones de L├¡nea y la estrategia Prevenir para Proteger
+                   </p>
+                 </div>
+               </div>
+@@ -1007,14 +936,27 @@ export default function TablerosDireccionesClient({ session }: Props) {
+                 </div>
+               </div>
+ 
+-              {/* Grid 2x2 de las 4 Direcciones (Alturas calibradas para entrar sin scroll) */}
+-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-auto">
+-                {(['DSLD', 'DPNNA', 'DPE', 'DA'] as DireccionCodigo[]).map(codigo => {
++              {catalogoCargado && tablerosList.length === 0 && (
++                <div role="status" className="my-4 rounded-xl border border-slate-200 bg-white p-6 text-center">
++                  <LayoutDashboard className="mx-auto mb-2 h-8 w-8 text-slate-400" />
++                  <p className="text-sm font-bold text-slate-800">No hay tableros registrados</p>
++                  <p className="mt-1 text-xs text-slate-500">El cat├ílogo del servidor est├í vac├¡o.</p>
++                  {puedeGestionar && (
++                    <button type="button" onClick={() => abrirModalCrear()} className="mt-3 rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700">
++                      Registrar primer tablero
++                    </button>
++                  )}
++                </div>
++              )}
++
++              {/* Grid de las 5 Direcciones y Estrategias */}
++              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 my-auto max-h-full overflow-y-auto pr-1">
++                {(['DSLD', 'DPNNA', 'DPE', 'DA', 'PREVENIR'] as DireccionCodigo[]).map(codigo => {
+                   const dir = DIRECCIONES_DATA[codigo]
+                   const DirIcon = dir.icono
+                   const tableros = tablerosPorDireccion(codigo)
+                   const tablerosPbi = tableros.filter(t => t.tipo === 'powerbi')
+-                  const tienePbi = tablerosPbi.length > 0
++                  const tienePbi = tablerosPbi.some(t => t.estado === 'activo' && Boolean(t.urlEmbed))
+ 
+                   return (
+                     <div
+@@ -1070,13 +1012,14 @@ export default function TablerosDireccionesClient({ session }: Props) {
+                               seleccionarTablero(tableros[0])
+                             }
+                           }}
++                          disabled={tableros.length === 0}
+                           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                             tienePbi
+                               ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-2xs active:scale-95'
+-                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
++                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:cursor-not-allowed disabled:opacity-50'
+                           }`}
+                         >
+-                          <span>{tienePbi ? `Ingresar al Tablero ${dir.codigo}` : `Ver Informaci├│n ${dir.codigo}`}</span>
++                          <span>{tableros.length === 0 ? 'Sin tableros registrados' : tienePbi ? `Ingresar al Tablero ${dir.codigo}` : `Ver Informaci├│n ${dir.codigo}`}</span>
+                           <ChevronRight className="w-3.5 h-3.5" />
+                         </button>
+ 
+@@ -1084,6 +1027,7 @@ export default function TablerosDireccionesClient({ session }: Props) {
+                           <button
+                             onClick={() => abrirModalCrear(codigo)}
+                             title={`Vincular nuevo tablero a ${codigo}`}
++                            aria-label={`Vincular nuevo tablero a ${codigo}`}
+                             className="p-1.5 rounded-lg text-slate-400 hover:text-blue-700 hover:bg-slate-100 transition-colors"
+                           >
+                             <Plus className="w-3.5 h-3.5" />
+@@ -1111,6 +1055,7 @@ export default function TablerosDireccionesClient({ session }: Props) {
+                 <button
+                   onClick={irAInicio}
+                   title="Volver a la pantalla de inicio del m├│dulo"
++                  aria-label="Volver a la pantalla de inicio del m├│dulo"
+                   className="p-1.5 rounded-lg text-slate-400 hover:text-blue-700 hover:bg-blue-50 transition-colors"
+                 >
+                   <ArrowLeft className="w-4 h-4" />
+@@ -1132,9 +1077,21 @@ export default function TablerosDireccionesClient({ session }: Props) {
+                       {direccionConfig.nombreCorto} ┬À {direccionConfig.nombreCompleto}
+                     </span>
+                     <span className="text-slate-300">ÔÇó</span>
+-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+-                      {tableroActivo.estado === 'activo' ? 'En L├¡nea' : 'Pr├│ximamente'}
++                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-extrabold rounded-full border ${
++                      tableroActivo.tipo === 'powerbi' && tableroActivo.estado === 'activo' && tableroActivo.urlEmbed
++                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
++                        : tableroActivo.estado === 'desarrollo'
++                          ? 'bg-amber-50 text-amber-700 border-amber-200'
++                          : 'bg-slate-100 text-slate-600 border-slate-200'
++                    }`}>
++                      <span className={`w-1.5 h-1.5 rounded-full ${
++                        tableroActivo.tipo === 'powerbi' && tableroActivo.estado === 'activo' && tableroActivo.urlEmbed
++                          ? 'bg-emerald-500 animate-pulse'
++                          : tableroActivo.estado === 'desarrollo' ? 'bg-amber-500' : 'bg-slate-400'
++                      }`} />
++                      {tableroActivo.tipo === 'powerbi' && tableroActivo.estado === 'activo' && tableroActivo.urlEmbed
++                        ? 'En L├¡nea'
++                        : tableroActivo.estado === 'desarrollo' ? 'En Desarrollo' : 'Planificado'}
+                     </span>
+                   </div>
+                   <h2
+@@ -1227,7 +1184,7 @@ export default function TablerosDireccionesClient({ session }: Props) {
+               {tableroActivo.tipo === 'powerbi' && tableroActivo.urlEmbed ? (
+                 <div className="w-full h-full relative bg-white rounded-2xl shadow-sm border border-slate-200/90 overflow-hidden flex flex-col">
+                   {/* Spinner / Skeleton de Carga */}
+-                  {cargandoIframe && (
++                  {cargandoIframe && !errorIframe && (
+                     <div className="absolute inset-0 z-20 bg-slate-50/95 flex flex-col items-center justify-center gap-3 backdrop-blur-xs">
+                       <div className="w-12 h-12 rounded-2xl bg-blue-600/10 border border-blue-200 flex items-center justify-center">
+                         <RotateCw className="w-6 h-6 text-blue-600 animate-spin" />
+@@ -1241,13 +1198,29 @@ export default function TablerosDireccionesClient({ session }: Props) {
+                     </div>
+                   )}
+ 
++                  {errorIframe && (
++                    <div role="alert" className="absolute inset-0 z-20 bg-slate-50 flex flex-col items-center justify-center gap-3 p-6 text-center">
++                      <Info className="w-8 h-8 text-amber-600" />
++                      <p className="text-sm font-bold text-slate-800">El tablero est├í tardando demasiado en responder</p>
++                      <p className="text-xs text-slate-600">Comprueba tu conexi├│n o intenta cargar nuevamente.</p>
++                      <button type="button" onClick={recargarIframe} className="px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700">
++                        Reintentar
++                      </button>
++                    </div>
++                  )}
++
+                   {/* Contenedor del Iframe Oficial */}
+                   <iframe
+                     key={iframeKey}
+                     title={tableroActivo.titulo}
+                     src={tableroActivo.urlEmbed}
+                     allowFullScreen={true}
+-                    onLoad={() => setCargandoIframe(false)}
++                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
++                    referrerPolicy="strict-origin-when-cross-origin"
++                    onLoad={() => {
++                      setCargandoIframe(false)
++                      setErrorIframe(false)
++                    }}
+                     className="w-full h-full border-0 rounded-2xl"
+                   />
+                 </div>
+@@ -1324,7 +1297,13 @@ export default function TablerosDireccionesClient({ session }: Props) {
+       ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ */}
+       {modalAbierto && (
+         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
++          <div
++            ref={modalRef}
++            role="dialog"
++            aria-modal="true"
++            aria-labelledby="modal-tablero-titulo"
++            className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full max-h-[calc(100vh-2rem)] overflow-y-auto animate-in fade-in zoom-in-95 duration-150"
++          >
+             {/* Cabecera del Modal */}
+             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
+               <div className="flex items-center gap-2.5">
+@@ -1332,7 +1311,7 @@ export default function TablerosDireccionesClient({ session }: Props) {
+                   <LayoutDashboard className="w-4 h-4" />
+                 </div>
+                 <div>
+-                  <h3 className="text-sm font-bold text-slate-900">
++                  <h3 id="modal-tablero-titulo" className="text-sm font-bold text-slate-900">
+                     {tableroEnEdicion ? 'Editar Tablero de Direcci├│n' : 'Nuevo Tablero de Direcci├│n'}
+                   </h3>
+                   <p className="text-[11px] text-slate-500">
+@@ -1341,7 +1320,10 @@ export default function TablerosDireccionesClient({ session }: Props) {
+                 </div>
+               </div>
+               <button
++                ref={cerrarModalRef}
++                type="button"
+                 onClick={() => setModalAbierto(false)}
++                aria-label="Cerrar formulario de tablero"
+                 className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+               >
+                 <X className="w-5 h-5" />
+@@ -1352,17 +1334,18 @@ export default function TablerosDireccionesClient({ session }: Props) {
+             <form onSubmit={guardarTablero} className="p-5 space-y-4">
+               {/* Selector de Direcci├│n de L├¡nea (Botonera 1-clic) */}
+               <div>
+-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
++                <span id="direccion-label" className="block text-xs font-bold text-slate-700 mb-1.5">
+                   Direcci├│n de L├¡nea
+-                </label>
+-                <div className="grid grid-cols-4 gap-2">
+-                  {(['DSLD', 'DPNNA', 'DPE', 'DA'] as DireccionCodigo[]).map(cod => {
++                </span>
++                <div role="group" aria-labelledby="direccion-label" className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
++                  {(['DSLD', 'DPNNA', 'DPE', 'DA', 'PREVENIR'] as DireccionCodigo[]).map(cod => {
+                     const sel = formDireccion === cod
+                     return (
+                       <button
+                         key={cod}
+                         type="button"
+                         onClick={() => setFormDireccion(cod)}
++                        aria-pressed={sel}
+                         className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-1 ${
+                           sel
+                             ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+@@ -1378,10 +1361,11 @@ export default function TablerosDireccionesClient({ session }: Props) {
+ 
+               {/* T├¡tulo */}
+               <div>
+-                <label className="block text-xs font-bold text-slate-700 mb-1">
++                <label htmlFor="tablero-titulo" className="block text-xs font-bold text-slate-700 mb-1">
+                   T├¡tulo del Tablero *
+                 </label>
+                 <input
++                  id="tablero-titulo"
+                   type="text"
+                   required
+                   value={formTitulo}
+@@ -1393,10 +1377,11 @@ export default function TablerosDireccionesClient({ session }: Props) {
+ 
+               {/* Subt├¡tulo */}
+               <div>
+-                <label className="block text-xs font-bold text-slate-700 mb-1">
++                <label htmlFor="tablero-subtitulo" className="block text-xs font-bold text-slate-700 mb-1">
+                   Subt├¡tulo o Tem├ítica
+                 </label>
+                 <input
++                  id="tablero-subtitulo"
+                   type="text"
+                   value={formSubtitulo}
+                   onChange={e => setFormSubtitulo(e.target.value)}
+@@ -1407,10 +1392,11 @@ export default function TablerosDireccionesClient({ session }: Props) {
+ 
+               {/* URL o C├│digo Iframe */}
+               <div>
+-                <label className="block text-xs font-bold text-slate-700 mb-1">
++                <label htmlFor="tablero-url" className="block text-xs font-bold text-slate-700 mb-1">
+                   URL de Power BI o C├│digo &lt;iframe&gt; completo
+                 </label>
+                 <textarea
++                  id="tablero-url"
+                   rows={3}
+                   value={formIframeInput}
+                   onChange={e => setFormIframeInput(e.target.value)}
+@@ -1425,12 +1411,13 @@ export default function TablerosDireccionesClient({ session }: Props) {
+               {/* Estado y Responsable */}
+               <div className="grid grid-cols-2 gap-3">
+                 <div>
+-                  <label className="block text-xs font-bold text-slate-700 mb-1">
++                  <label htmlFor="tablero-estado" className="block text-xs font-bold text-slate-700 mb-1">
+                     Estado
+                   </label>
+                   <select
++                    id="tablero-estado"
+                     value={formEstado}
+-                    onChange={e => setFormEstado(e.target.value as any)}
++                    onChange={e => setFormEstado(e.target.value as 'activo' | 'desarrollo' | 'planificado')}
+                     className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-500 outline-none bg-white"
+                   >
+                     <option value="activo">­ƒƒó Activo (En L├¡nea)</option>
+@@ -1440,10 +1427,11 @@ export default function TablerosDireccionesClient({ session }: Props) {
+                 </div>
+ 
+                 <div>
+-                  <label className="block text-xs font-bold text-slate-700 mb-1">
++                  <label htmlFor="tablero-responsable" className="block text-xs font-bold text-slate-700 mb-1">
+                     Responsable / Equipo
+                   </label>
+                   <input
++                    id="tablero-responsable"
+                     type="text"
+                     value={formResponsable}
+                     onChange={e => setFormResponsable(e.target.value)}
+@@ -1464,10 +1452,12 @@ export default function TablerosDireccionesClient({ session }: Props) {
+                 </button>
+                 <button
+                   type="submit"
++                  disabled={guardando}
++                  aria-busy={guardando}
+                   className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-1.5"
+                 >
+                   <Check className="w-4 h-4" />
+-                  <span>{tableroEnEdicion ? 'Guardar Cambios' : 'Registrar Tablero'}</span>
++                  <span>{guardando ? 'GuardandoÔÇª' : tableroEnEdicion ? 'Guardar Cambios' : 'Registrar Tablero'}</span>
+                 </button>
+               </div>
+             </form>

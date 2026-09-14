@@ -1,17 +1,12 @@
-"""
-Conexión a la base de datos.
+"""Conexión Oracle del backend.
 
-MODO DESARROLLO  → SQLite (sin instalación adicional)
-MODO PRODUCCIÓN  → Oracle (cambiar DATABASE_URL en .env)
-
-Para cambiar a Oracle cuando esté listo:
-  1. Instalar: pip install oracledb
-  2. En .env cambiar DATABASE_URL a:
-     oracle+oracledb://usuario:password@host:1521/?service_name=ORCL
+SQLite no es un motor de ejecución del Sistema DGNNA. Solo se admite cuando
+``TESTING=true`` para pruebas unitarias efímeras y aisladas.
 """
 
 import os
 from sqlalchemy import create_engine
+from sqlalchemy.engine import make_url
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
@@ -19,9 +14,21 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+TESTING = os.getenv("TESTING", "").strip().lower() == "true"
 
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL no encontrada en el archivo .env. Por favor, configura la conexión a Oracle.")
+
+DATABASE_DIALECT = make_url(DATABASE_URL).get_backend_name()
+
+if DATABASE_DIALECT == "sqlite" and not TESTING:
+    raise ValueError(
+        "SQLite no está permitido en ejecución normal. Configure DATABASE_URL "
+        "con oracle+oracledb:// o use TESTING=true únicamente en pruebas aisladas."
+    )
+
+if DATABASE_DIALECT not in ({"oracle", "sqlite"} if TESTING else {"oracle"}):
+    raise ValueError("Solo se admite Oracle; SQLite está reservado para TESTING=true.")
 
 engine = create_engine(DATABASE_URL)
 
