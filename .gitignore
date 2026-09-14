@@ -9,3 +9,7 @@ __pycache__/
 *.exe
 *.zip
 *.xlsx
+
+# Secretos de entorno (no versionar)
+.env
+.env.local
