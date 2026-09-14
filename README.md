@@ -34,6 +34,16 @@ Para consultar el mapa topológico completo y los diagramas Mermaid, revisa el a
 
 ## 🚀 Puesta en Marcha Rápida (Docker)
 
+0. **Configurar el secreto de sesión (obligatorio, una sola vez):**
+   ```powershell
+   copy .env.example .env
+   ```
+   Luego abre `.env` y reemplaza `SESSION_SECRET=` por un valor generado con
+   `openssl rand -hex 32` (o cualquier cadena aleatoria larga). Este secreto
+   firma las cookies de sesión de todos los servicios y del frontend — ya no
+   existe un valor por defecto en el código; si falta, los contenedores no
+   arrancan.
+
 1. **Levantar todo el ecosistema:**
    ```powershell
    docker compose up -d

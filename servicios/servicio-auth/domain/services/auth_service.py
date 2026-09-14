@@ -11,7 +11,13 @@ import jwt as pyjwt
 
 from domain.ports.usuario_repository import UsuarioRepository
 
-SECRET_KEY   = os.getenv("SESSION_SECRET", "dgnna-sistema-dgnna-secret-2026")
+TESTING = os.getenv("TESTING", "").strip().lower() == "true"
+SECRET_KEY = os.getenv("SESSION_SECRET") or ("dgnna-test-secret-no-usar-en-produccion" if TESTING else None)
+if not SECRET_KEY:
+    raise RuntimeError(
+        "SESSION_SECRET no está definido. Defínelo en el archivo .env "
+        "(no existe valor por defecto; genera uno con: openssl rand -hex 32)."
+    )
 ALGORITHM    = "HS256"
 EXPIRE_MINUTES = 480  # sesión dura 8 horas (jornada laboral completa)
 
@@ -34,6 +40,59 @@ class AuthService:
         if not bcrypt.checkpw(password.encode(), usuario.passwordHash.encode()):
             raise PermissionError("Credenciales incorrectas")
 
+        rol, modulos_payload = self._rol_y_modulos_normalizados(usuario)
+
+        token = self._crear_token({
+            "userId":    usuario.id,
+            "nombre":    usuario.nombre,
+            "email":     usuario.email,
+            "rol":       rol,
+            "direccion": usuario.direccion or "",
+            "modulos":   modulos_payload,
+        })
+
+        return {
+            "ok":           True,
+            "nombre":       usuario.nombre,
+            "rol":          rol,
+            "direccion":    usuario.direccion,
+            "modulos":      modulos_payload,
+            "access_token": token,
+        }
+
+    def verificar_token(self, token: str) -> Optional[dict]:
+        try:
+            return pyjwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        except pyjwt.PyJWTError:
+            return None
+
+    def estado_actual(self, token: str) -> dict:
+        """Revalida un token contra la base de datos (no solo contra su firma).
+
+        El middleware del frontend llama a esto periódicamente durante la
+        renovación deslizante de la cookie de sesión, para que desactivar o
+        cambiar el rol/módulos de un usuario corte su sesión ya iniciada en
+        vez de esperar a que el token expire (hasta 8 horas después).
+        """
+        payload = self.verificar_token(token)
+        if not payload:
+            raise PermissionError("Token inválido o expirado")
+
+        usuario_id = payload.get("userId")
+        usuario = self._usuarios.obtener_por_id(usuario_id) if usuario_id else None
+        if not usuario or not usuario.activo:
+            raise PermissionError("La cuenta fue desactivada o ya no existe")
+
+        rol, modulos_payload = self._rol_y_modulos_normalizados(usuario)
+        return {
+            "activo":    True,
+            "rol":       rol,
+            "direccion": usuario.direccion or "",
+            "modulos":   modulos_payload,
+        }
+
+    @staticmethod
+    def _rol_y_modulos_normalizados(usuario) -> tuple[str, list[dict]]:
         # El rol global es independiente de los roles asignados por modulo.
         # Un permiso de lectura como "directora" nunca debe elevar al usuario
         # a una identidad global distinta de "usuario".
@@ -51,27 +110,7 @@ class AuthService:
             rol_modulo = "registrador" if usuario.rol == "registrador" else "directora"
             modulos_payload = [{"modulo": "apelaciones", "rolModulo": rol_modulo}]
 
-        token = self._crear_token({
-            "userId":  usuario.id,
-            "nombre":  usuario.nombre,
-            "email":   usuario.email,
-            "rol":     rol,
-            "modulos": modulos_payload,
-        })
-
-        return {
-            "ok":           True,
-            "nombre":       usuario.nombre,
-            "rol":          rol,
-            "modulos":      modulos_payload,
-            "access_token": token,
-        }
-
-    def verificar_token(self, token: str) -> Optional[dict]:
-        try:
-            return pyjwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        except pyjwt.PyJWTError:
-            return None
+        return rol, modulos_payload
 
     @staticmethod
     def hash_password(password: str) -> str:

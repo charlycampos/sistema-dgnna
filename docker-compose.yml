@@ -18,6 +18,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
       - BACKEND_URL=http://gateway:8000
       - BACKEND_INTERNAL_URL=http://gateway:8000
       - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
@@ -38,7 +39,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
       - AUTH_SERVICE_URL=http://auth-service:8001
       - APELACIONES_SERVICE_URL=http://apelaciones-service:8002
       - SUSTRACION_SERVICE_URL=http://sustracion-service:8003
@@ -51,6 +52,7 @@ services:
       - PREVENIR_PROTEGER_SERVICE_URL=http://prevenir-service:8010
       - NORMATIVA_SERVICE_URL=http://normativa-service:8011
       - TABLEROS_SERVICE_URL=http://tableros-service:8012
+      - AYUDA_MEMORIA_SERVICE_URL=http://ayuda-memoria-service:8013
     networks:
       - dgnna-net
 
@@ -67,7 +69,7 @@ services:
       - "8001:8001"
     environment:
       - PORT=8001
-      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
       - DATABASE_URL=${DATABASE_URL_AUTH:-oracle+oracledb://auth_db:Auth2026@host.docker.internal:1521/?service_name=XEPDB1}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -87,7 +89,7 @@ services:
       - "8002:8002"
     environment:
       - PORT=8002
-      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
       - DATABASE_URL=${DATABASE_URL_APELACIONES:-oracle+oracledb://apelaciones_db:Apelaciones2026@host.docker.internal:1521/?service_name=XEPDB1}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -107,7 +109,7 @@ services:
       - "8003:8003"
     environment:
       - PORT=8003
-      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
       - DATABASE_URL=${DATABASE_URL_SUSTRACION:-oracle+oracledb://sustracion_db:Sustracion2026@host.docker.internal:1521/?service_name=XEPDB1}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -127,7 +129,7 @@ services:
       - "8004:8004"
     environment:
       - PORT=8004
-      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
       - DATABASE_URL=${DATABASE_URL_SALA:-oracle+oracledb://sala_db:Sala2026@host.docker.internal:1521/?service_name=XEPDB1}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -147,7 +149,7 @@ services:
       - "8005:8005"
     environment:
       - PORT=8005
-      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
       - DATABASE_URL=${DATABASE_URL_PROYECTOS_LEY:-oracle+oracledb://PROYECTOS_LEY_DB:proyectos_ley_2026@host.docker.internal:1521/?service_name=XEPDB1}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -167,7 +169,7 @@ services:
       - "8006:8006"
     environment:
       - PORT=8006
-      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
       - DATABASE_URL=${DATABASE_URL_TRANSPARENCIA:-oracle+oracledb://TRANSPARENCIA_DB:123456@host.docker.internal:1521/?service_name=XEPDB1}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -187,7 +189,7 @@ services:
       - "8007:8007"
     environment:
       - PORT=8007
-      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
       - DATABASE_URL=${DATABASE_URL_POI:-oracle+oracledb://poi_db:Poi2026@host.docker.internal:1521/?service_name=XEPDB1}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -207,7 +209,7 @@ services:
       - "8008:8008"
     environment:
       - PORT=8008
-      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
       - DATABASE_URL=${DATABASE_URL_MAPA:-oracle+oracledb://mapa_db:Mapa2026@host.docker.internal:1521/?service_name=XEPDB1}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -227,7 +229,7 @@ services:
       - "8010:8010"
     environment:
       - PORT=8010
-      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
       - DATABASE_URL=${DATABASE_URL_PREVENIR:-oracle+oracledb://prevenir_db:Prevenir2026@host.docker.internal:1521/?service_name=XEPDB1}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -248,7 +250,7 @@ services:
       - "8009:8009"
     environment:
       - PORT=8009
-      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
       - DATABASE_URL=${DATABASE_URL_AUDITORIA:-oracle+oracledb://auditoria_db:Auditoria2026@host.docker.internal:1521/?service_name=XEPDB1}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -269,7 +271,7 @@ services:
       - "8011:8011"
     environment:
       - PORT=8011
-      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
       - DATABASE_URL=${DATABASE_URL_NORMATIVA:-oracle+oracledb://normativa_db:Normativa2026@host.docker.internal:1521/?service_name=XEPDB1}
       - AUDITORIA_SERVICE_URL=http://auditoria-service:8009
       - IA_HABILITADA=true
@@ -298,12 +300,35 @@ services:
       - "8012:8012"
     environment:
       - PORT=8012
-      - SESSION_SECRET=${SESSION_SECRET:-dgnna-sistema-dgnna-secret-2026}
+      - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
       - DATABASE_URL=${DATABASE_URL_TABLEROS:-oracle+oracledb://tableros_db:Tableros2026@host.docker.internal:1521/?service_name=XEPDB1}
+    volumes:
+      - ./data/tableros:/app/data
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
       - dgnna-net
 
+  # 15. MICROSERVICIO: AYUDA MEMORIA
+  ayuda-memoria-service:
+    container_name: dgnna-ayuda-memoria-service-1
+    build:
+      context: ./servicios/servicio-ayuda-memoria
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    mem_limit: 256m
+    ports:
+      - "8013:8013"
+    environment:
+      - PORT=8013
+      - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
+      - DATABASE_URL=${DATABASE_URL_AYUDA_MEMORIA:-oracle+oracledb://ayuda_memoria_db:AyudaMemoria2026@host.docker.internal:1521/?service_name=XEPDB1}
+      - ALLOW_SQLITE_FALLBACK=true
+    volumes:
+      - ./data/ayuda-memoria:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - dgnna-net
 
 

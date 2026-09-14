@@ -20,29 +20,40 @@ class LoginResponse(BaseModel):
     ok:           bool
     nombre:       str
     rol:          str
+    direccion:    Optional[str] = None
     modulos:      List[ModuloPermisoOut]
     access_token: str
 
+class EstadoActualOut(BaseModel):
+    activo:    bool
+    rol:       str
+    direccion: Optional[str] = None
+    modulos:   List[ModuloPermisoOut]
+
 class UsuarioCreate(BaseModel):
-    nombre:   str
-    email:    str
-    password: str
-    rol:      str = "usuario"
-    modulos:  Optional[List[ModuloPermisoIn]] = None
+    nombre:    str
+    email:     str
+    password:  str
+    rol:       str = "usuario"
+    direccion: Optional[str] = None
+    modulos:   Optional[List[ModuloPermisoIn]] = None
 
 class UsuarioUpdate(BaseModel):
-    nombre:   Optional[str] = None
-    email:    Optional[str] = None
-    password: Optional[str] = None
-    rol:      Optional[str] = None
-    activo:   Optional[bool] = None
-    modulos:  Optional[List[ModuloPermisoIn]] = None
+    nombre:    Optional[str] = None
+    email:     Optional[str] = None
+    password:  Optional[str] = None
+    rol:       Optional[str] = None
+    # "" limpia la dirección asignada; None deja el valor actual sin tocar.
+    direccion: Optional[str] = None
+    activo:    Optional[bool] = None
+    modulos:   Optional[List[ModuloPermisoIn]] = None
 
 class UsuarioOut(BaseModel):
     id:        str
     nombre:    str
     email:     str
     rol:       str
+    direccion: Optional[str] = None
     activo:    bool
     modulos:   List[ModuloPermisoOut] = []
     createdAt: datetime

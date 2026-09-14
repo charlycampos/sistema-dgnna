@@ -30,9 +30,16 @@ SERVICES = {
     "prevenir-proteger": os.getenv("PREVENIR_PROTEGER_SERVICE_URL", "http://localhost:8010"),
     "normativa":       os.getenv("NORMATIVA_SERVICE_URL",       "http://localhost:8011"),
     "tableros":        os.getenv("TABLEROS_SERVICE_URL",        "http://localhost:8012"),
+    "ayuda-memoria":  os.getenv("AYUDA_MEMORIA_SERVICE_URL",  "http://localhost:8013"),
 }
 
-SECRET_KEY = os.getenv("SESSION_SECRET", "dgnna-sistema-dgnna-secret-2026")
+TESTING = os.getenv("TESTING", "").strip().lower() == "true"
+SECRET_KEY = os.getenv("SESSION_SECRET") or ("dgnna-test-secret-no-usar-en-produccion" if TESTING else None)
+if not SECRET_KEY:
+    raise RuntimeError(
+        "SESSION_SECRET no está definido. Defínelo en el archivo .env "
+        "(no existe valor por defecto; genera uno con: openssl rand -hex 32)."
+    )
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 # ── Rutas públicas (sin autenticación) ───────────────────────────
@@ -62,6 +69,7 @@ ROUTE_MAP = [
     ("/api/prevenir-proteger", "prevenir-proteger"),
     ("/api/normativa",      "normativa"),
     ("/api/tableros",       "tableros"),
+    ("/api/ayuda-memoria", "ayuda-memoria"),
 ]
 
 app = FastAPI(
