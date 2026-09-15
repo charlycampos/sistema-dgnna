@@ -261,6 +261,21 @@ def cobertura(tipo: Optional[str] = None, db: Session = Depends(get_db)):
         totales_dep[dep_c] = totales_dep.get(dep_c, 0) + n
         totales_prov[dep_c + prov_c] = n
 
+    # Mapa completo de ubigeos (departamento, provincia, distrito) en una sola pasada
+    todos_ubigeos = db.query(MapaUbigeo).all()
+    nombres_dep = {u.departamento: u.nombre for u in todos_ubigeos if u.provincia == "00" and u.distrito == "00"}
+    nombres_prov = {(u.departamento + u.provincia): u.nombre for u in todos_ubigeos if u.provincia != "00" and u.distrito == "00"}
+
+    ubigeo_map: dict = {}
+    for u in todos_ubigeos:
+        if u.distrito != "00":
+            ubigeo_map[u.codigo] = {
+                "codigo": u.codigo,
+                "distrito": u.nombre,
+                "provincia": nombres_prov.get(u.departamento + u.provincia, ""),
+                "departamento": nombres_dep.get(u.departamento, ""),
+            }
+
     return {
         "totalesDep": totales_dep,
         "totalesProv": totales_prov,
@@ -269,6 +284,8 @@ def cobertura(tipo: Optional[str] = None, db: Session = Depends(get_db)):
             "direccion": i.direccion, "telefono": i.telefono,
             "horario": i.horario, "lat": i.lat, "lng": i.lng,
             "acreditacion": i.acreditacion,
+            "departamento": i.departamento,
         } for i in insts],
         "distritos": distritos,
+        "catalogoUbigeo": ubigeo_map,
     }

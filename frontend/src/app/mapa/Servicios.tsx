@@ -15,6 +15,13 @@ import {
   HeartHandshake, Home, Landmark, Check, X, RotateCcw
 } from 'lucide-react'
 
+interface UbigeoDetalle {
+  codigo: string
+  distrito: string
+  provincia: string
+  departamento: string
+}
+
 interface Institucion {
   id: string
   nombre: string
@@ -23,6 +30,11 @@ interface Institucion {
   telefono?: string | null
   horario?: string | null
   acreditacion?: string | null
+  departamento?: string | null
+  ubigeo?: string | null
+  distritoNombre?: string | null
+  provinciaNombre?: string | null
+  departamentoNombre?: string | null
 }
 
 interface Cobertura {
@@ -30,6 +42,7 @@ interface Cobertura {
   distritos: Record<string, number[]>
   totalesDep: Record<string, number>
   totalesProv: Record<string, number>
+  catalogoUbigeo?: Record<string, UbigeoDetalle>
 }
 
 interface Opcion { codigo: string; nombre: string }
@@ -182,16 +195,42 @@ export default function Servicios() {
     return indices
   }, [cobertura, departamento, provincia, distrito])
 
+  // Mapa inverso de índice de institución -> código ubigeo distrito
+  const instIdToUbigeo = useMemo(() => {
+    const mapa = new Map<string, string>()
+    if (!cobertura) return mapa
+    Object.entries(cobertura.distritos).forEach(([ubigeo, ids]) => {
+      ids.forEach(idx => {
+        const inst = cobertura.instituciones[idx]
+        if (inst && !mapa.has(inst.id)) {
+          mapa.set(inst.id, ubigeo)
+        }
+      })
+    })
+    return mapa
+  }, [cobertura])
+
   const institucionesAmbito = useMemo(() => {
     if (!cobertura) return []
+    const cat = cobertura.catalogoUbigeo || {}
     const unicas = new Map<string, Institucion>()
     indicesAmbito.forEach(indice => {
       const institucion = cobertura.instituciones[indice]
-      if (institucion) unicas.set(institucion.id, institucion)
+      if (institucion) {
+        const ubigeo = instIdToUbigeo.get(institucion.id) || institucion.ubigeo || null
+        const ubiInfo = ubigeo ? cat[ubigeo] : null
+        unicas.set(institucion.id, {
+          ...institucion,
+          ubigeo: ubigeo || institucion.ubigeo || null,
+          distritoNombre: ubiInfo?.distrito || null,
+          provinciaNombre: ubiInfo?.provincia || null,
+          departamentoNombre: ubiInfo?.departamento || institucion.departamento || null,
+        })
+      }
     })
     return Array.from(unicas.values()).sort((a, b) =>
       a.tipo.localeCompare(b.tipo, 'es') || a.nombre.localeCompare(b.nombre, 'es'))
-  }, [cobertura, indicesAmbito])
+  }, [cobertura, indicesAmbito, instIdToUbigeo])
 
   const resumen = useMemo(() => {
     const agrupado = new Map<string, number>()
@@ -210,7 +249,7 @@ export default function Servicios() {
         if (filtroAcreditacion === 'Inoperativa' && i.acreditacion !== 'Inoperativa') return false
       }
       if (!termino) return true
-      return [i.nombre, i.tipo, i.direccion, i.telefono, i.horario]
+      return [i.nombre, i.tipo, i.direccion, i.telefono, i.horario, i.ubigeo, i.distritoNombre, i.provinciaNombre, i.departamentoNombre]
         .some(valor => valor?.toLocaleLowerCase('es').includes(termino))
     })
   }, [institucionesAmbito, tipo, filtroAcreditacion, busqueda])
@@ -244,7 +283,9 @@ export default function Servicios() {
       inst.direccion ? `📍 Dirección: ${inst.direccion}` : null,
       inst.telefono ? `📞 Teléfono: ${inst.telefono}` : null,
       inst.horario ? `🕒 Horario: ${inst.horario}` : null,
-      `Ámbito: ${nombreAmbito || ''}`,
+      inst.distritoNombre || inst.provinciaNombre || inst.departamentoNombre
+        ? `Ubicación: ${[inst.distritoNombre, inst.provinciaNombre, inst.departamentoNombre].filter(Boolean).join(', ')}${inst.ubigeo ? ` (UBIGEO: ${inst.ubigeo})` : ''}`
+        : `Ámbito: ${nombreAmbito || ''}`,
     ].filter(Boolean).join('\n')
 
     navigator.clipboard.writeText(texto)
@@ -264,9 +305,10 @@ export default function Servicios() {
 
     const filas = listado.map((i, idx) => ({
       'N°': idx + 1,
-      'Departamento': nombreDepartamento || 'Nacional',
-      'Provincia': nombreProvincia || (provincia !== TODOS ? provincia : 'Todas'),
-      'Distrito': nombreDistrito || (distrito !== TODOS ? distrito : 'Todos'),
+      'UBIGEO': i.ubigeo || '',
+      'Departamento': i.departamentoNombre || (esNacional ? 'Nacional' : (nombreDepartamento || 'Nacional')),
+      'Provincia': i.provinciaNombre || (provincia !== TODOS ? (nombreProvincia || provincia) : 'Todas'),
+      'Distrito': i.distritoNombre || (distrito !== TODOS ? (nombreDistrito || distrito) : 'Todos'),
       'Tipo de Servicio': i.tipo,
       'Nombre de la Sede': i.nombre,
       'Acreditación': i.acreditacion || 'No aplica',
@@ -475,7 +517,7 @@ export default function Servicios() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+        <div className="grid grid-flow-col auto-cols-fr gap-2 overflow-x-auto pb-1">
           {resumen.map(item => {
             const estilo = getEstiloTipo(item.nombre)
             const Icono = estilo.icono
