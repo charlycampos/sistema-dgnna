@@ -6,6 +6,24 @@ networks:
 
 services:
   # ─────────────────────────────────────────────────────────────
+  # 0. BALANCEADOR DE CARGA / PROXY REVERSO (NGINX)
+  # ─────────────────────────────────────────────────────────────
+  load-balancer:
+    image: nginx:alpine
+    container_name: dgnna-load-balancer
+    restart: unless-stopped
+    mem_limit: 50m
+    ports:
+      - "80:80"
+      - "8000:8000"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - gateway
+    networks:
+      - dgnna-net
+
+  # ─────────────────────────────────────────────────────────────
   # 1. FRONTEND
   # ─────────────────────────────────────────────────────────────
   frontend:
@@ -19,16 +37,16 @@ services:
     environment:
       - NODE_ENV=production
       - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
-      - BACKEND_URL=http://gateway:8000
-      - BACKEND_INTERNAL_URL=http://gateway:8000
+      - BACKEND_URL=http://load-balancer:8000
+      - BACKEND_INTERNAL_URL=http://load-balancer:8000
       - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
     depends_on:
-      - gateway
+      - load-balancer
     networks:
       - dgnna-net
 
   # ─────────────────────────────────────────────────────────────
-  # 2. API GATEWAY
+  # 2. API GATEWAY (Instancia Principal)
   # ─────────────────────────────────────────────────────────────
   gateway:
     build:
@@ -36,8 +54,39 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     mem_limit: 200m
-    ports:
-      - "8000:8000"
+    environment:
+      - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - APELACIONES_SERVICE_URL=http://apelaciones-service:8002
+      - SUSTRACION_SERVICE_URL=http://sustracion-service:8003
+      - SALA_SERVICE_URL=http://sala-service:8004
+      - PROYECTOS_LEY_SERVICE_URL=http://proyectosley-service:8005
+      - TRANSPARENCIA_SERVICE_URL=http://transparencia-service:8006
+      - POI_PP117_SERVICE_URL=http://poi-service:8007
+      - MAPA_SERVICE_URL=http://mapa-service:8008
+      - AUDITORIA_SERVICE_URL=http://auditoria-service:8009
+      - PREVENIR_PROTEGER_SERVICE_URL=http://prevenir-service:8010
+      - NORMATIVA_SERVICE_URL=http://normativa-service:8011
+      - TABLEROS_SERVICE_URL=http://tableros-service:8012
+      - AYUDA_MEMORIA_SERVICE_URL=http://ayuda-memoria-service:8013
+      - GESTION_DATOS_SERVICE_URL=http://gestion-datos-service:8014
+    networks:
+      - dgnna-net
+
+  # ─────────────────────────────────────────────────────────────
+  # 2.1 API GATEWAY (Segunda Réplica - Alta Disponibilidad OGTI)
+  # Se activa únicamente con: docker compose --profile ha up -d
+  # En desarrollo local permanece apagado (0 consumo de RAM).
+  # ─────────────────────────────────────────────────────────────
+  gateway-2:
+    profiles:
+      - ha
+      - produccion-ogti
+    build:
+      context: ./servicios/api-gateway
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    mem_limit: 200m
     environment:
       - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
       - AUTH_SERVICE_URL=http://auth-service:8001

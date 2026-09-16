@@ -15,7 +15,12 @@ flowchart TD
 
     subgraph DockerBridge["🌐 RED PRIVADA DOCKER (dgnna-net)"]
         Frontend["🎨 Frontend (Next.js 16 / React 19)\nContenedor: dgnna-frontend-1\nPuerto Host: 3000"]
-        Gateway["🛡️ API Gateway (FastAPI)\nContenedor: dgnna-gateway-1\nPuerto Host: 8000"]
+        LB["⚖️ Load Balancer (NGINX:alpine)\nContenedor: dgnna-load-balancer\nPuertos Host: 80 / 8000"]
+        
+        subgraph GatewayCluster["🛡️ CLÚSTER DE API GATEWAYS (ALTA DISPONIBILIDAD)"]
+            Gateway1["Gateway Principal\nContenedor: dgnna-gateway-1\n:8000"]
+            Gateway2["Gateway Réplica (HA OGTI)\nContenedor: dgnna-gateway-2\n:8000"]
+        end
 
         subgraph Microservicios["⚙️ MICROSERVICIOS BACKEND (FastAPI / SQLAlchemy)"]
             S_Auth["1. auth-service\n:8001"]
@@ -55,22 +60,40 @@ flowchart TD
     end
 
     User -->|HTTP Requests| Frontend
-    Frontend -->|Proxy interno http://gateway:8000| Gateway
+    User -.->|Llamadas API directas :8000| LB
+    Frontend -->|Proxy interno http://load-balancer:8000| LB
+    LB -->|Balanceo least_conn| Gateway1
+    LB -.->|Failover / Balanceo HA| Gateway2
 
-    Gateway -->|/api/auth, /api/usuarios| S_Auth
-    Gateway -->|/api/apelaciones, /api/dashboard| S_Apel
-    Gateway -->|/api/sustracion| S_Sust
-    Gateway -->|/api/sala-reuniones| S_Sala
-    Gateway -->|/api/proyectos-ley| S_Pley
-    Gateway -->|/api/transparencia| S_Trans
-    Gateway -->|/api/poi-pp117| S_Poi
-    Gateway -->|/api/mapa| S_Mapa
-    Gateway -->|/api/auditoria| S_Audit
-    Gateway -->|/api/prevenir-proteger| S_Prev
-    Gateway -->|/api/normativa| S_Norm
-    Gateway -->|/api/tableros| S_Tabl
-    Gateway -->|/api/ayuda-memoria| S_Ayud
-    Gateway -->|/api/gestion-datos| S_GDat
+    Gateway1 --> S_Auth
+    Gateway1 --> S_Apel
+    Gateway1 --> S_Sust
+    Gateway1 --> S_Sala
+    Gateway1 --> S_Pley
+    Gateway1 --> S_Trans
+    Gateway1 --> S_Poi
+    Gateway1 --> S_Mapa
+    Gateway1 --> S_Audit
+    Gateway1 --> S_Prev
+    Gateway1 --> S_Norm
+    Gateway1 --> S_Tabl
+    Gateway1 --> S_Ayud
+    Gateway1 --> S_GDat
+
+    Gateway2 -.-> S_Auth
+    Gateway2 -.-> S_Apel
+    Gateway2 -.-> S_Sust
+    Gateway2 -.-> S_Sala
+    Gateway2 -.-> S_Pley
+    Gateway2 -.-> S_Trans
+    Gateway2 -.-> S_Poi
+    Gateway2 -.-> S_Mapa
+    Gateway2 -.-> S_Audit
+    Gateway2 -.-> S_Prev
+    Gateway2 -.-> S_Norm
+    Gateway2 -.-> S_Tabl
+    Gateway2 -.-> S_Ayud
+    Gateway2 -.-> S_GDat
 
     %% Hooks de auditoría en segundo plano
     S_Sust -.->|Auditoría Async POST| S_Audit
@@ -116,8 +139,10 @@ flowchart TD
 
 | # | Servicio Docker | Contenedor | Puerto Host | Puerto Interno | Esquema / Almacén | Responsabilidad Principal |
 | :-: | :--- | :--- | :-: | :-: | :--- | :--- |
+| **0** | `load-balancer` | `dgnna-load-balancer` | **80 / 8000** | 80 / 8000 | — | Proxy Reverso NGINX: Balanceo `least_conn`, reintentos automáticos y tolerancia a fallos |
 | **1** | `frontend` | `dgnna-frontend-1` | **3000** | 3000 | — | Interfaz Next.js 16 / React 19 con Server Components y proxy dinámico |
-| **2** | `gateway` | `dgnna-gateway-1` | **8000** | 8000 | — | API Gateway Central: Validador JWT, enrutador y balanceador de microservicios |
+| **2** | `gateway` | `dgnna-gateway-1` | — | 8000 | — | API Gateway Principal: Validador JWT, enrutador y balanceador de microservicios |
+| **2.1**| `gateway-2` *(OGTI)*| `dgnna-gateway-2` | — | 8000 | — | Réplica secundaria para Alta Disponibilidad activa-activa (`profiles: ["ha"]`) |
 | **3** | `auth-service` | `dgnna-auth-service-1` | **8001** | 8001 | `AUTH_DB` | Autenticación, JWT, roles y gestión de usuarios y permisos por módulo |
 | **4** | `apelaciones-service` | `dgnna-apelaciones-service-1` | **8002** | 8002 | `APELACIONES_DB` | Expedientes de apelación, asignación de revisores y generación de resoluciones |
 | **5** | `sustracion-service` | `dgnna-sustracion-service-1` | **8003** | 8003 | `SUSTRACION_DB` | Casos de restitución internacional de NNA (Convenio de La Haya 1980) |
@@ -141,14 +166,14 @@ flowchart TD
 * Todos los contenedores conviven dentro de una misma red privada virtual llamada **`dgnna-net`**.
 * **Resolución Automática de Nombres (DNS Interno):**  
   Un contenedor no necesita saber la IP de otro; utiliza directamente el nombre del servicio:
-  * El Frontend se comunica con el Gateway usando: `http://gateway:8000`.
-  * El Gateway se comunica con Sustracción usando: `http://sustracion-service:8003`.
+  * El Frontend se comunica con el Gateway a través del Balanceador: `http://load-balancer:8000`.
+  * El Balanceador reparte la carga hacia el Gateway principal (`gateway:8000`) o sus réplicas redundantes (`gateway-2:8000`).
   * El Gateway se comunica con Gestión de Datos usando: `http://gestion-datos-service:8014`.
   * El Gateway se comunica con Auditoría usando: `http://auditoria-service:8009`.
   * Los microservicios despachan eventos a Auditoría usando: `http://auditoria-service:8009/api/auditoria`.
 
 ### B. Enrutamiento del API Gateway (`servicios/api-gateway/main.py`)
-El Gateway escucha en el puerto `8000` y analiza el prefijo de cada petición entrante:
+El Gateway escucha en el puerto interno `8000` y analiza el prefijo de cada petición entrante:
 
 ```python
 ROUTE_MAP = [
@@ -197,8 +222,11 @@ Dado que la base de datos **Oracle Database XE 21c** corre nativamente en el sis
 
 ### 🔹 Gestión Global del Ecosistema
 ```powershell
-# Levantar todos los 12 contenedores en segundo plano
+# Levantar el ecosistema estándar (1 Gateway + 1 Balanceador + Microservicios)
 docker compose up -d
+
+# Levantar en Modo Alta Disponibilidad para OGTI (Cluster Activo-Activo con 2 Gateways)
+docker compose --profile ha up -d
 
 # Ver el estado de todos los contenedores
 docker compose ps
@@ -215,6 +243,7 @@ docker compose down
 | :--- | :--- |
 | **Reiniciar Frontend** | `docker compose restart frontend` |
 | **Reconstruir Frontend** | `docker compose up -d --build frontend` |
+| **Reiniciar Balanceador NGINX** | `docker compose restart load-balancer` |
 | **Reiniciar Auditoría** | `docker compose restart auditoria-service` |
 | **Reconstruir Auditoría** | `docker compose up -d --build auditoria-service` |
 | **Reiniciar Auth Service** | `docker compose restart auth-service` |
@@ -227,14 +256,17 @@ docker compose down
 
 ### 🔹 Ver Logs en Tiempo Real
 ```powershell
+# Ver logs del Balanceador NGINX
+docker compose logs -f load-balancer
+
+# Ver logs del API Gateway
+docker compose logs -f gateway
+
 # Ver logs de auditoría
 docker compose logs -f auditoria-service
 
 # Ver logs de sustracción
 docker compose logs -f sustracion-service
-
-# Ver logs del API Gateway
-docker compose logs -f gateway
 
 # Ver las últimas 50 líneas del Frontend
 docker compose logs --tail 50 frontend
@@ -245,7 +277,8 @@ docker compose logs --tail 50 frontend
 
 ### 🔹 Verificación de Salud del Ecosistema
 Puedes abrir en tu navegador o probar con PowerShell:
-* **Estado de todos los microservicios:** [http://localhost:8000/health](http://localhost:8000/health)
+* **Estado de salud del Balanceador NGINX:** [http://localhost:8000/lb-health](http://localhost:8000/lb-health)
+* **Estado de salud de todos los microservicios:** [http://localhost:8000/health](http://localhost:8000/health)
 * **Documentación interactiva Swagger del Gateway:** [http://localhost:8000/docs](http://localhost:8000/docs)
 * **Módulo de Auditoría y Trazabilidad:** [http://localhost:3000/auditoria](http://localhost:3000/auditoria)
 * **Aplicación Web Principal:** [http://localhost:3000](http://localhost:3000)

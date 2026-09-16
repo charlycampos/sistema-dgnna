@@ -139,8 +139,13 @@ flowchart TD
     Nav["Navegador del usuario"]
 
     subgraph Plataforma["Servidor de aplicaciones — Docker"]
-        FE["<b>frontend</b><br/>Next.js 16 · React 19<br/>Node 20 · puerto 3000<br/><i>Interfaz de usuario y proxy interno</i>"]
-        GW["<b>gateway</b><br/>FastAPI · Python 3.11<br/>puerto 8000<br/><i>Entrada única, valida JWT y enruta</i>"]
+        LB["<b>load-balancer</b><br/>NGINX Alpine · puertos 80/8000<br/><i>Proxy reverso, balanceador least_conn y failover</i>"]
+        FE["<b>frontend</b><br/>Next.js 16 · React 19<br/>Node 20 · puerto 3000<br/><i>Interfaz de usuario y SSR</i>"]
+
+        subgraph GW_Cluster["🛡️ Cluster de API Gateways (Alta Disponibilidad)"]
+            GW1["<b>gateway</b> (Instancia 1)<br/>FastAPI · :8000"]
+            GW2["<b>gateway-2</b> (Instancia 2 - HA OGTI)<br/>FastAPI · :8000"]
+        end
 
         subgraph MS["Microservicios de dominio"]
             direction LR
@@ -165,23 +170,40 @@ flowchart TD
     ORA[("<b>Oracle Database XE 21c</b><br/>PDB XEPDB1<br/>14 esquemas dedicados")]
 
     Nav -->|"HTTPS :3000"| FE
-    Nav -->|"HTTPS :8000 (API)"| GW
-    FE -->|"http://gateway:8000"| GW
+    Nav -->|"HTTPS :80 / :8000 (API)"| LB
+    FE -->|"http://load-balancer:8000"| LB
+    LB -->|"balanceo least_conn"| GW1
+    LB -.->|"failover / carga compartida (HA)"| GW2
 
-    GW --> AU
-    GW --> AP
-    GW --> SU
-    GW --> SA
-    GW --> PL
-    GW --> TR
-    GW --> PO
-    GW --> MA
-    GW --> PR
-    GW --> NO
-    GW --> TB
-    GW --> AY
-    GW --> GD
-    GW --> AD
+    GW1 --> AU
+    GW1 --> AP
+    GW1 --> SU
+    GW1 --> SA
+    GW1 --> PL
+    GW1 --> TR
+    GW1 --> PO
+    GW1 --> MA
+    GW1 --> PR
+    GW1 --> NO
+    GW1 --> TB
+    GW1 --> AY
+    GW1 --> GD
+    GW1 --> AD
+
+    GW2 -.-> AU
+    GW2 -.-> AP
+    GW2 -.-> SU
+    GW2 -.-> SA
+    GW2 -.-> PL
+    GW2 -.-> TR
+    GW2 -.-> PO
+    GW2 -.-> MA
+    GW2 -.-> PR
+    GW2 -.-> NO
+    GW2 -.-> TB
+    GW2 -.-> AY
+    GW2 -.-> GD
+    GW2 -.-> AD
 
     AP -.->|"evento asíncrono"| AD
     SU -.->|"evento asíncrono"| AD
@@ -714,10 +736,10 @@ La capacidad de actualizar un módulo sin detener el resto es una consecuencia d
 - El endpoint `/health` consolidado facilita el monitoreo.
 
 **Consecuencias desfavorables.**
-- Constituye un punto único de fallo para todo el tráfico funcional.
-- Añade un salto de red a cada petición.
+- Requiere balanceo de carga para evitar que sea un punto único de fallo.
+- Añade un salto de red mínimo a cada petición.
 
-**Mitigación pendiente.** El Gateway carece hoy de redundancia. Si el nivel de servicio comprometido lo exige, la OGTI puede ejecutar dos instancias tras un balanceador; el diseño no lo impide, ya que el Gateway no mantiene estado.
+**Mitigación implementada.** Se incorporó un **Balanceador de Carga / Proxy Reverso (NGINX:alpine)** en el puerto `8000`/`80` al frente del clúster de API Gateway (`upstream api_gateway_cluster`). El Gateway no mantiene estado (stateless), lo que permite balanceo `least_conn` y escalamiento horizontal de réplicas sin cortes de servicio.
 
 ---
 
@@ -824,7 +846,7 @@ La capacidad de actualizar un módulo sin detener el resto es una consecuencia d
 | :--- | :--- | :--- | :--- |
 | **Disponibilidad** | El fallo de un módulo no debe interrumpir a los demás. | Microservicios independientes; el Gateway responde 503 solo para el módulo afectado; `restart: unless-stopped` reinicia automáticamente. | Cumplido |
 | **Disponibilidad** | Recuperación automática ante caída de un contenedor. | Política de reinicio de Docker. | Cumplido |
-| **Disponibilidad** | Ausencia de punto único de fallo. | El Gateway es actualmente un punto único de fallo. | **Pendiente** |
+| **Disponibilidad** | Ausencia de punto único de fallo. | Balanceador de Carga NGINX (`load-balancer`) distribuyendo tráfico hacia el clúster de API Gateway. | **Cumplido** |
 | **Seguridad** | Autenticación obligatoria en toda operación. | Validación JWT en el Gateway. | Cumplido en el diseño; requiere cerrar los puertos 8001-8011. |
 | **Seguridad** | Cifrado en tránsito. | Requiere proxy inverso con TLS. | **Pendiente — OGTI** |
 | **Seguridad** | Almacenamiento seguro de contraseñas. | `bcrypt` con sal por registro. | Cumplido |
@@ -833,12 +855,12 @@ La capacidad de actualizar un módulo sin detener el resto es una consecuencia d
 | **Mantenibilidad** | Actualizar un módulo sin desplegar el resto. | Aislamiento de contenedor y de esquema. | Cumplido |
 | **Mantenibilidad** | Estructura homogénea entre servicios. | Todos comparten el mismo patrón de organización interna. | Cumplido |
 | **Mantenibilidad** | Versionado de la estructura de base de datos. | `create_all()` no versiona. | **Pendiente** |
-| **Observabilidad** | Punto único de verificación del estado. | `/health` consolidado en el Gateway. | Cumplido |
+| **Observabilidad** | Punto único de verificación del estado. | `/health` consolidado en el Gateway y `/lb-health` en el balanceador. | Cumplido |
 | **Observabilidad** | Detección de operación en modo degradado. | El respaldo a SQLite del módulo normativo no se refleja en `/health`. | **Pendiente** |
 | **Portabilidad** | Despliegue reproducible. | Docker Compose con dependencias fijadas por versión. | Cumplido |
 | **Portabilidad** | Independencia de bibliotecas nativas. | Driver `oracledb` en modo thin. | Cumplido |
 | **Continuidad** | Operación sin acceso a internet. | Todas las funciones esenciales son locales; solo la IA requiere salida. | Cumplido |
-| **Escalabilidad** | Crecimiento por módulo. | Cada microservicio puede replicarse de forma independiente. | Soportado por el diseño; no configurado. |
+| **Escalabilidad** | Crecimiento por módulo. | Cada microservicio puede replicarse de forma independiente. | Soportado por el diseño. |
 
 ---
 
@@ -858,7 +880,7 @@ Se consigna de forma explícita para que la OGTI disponga de un panorama complet
 | 8 | Códigos de módulo no normalizados | Los valores de `USUARIO_MODULOS.MODULO` no siguen un catálogo único. | Funcional | Media |
 | 9 | Monolito residual | El directorio `backend/` conserva la implementación previa, fuera del despliegue. | Claridad | Media |
 | 10 | Respaldo a SQLite silencioso | El módulo normativo puede operar degradado sin señal en `/health`. | Observabilidad | Media |
-| 11 | Gateway sin redundancia | Punto único de fallo para todo el tráfico funcional. | Disponibilidad | Media |
+| 11 | Gateway sin redundancia | Resuelto mediante el contenedor `load-balancer` (NGINX) como proxy reverso y distribuidor de tráfico. | Disponibilidad | **Resuelto** |
 | 12 | Contenedores como `root` | Ninguna imagen declara un usuario sin privilegios. | Seguridad | Baja |
 | 13 | Sin métricas de aplicación | Solo existe verificación binaria de estado; no hay series de latencia ni de errores. | Observabilidad | Baja |
 
@@ -876,7 +898,6 @@ Se consigna de forma explícita para que la OGTI disponga de un panorama complet
 | Mediano plazo | Consolidar las tablas duplicadas de POI y de proceso operativo. | Elimina ambigüedad sobre la fuente de verdad. |
 | Mediano plazo | Retirar el monolito residual del repositorio. | Reduce la superficie de mantenimiento y evita confusión. |
 | Mediano plazo | Exponer el motor de base de datos efectivo en `/health`. | Permite detectar la operación en modo degradado. |
-| Largo plazo | Redundancia del API Gateway. | Elimina el punto único de fallo, si el nivel de servicio lo requiere. |
 | Largo plazo | Métricas de aplicación y tablero de operación. | Habilita la gestión proactiva del servicio. |
 | Según demanda | Reevaluar la estrategia de búsqueda vectorial. | Si el corpus normativo se amplía de forma significativa. |
 

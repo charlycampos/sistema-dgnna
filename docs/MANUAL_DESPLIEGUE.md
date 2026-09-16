@@ -567,8 +567,14 @@ docker images | grep dgnna
 
 ### Paso 7 — Levantar el ecosistema
 
+**Opción A — Despliegue Estándar (1 Gateway + 1 Balanceador NGINX + Microservicios):**
 ```bash
 docker compose up -d
+```
+
+**Opción B — Despliegue en Alta Disponibilidad Institucional (2 Gateways Activo-Activo + Balanceador NGINX):**
+```bash
+docker compose --profile ha up -d
 ```
 
 ### Paso 8 — Confirmar el estado de los contenedores
@@ -577,7 +583,7 @@ docker compose up -d
 docker compose ps
 ```
 
-**Resultado esperado:** trece filas con estado `Up`. Ningún contenedor debe aparecer como `Restarting` o `Exited`.
+**Resultado esperado:** todos los contenedores activos con estado `Up` (incluyendo `dgnna-load-balancer`). Ningún contenedor debe aparecer como `Restarting` o `Exited`.
 
 Esperar entre 30 y 60 segundos antes de la verificación funcional: cada microservicio necesita ese margen para conectar con Oracle y crear sus tablas.
 
@@ -605,13 +611,20 @@ Continuar con la sección 11.
 
 ## 11. Verificación post-despliegue
 
-### 11.1. Salud del ecosistema
+### 11.1. Salud del balanceador y ecosistema
 
-```bash
-curl -s http://localhost:8000/health
-```
+1. **Verificar Balanceador NGINX:**
+   ```bash
+   curl -s http://localhost:8000/lb-health
+   ```
+   **Resultado esperado:** `{"status":"ok","balancer":"nginx","cluster":"api_gateway_cluster"}`
 
-**Resultado esperado:** un objeto JSON en el que `gateway` sea `"ok"` y **los once microservicios** figuren como `"ok"`:
+2. **Verificar Microservicios:**
+   ```bash
+   curl -s http://localhost:8000/health
+   ```
+
+**Resultado esperado:** un objeto JSON en el que `gateway` sea `"ok"` y **todos los microservicios** figuren como `"ok"`:
 
 ```json
 {
