@@ -155,12 +155,14 @@ flowchart TD
             PR["prevenir-service<br/>:8010"]
             NO["normativa-service<br/>:8011"]
             TB["tableros-service<br/>:8012"]
+            AY["ayuda-memoria-service<br/>:8013"]
+            GD["gestion-datos-service<br/>:8014"]
         end
 
         AD["<b>auditoria-service</b><br/>FastAPI · :8009<br/><i>Registro transversal de trazabilidad</i>"]
     end
 
-    ORA[("<b>Oracle Database XE 21c</b><br/>PDB XEPDB1<br/>12 esquemas dedicados")]
+    ORA[("<b>Oracle Database XE 21c</b><br/>PDB XEPDB1<br/>14 esquemas dedicados")]
 
     Nav -->|"HTTPS :3000"| FE
     Nav -->|"HTTPS :8000 (API)"| GW
@@ -177,6 +179,8 @@ flowchart TD
     GW --> PR
     GW --> NO
     GW --> TB
+    GW --> AY
+    GW --> GD
     GW --> AD
 
     AP -.->|"evento asíncrono"| AD

@@ -53,6 +53,7 @@ services:
       - NORMATIVA_SERVICE_URL=http://normativa-service:8011
       - TABLEROS_SERVICE_URL=http://tableros-service:8012
       - AYUDA_MEMORIA_SERVICE_URL=http://ayuda-memoria-service:8013
+      - GESTION_DATOS_SERVICE_URL=http://gestion-datos-service:8014
     networks:
       - dgnna-net
 
@@ -326,6 +327,25 @@ services:
       - ALLOW_SQLITE_FALLBACK=true
     volumes:
       - ./data/ayuda-memoria:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - dgnna-net
+
+  # 16. MICROSERVICIO: GESTIÓN DE DATOS
+  gestion-datos-service:
+    container_name: dgnna-gestion-datos-service-1
+    build:
+      context: ./servicios/servicio-gestion-datos
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    mem_limit: 200m
+    ports:
+      - "8014:8014"
+    environment:
+      - PORT=8014
+      - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
+      - DATABASE_URL=${DATABASE_URL_GESTION_DATOS:-oracle+oracledb://gestion_datos_db:GestionDatos2026@host.docker.internal:1521/?service_name=XEPDB1}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:

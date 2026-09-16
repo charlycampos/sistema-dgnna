@@ -7,7 +7,7 @@ import {
   ShieldCheck, UserCheck, BookOpen, Search, Globe, KeyRound,
   Scale, FileText, CalendarDays, Eye, BarChart3, MapPin,
   ShieldAlert, Sparkles, X, EyeOff, Dices, Check, CheckCircle2,
-  Sparkle, RefreshCw, LayoutDashboard
+  Sparkle, RefreshCw, LayoutDashboard, Database
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -47,6 +47,7 @@ const MODULOS_DISPONIBLES = [
   { id: 'fortalecimiento',   label: 'Fortalecimiento Capacidades',  desc: 'Capacitaciones DGNNA',         icon: BookOpen,     color: 'text-teal-600 bg-teal-50 border-teal-200' },
   { id: 'prevenir-proteger', label: 'Prevenir para Proteger',       desc: 'Alertas y protección',         icon: ShieldAlert,  color: 'text-red-600 bg-red-50 border-red-200' },
   { id: 'ayuda-memoria',     label: 'Ayuda Memoria',                desc: 'Formularios, revisión y sellado', icon: FileText,  color: 'text-sky-600 bg-sky-50 border-sky-200' },
+  { id: 'gestion-datos',     label: 'Gestión de Datos',             desc: 'Catálogo de datasets y diccionario', icon: Database, color: 'text-cyan-700 bg-cyan-50 border-cyan-200' },
 ]
 
 // Direcciones de línea DGNNA para el selector del formulario de usuario.

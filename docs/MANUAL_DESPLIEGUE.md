@@ -197,7 +197,7 @@ flowchart TD
 
 ### 5.2. Principios de comunicación
 
-1. **Red privada interna.** Los trece contenedores comparten la red bridge `dgnna-net`. El DNS interno de Docker resuelve cada servicio por su nombre (`http://gateway:8000`, `http://auth-service:8001`, etc.); no se usan direcciones IP fijas.
+1. **Red privada interna.** Los dieciséis contenedores comparten la red bridge `dgnna-net`. El DNS interno de Docker resuelve cada servicio por su nombre (`http://gateway:8000`, `http://auth-service:8001`, `http://gestion-datos-service:8014`, etc.); no se usan direcciones IP fijas.
 
 2. **Punto de entrada único.** El navegador nunca se comunica directamente con un microservicio. Todo tráfico funcional pasa por el **API Gateway** en el puerto `8000`, que valida el token JWT y reenvía la petición al microservicio correspondiente según el prefijo de la ruta.
 
@@ -224,8 +224,11 @@ flowchart TD
 | 11 | `auditoria-service` | 8009 | 8009 | `AUDITORIA_DB` | `python:3.11-slim` | 200 MB |
 | 12 | `prevenir-service` | 8010 | 8010 | `PREVENIR_DB` | `python:3.11-slim` | 200 MB |
 | 13 | `normativa-service` | 8011 | 8011 | `NORMATIVA_DB` | `python:3.11-slim` | 512 MB |
+| 14 | `tableros-service` | 8012 | 8012 | `TABLEROS_DB` | `python:3.11-slim` | 200 MB |
+| 15 | `ayuda-memoria-service` | 8013 | 8013 | `AYUDA_MEMORIA_DB` | `python:3.11-slim` | 200 MB |
+| 16 | `gestion-datos-service` | 8014 | 8014 | `GESTION_DATOS_DB` | `python:3.11-slim` | 200 MB |
 
-**Consumo total de memoria comprometido:** aproximadamente **3.1 GB** en límites declarados.
+**Consumo total de memoria comprometido:** aproximadamente **3.7 GB** en límites declarados.
 
 ### 6.1. Mapa de enrutamiento del Gateway
 
@@ -244,6 +247,11 @@ El Gateway resuelve el microservicio destino por prefijo de ruta, en el orden en
 | `/api/auditoria` | `auditoria-service:8009` |
 | `/api/prevenir-proteger` | `prevenir-service:8010` |
 | `/api/normativa` | `normativa-service:8011` |
+| `/api/tableros` | `tableros-service:8012` |
+| `/api/ayuda-memoria` | `ayuda-memoria-service:8013` |
+| `/api/gestion-datos` | `gestion-datos-service:8014` |
+
+Rutas públicas que **no** exigen token JWT: `/`, `/health`, `/docs`, `/openapi.json`, `/api/auth/login`, `/api/auth/logout`.
 
 Rutas públicas que **no** exigen token JWT: `/`, `/health`, `/docs`, `/openapi.json`, `/api/auth/login`, `/api/auth/logout`.
 

@@ -1,7 +1,7 @@
 # 🐳 ARQUITECTURA DE CONTENEDORES Y DISTRIBUCIÓN DOCKER
 ## Sistema Integral DGNNA — Ministerio de la Mujer y Poblaciones Vulnerables (MIMP)
 
-Este documento detalla la topología de red, la distribución de los **13 contenedores**, el flujo de comunicación interna, los hooks de auditoría en segundo plano, el motor RAG de consulta normativa y el mecanismo de conexión con la base de datos **Oracle XE 21c** en el sistema DGNNA.
+Este documento detalla la topología de red, la distribución de los **16 contenedores**, el flujo de comunicación interna, los hooks de auditoría en segundo plano, el motor RAG de consulta normativa, la suite de **Gestión de Datos** (DSLD, DPNNA, DA, DPE) y el mecanismo de conexión con la base de datos **Oracle XE 21c** en el sistema DGNNA.
 
 ---
 
@@ -26,10 +26,12 @@ flowchart TD
             S_Trans["6. transparencia-service\n:8006"]
             S_Poi["7. poi-service\n:8007"]
             S_Mapa["8. mapa-service\n:8008"]
-            S_Prev["9. prevenir-service\n:8010"]
-            S_Audit["10. auditoria-service\n:8009"]
+            S_Audit["9. auditoria-service\n:8009"]
+            S_Prev["10. prevenir-service\n:8010"]
             S_Norm["11. normativa-service\n:8011 (RAG Multi-LLM)"]
-            S_Tabl["12. tableros-service\n:8012 (Power BI / Direcciones)"]
+            S_Tabl["12. tableros-service\n:8012 (Power BI)"]
+            S_Ayud["13. ayuda-memoria-service\n:8013"]
+            S_GDat["14. gestion-datos-service\n:8014 (DSLD/CAR/DA/DPE)"]
         end
     end
 
@@ -44,10 +46,12 @@ flowchart TD
         DB_Trans[("TRANSPARENCIA_DB")]
         DB_Poi[("POI_DB")]
         DB_Mapa[("MAPA_DB")]
-        DB_Prev[("PREVENIR_DB")]
         DB_Audit[("AUDITORIA_DB")]
+        DB_Prev[("PREVENIR_DB")]
         DB_Norm[("NORMATIVA_DB")]
         DB_Tabl[("TABLEROS_DB")]
+        DB_Ayud[("AYUDA_MEMORIA_DB")]
+        DB_GDat[("GESTION_DATOS_DB")]
     end
 
     User -->|HTTP Requests| Frontend
@@ -61,10 +65,12 @@ flowchart TD
     Gateway -->|/api/transparencia| S_Trans
     Gateway -->|/api/poi-pp117| S_Poi
     Gateway -->|/api/mapa| S_Mapa
-    Gateway -->|/api/prevenir-proteger| S_Prev
     Gateway -->|/api/auditoria| S_Audit
+    Gateway -->|/api/prevenir-proteger| S_Prev
     Gateway -->|/api/normativa| S_Norm
     Gateway -->|/api/tableros| S_Tabl
+    Gateway -->|/api/ayuda-memoria| S_Ayud
+    Gateway -->|/api/gestion-datos| S_GDat
 
     %% Hooks de auditoría en segundo plano
     S_Sust -.->|Auditoría Async POST| S_Audit
@@ -81,9 +87,12 @@ flowchart TD
     S_Trans -.->|extra_hosts| DB_Trans
     S_Poi -.->|extra_hosts| DB_Poi
     S_Mapa -.->|extra_hosts| DB_Mapa
-    S_Prev -.->|extra_hosts| DB_Prev
     S_Audit -.->|extra_hosts| DB_Audit
+    S_Prev -.->|extra_hosts| DB_Prev
     S_Norm -.->|extra_hosts| DB_Norm
+    S_Tabl -.->|extra_hosts| DB_Tabl
+    S_Ayud -.->|extra_hosts| DB_Ayud
+    S_GDat -.->|extra_hosts| DB_GDat
 
     Oracle --- DB_Auth
     Oracle --- DB_Apel
@@ -93,9 +102,12 @@ flowchart TD
     Oracle --- DB_Trans
     Oracle --- DB_Poi
     Oracle --- DB_Mapa
-    Oracle --- DB_Prev
     Oracle --- DB_Audit
+    Oracle --- DB_Prev
     Oracle --- DB_Norm
+    Oracle --- DB_Tabl
+    Oracle --- DB_Ayud
+    Oracle --- DB_GDat
 ```
 
 ---
@@ -116,8 +128,10 @@ flowchart TD
 | **10** | `mapa-service` | `dgnna-mapa-service-1` | **8008** | 8008 | `MAPA_DB` | Cobertura territorial y geo-referenciación de UPE, CAR, DEMUNA a nivel nacional |
 | **11** | `auditoria-service` | `auditoria-service-1` | **8009** | 8009 | `AUDITORIA_DB` | Registro inmutable de actividades, trazabilidad y visor forense |
 | **12** | `prevenir-service` | `dgnna-prevenir-service-1` | **8010** | 8010 | `PREVENIR_DB` | Servicios de prevención y protección a nivel distrital y regional |
-| **13** | `normativa-service` | `normativa-service-1` | **8011** | 8011 | `NORMATIVA_DB` | Consulta normativa y Asistente RAG Multi-LLM (ChatGPT, Gemini, Claude) anclado al DL 1297 y Reglamento |
-| **14** | `tableros-service` | `dgnna-tableros-service-1` | **8012** | 8012 | `TABLEROS_DB` | Tableros analíticos y métricas de Direcciones de Línea (DSLD, DPNNA, DPE, DA) |
+| **13** | `normativa-service` | `normativa-service-1` | **8011** | 8011 | `NORMATIVA_DB` | Consulta normativa y Asistente RAG Multi-LLM (ChatGPT, Gemini, Claude) |
+| **14** | `tableros-service` | `dgnna-tableros-service-1` | **8012** | 8012 | `TABLEROS_DB` | Tableros analíticos y métricas integradas de Direcciones de Línea |
+| **15** | `ayuda-memoria-service` | `dgnna-ayuda-memoria-service-1` | **8013** | 8013 | `AYUDA_MEMORIA_DB` | Generador de Fichas Ejecutivas y Ayudas Memoria para Alta Dirección |
+| **16** | `gestion-datos-service` | `dgnna-gestion-datos-service-1` | **8014** | 8014 | `GESTION_DATOS_DB` | Repositorio y bandejas de datasets analíticos (DSLD, CAR, DA, DPE) |
 
 ---
 
@@ -129,6 +143,7 @@ flowchart TD
   Un contenedor no necesita saber la IP de otro; utiliza directamente el nombre del servicio:
   * El Frontend se comunica con el Gateway usando: `http://gateway:8000`.
   * El Gateway se comunica con Sustracción usando: `http://sustracion-service:8003`.
+  * El Gateway se comunica con Gestión de Datos usando: `http://gestion-datos-service:8014`.
   * El Gateway se comunica con Auditoría usando: `http://auditoria-service:8009`.
   * Los microservicios despachan eventos a Auditoría usando: `http://auditoria-service:8009/api/auditoria`.
 
@@ -151,6 +166,8 @@ ROUTE_MAP = [
     ("/api/prevenir-proteger", "prevenir-service:8010"),
     ("/api/normativa",         "normativa-service:8011"),
     ("/api/tableros",          "tableros-service:8012"),
+    ("/api/ayuda-memoria",     "ayuda-memoria-service:8013"),
+    ("/api/gestion-datos",      "gestion-datos-service:8014"),
 ]
 ```
 

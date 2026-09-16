@@ -31,6 +31,7 @@ SERVICES = {
     "normativa":       os.getenv("NORMATIVA_SERVICE_URL",       "http://localhost:8011"),
     "tableros":        os.getenv("TABLEROS_SERVICE_URL",        "http://localhost:8012"),
     "ayuda-memoria":  os.getenv("AYUDA_MEMORIA_SERVICE_URL",  "http://localhost:8013"),
+    "gestion-datos":   os.getenv("GESTION_DATOS_SERVICE_URL",   "http://localhost:8014"),
 }
 
 TESTING = os.getenv("TESTING", "").strip().lower() == "true"
@@ -70,6 +71,7 @@ ROUTE_MAP = [
     ("/api/normativa",      "normativa"),
     ("/api/tableros",       "tableros"),
     ("/api/ayuda-memoria", "ayuda-memoria"),
+    ("/api/gestion-datos",  "gestion-datos"),
 ]
 
 app = FastAPI(

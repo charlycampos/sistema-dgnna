@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import {
   LogOut, Scale, Globe, BookOpen, Users, ChevronRight, Lock,
   Landmark, CalendarDays, FileText, Eye, BarChart3, MapPin,
-  LayoutDashboard, ShieldCheck, ShieldAlert
+  LayoutDashboard, ShieldCheck, ShieldAlert, Database
 } from 'lucide-react'
 import type { SessionPayload } from '@/lib/auth'
 
@@ -142,6 +142,14 @@ export default function MenuClient({ session }: Props) {
       descripcion: 'Generación descentralizada de reportes temáticos por dirección y seguimiento de casos',
       icono: <FileText className="w-8 h-8 text-sky-600" />,
       ruta: '/ayuda-memoria',
+      disponible: true,
+    },
+    {
+      id: 'gestion-datos',
+      titulo: 'Módulo Gestión de Datos',
+      descripcion: 'Catálogo de conjuntos de datos, diccionario de variables y fuentes de información',
+      icono: <Database className="w-8 h-8 text-cyan-600" />,
+      ruta: '/gestion-datos',
       disponible: true,
     },
     {
