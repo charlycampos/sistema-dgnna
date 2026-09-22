@@ -884,37 +884,38 @@ export default function DpeDashboardClient() {
                     <path d="M 345 95 H 375 C 385 95, 385 55, 395 55 H 405" fill="none" stroke="#94a3b8" strokeWidth="1.8" />
                     <path d="M 345 95 H 375 C 385 95, 385 135, 395 135 H 405" fill="none" stroke="#94a3b8" strokeWidth="1.8" />
 
-                    {/* ★ DE INICIO (540, 135) SALE A RIESGO (605, 55) Y DESPROTECCION (605, 135) */}
-                    <path d="M 540 135 H 565 C 575 135, 575 55, 585 55 H 605" fill="none" stroke="#0284c7" strokeWidth="1.8" markerEnd="url(#blue-arrow)" />
-                    <line x1="540" y1="135" x2="605" y2="135" stroke="#0284c7" strokeWidth="1.8" markerEnd="url(#blue-arrow)" />
+                    {/* ★ DE INICIO (540, 135) SALE A RIESGO (605, 45), DESPROTECCION (605, 125) Y ACOGIMIENTO DE HECHO (605, 205) */}
+                    <path d="M 540 135 H 565 C 575 135, 575 45, 585 45 H 605" fill="none" stroke="#0284c7" strokeWidth="1.8" markerEnd="url(#blue-arrow)" />
+                    <path d="M 540 135 H 565 C 575 135, 575 125, 585 125 H 605" fill="none" stroke="#0284c7" strokeWidth="1.8" markerEnd="url(#blue-arrow)" />
+                    <path d="M 540 135 H 565 C 575 135, 575 205, 585 205 H 605" fill="none" stroke="#0284c7" strokeWidth="1.8" markerEnd="url(#blue-arrow)" />
 
-                    {/* ★ DE INICIO POR RIESGO (750, 55) SALE SU CONDICIÓN SIN MP (805, 55) */}
-                    <line x1="750" y1="55" x2="805" y2="55" stroke="#0284c7" strokeWidth="1.8" markerEnd="url(#blue-arrow)" />
+                    {/* ★ DE INICIO POR DESPROTECCION (750, 125) SALEN SUS 3 MEDIDAS CON FLECHAS EXACTAS A SU CENTRO: */}
+                    {/* 1. Hacia Acog. Familiar (centro y = 80) */}
+                    <path d="M 750 125 H 775 C 785 125, 785 80, 795 80 H 815" fill="none" stroke="#0284c7" strokeWidth="1.8" markerEnd="url(#blue-arrow)" />
+                    {/* 2. Hacia Acog. Residencial (centro y = 125) */}
+                    <line x1="750" y1="125" x2="815" y2="125" stroke="#0284c7" strokeWidth="1.8" markerEnd="url(#blue-arrow)" />
+                    {/* 3. Hacia Sin Medida (Sin MP) (centro y = 170) */}
+                    <path d="M 750 125 H 775 C 785 125, 785 170, 795 170 H 815" fill="none" stroke="#0284c7" strokeWidth="1.8" markerEnd="url(#blue-arrow)" />
 
-                    {/* ★ DE INICIO POR DESPROTECCION (750, 135) SALEN SUS 3 MEDIDAS */}
-                    <path d="M 750 135 H 775 C 785 135, 785 110, 795 110 H 805" fill="none" stroke="#0284c7" strokeWidth="1.8" markerEnd="url(#blue-arrow)" />
-                    <line x1="750" y1="135" x2="805" y2="135" stroke="#0284c7" strokeWidth="1.8" markerEnd="url(#blue-arrow)" />
-                    <path d="M 750 135 H 775 C 785 135, 785 160, 795 160 H 805" fill="none" stroke="#0284c7" strokeWidth="1.8" markerEnd="url(#blue-arrow)" />
-
-                    {/* De Inicio baja hacia el peine de destinos (y = 230) */}
-                    <path d="M 470 166 V 230" fill="none" stroke="#94a3b8" strokeWidth="1.8" />
-                    <line x1="360" y1="230" x2="940" y2="230" stroke="#94a3b8" strokeWidth="1.8" />
+                    {/* De Inicio baja hacia el peine de destinos (y = 245) */}
+                    <path d="M 470 166 V 245" fill="none" stroke="#94a3b8" strokeWidth="1.8" />
+                    <line x1="360" y1="245" x2="940" y2="245" stroke="#94a3b8" strokeWidth="1.8" />
 
                     {/* Bajadas hacia cada una de las 5 cajas de destino */}
-                    <line x1="360" y1="230" x2="360" y2="250" stroke="#94a3b8" strokeWidth="1.8" />
-                    <line x1="475" y1="230" x2="475" y2="250" stroke="#94a3b8" strokeWidth="1.8" />
-                    <line x1="610" y1="230" x2="610" y2="250" stroke="#94a3b8" strokeWidth="1.8" />
-                    <line x1="745" y1="230" x2="745" y2="250" stroke="#94a3b8" strokeWidth="1.8" />
-                    <line x1="940" y1="230" x2="940" y2="250" stroke="#94a3b8" strokeWidth="1.8" />
+                    <line x1="360" y1="245" x2="360" y2="265" stroke="#94a3b8" strokeWidth="1.8" />
+                    <line x1="475" y1="245" x2="475" y2="265" stroke="#94a3b8" strokeWidth="1.8" />
+                    <line x1="610" y1="245" x2="610" y2="265" stroke="#94a3b8" strokeWidth="1.8" />
+                    <line x1="745" y1="245" x2="745" y2="265" stroke="#94a3b8" strokeWidth="1.8" />
+                    <line x1="940" y1="245" x2="940" y2="265" stroke="#94a3b8" strokeWidth="1.8" />
 
-                    {/* Ramificaciones desde Con Declaración (475, 320) hacia Desprotección y Riesgo */}
-                    <path d="M 475 320 V 365 H 525" fill="none" stroke="#94a3b8" strokeWidth="1.8" />
-                    <path d="M 475 320 V 425 H 525" fill="none" stroke="#94a3b8" strokeWidth="1.8" />
+                    {/* Ramificaciones desde Con Declaración (475, 335) hacia Desprotección y Riesgo */}
+                    <path d="M 475 335 V 380 H 525" fill="none" stroke="#94a3b8" strokeWidth="1.8" />
+                    <path d="M 475 335 V 440 H 525" fill="none" stroke="#94a3b8" strokeWidth="1.8" />
 
-                    {/* Conexión Desprotección (645, 365) -> Con PTI (670, 365) */}
-                    <line x1="645" y1="365" x2="670" y2="365" stroke="#94a3b8" strokeWidth="1.8" />
-                    {/* Conexión Riesgo (645, 425) -> Con PTI (670, 425) */}
-                    <line x1="645" y1="425" x2="670" y2="425" stroke="#94a3b8" strokeWidth="1.8" />
+                    {/* Conexión Desprotección (645, 380) -> Con PTI (670, 380) */}
+                    <line x1="645" y1="380" x2="670" y2="380" stroke="#94a3b8" strokeWidth="1.8" />
+                    {/* Conexión Riesgo (645, 440) -> Con PTI (670, 440) */}
+                    <line x1="645" y1="440" x2="670" y2="440" stroke="#94a3b8" strokeWidth="1.8" />
 
                     <defs>
                       <marker id="blue-arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -972,77 +973,77 @@ export default function DpeDashboardClient() {
                     </div>
                   </div>
 
-                  {/* ================= ★ RAMIFICACIÓN: TIPOS DE INICIO ================= */}
+                  {/* ================= ★ RAMIFICACIÓN: LOS 3 TIPOS DE INICIO ================= */}
 
-                  {/* Inicio por Riesgo */}
+                  {/* 1. Inicio por Riesgo */}
                   <div
                     className="absolute rounded-xl border border-[#ca8a04] bg-[#eab308] p-2 flex flex-col justify-center shadow-sm"
-                    style={{ left: '605px', top: '32px', width: '145px', height: '48px', zIndex: 2 }}
+                    style={{ left: '605px', top: '22px', width: '145px', height: '46px', zIndex: 2 }}
                   >
                     <div className="text-white text-[10px] font-bold text-center leading-tight">Inicio por Riesgo</div>
                     <div className="text-amber-950 font-black text-xs text-center bg-white/95 rounded mt-0.5 py-0.5 shadow-2xs">
-                      {(upeResumen.arbolTrazabilidad.inicioRiesgo || 5042).toLocaleString()}
+                      {(upeResumen.arbolTrazabilidad.inicioRiesgo || 5034).toLocaleString()}
                     </div>
                   </div>
 
-                  {/* Desde Riesgo: Sin MP */}
-                  <div
-                    className="absolute rounded-xl border border-[#eab308] bg-[#fef08a] px-2.5 py-1.5 flex flex-col justify-center shadow-sm"
-                    style={{ left: '805px', top: '32px', width: '165px', height: '48px', zIndex: 2 }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-amber-900 text-[10px] font-bold">Sin Medida (Sin MP)</span>
-                      <span className="text-amber-950 font-black text-xs bg-white px-2 py-0.5 rounded border border-amber-200">
-                        {(upeResumen.arbolTrazabilidad.riesgoSinMp || 5206).toLocaleString()}
-                      </span>
-                    </div>
-                    <span className="text-[8px] text-amber-700 mt-0.5">En familia de origen</span>
-                  </div>
-
-                  {/* Inicio por Desprotección */}
+                  {/* 2. Inicio por Desprotección */}
                   <div
                     className="absolute rounded-xl border border-[#ca8a04] bg-[#eab308] p-2 flex flex-col justify-center shadow-sm"
-                    style={{ left: '605px', top: '110px', width: '145px', height: '48px', zIndex: 2 }}
+                    style={{ left: '605px', top: '102px', width: '145px', height: '46px', zIndex: 2 }}
                   >
                     <div className="text-white text-[10px] font-bold text-center leading-tight">Inicio por Desprotección</div>
                     <div className="text-amber-950 font-black text-xs text-center bg-white/95 rounded mt-0.5 py-0.5 shadow-2xs">
-                      {(upeResumen.arbolTrazabilidad.inicioDesproteccion || 5826).toLocaleString()}
+                      {(upeResumen.arbolTrazabilidad.inicioDesproteccion || 5810).toLocaleString()}
                     </div>
                   </div>
 
-                  {/* ================= ★ MEDIDAS DESDE INICIO POR DESPROTECCIÓN ================= */}
+                  {/* ================= ★ MEDIDAS EXCLUSIVAS DE INICIO POR DESPROTECCIÓN ================= */}
 
-                  {/* Acogimiento Familiar */}
+                  {/* 1. Acogimiento Familiar (centro y = 80 -> top: 62px, height: 36px) */}
                   <div
-                    className="absolute rounded-xl border border-[#ca8a04] bg-[#eab308] px-2.5 py-1 flex items-center justify-between shadow-sm"
-                    style={{ left: '805px', top: '92px', width: '165px', height: '36px', zIndex: 2 }}
+                    className="absolute rounded-xl border border-[#ca8a04] bg-[#eab308] px-3 py-1 flex items-center justify-between shadow-sm"
+                    style={{ left: '815px', top: '62px', width: '170px', height: '36px', zIndex: 2 }}
                   >
-                    <span className="text-white text-[10px] font-bold">👨‍👩‍👧 Acog. Familiar</span>
+                    <span className="text-white text-[11px] font-bold">👨‍👩‍👧 Acog. Familiar</span>
                     <span className="text-amber-950 font-black text-xs bg-white/95 px-2 py-0.5 rounded shadow-2xs">
                       {(upeResumen.arbolTrazabilidad.medidaAcogFamiliar || 52).toLocaleString()}
                     </span>
                   </div>
 
-                  {/* Acogimiento Residencial */}
+                  {/* 2. Acogimiento Residencial (centro y = 125 -> top: 107px, height: 36px) */}
                   <div
-                    className="absolute rounded-xl border border-[#ca8a04] bg-[#eab308] px-2.5 py-1 flex items-center justify-between shadow-sm"
-                    style={{ left: '805px', top: '133px', width: '165px', height: '36px', zIndex: 2 }}
+                    className="absolute rounded-xl border border-[#ca8a04] bg-[#eab308] px-3 py-1 flex items-center justify-between shadow-sm"
+                    style={{ left: '815px', top: '107px', width: '170px', height: '36px', zIndex: 2 }}
                   >
-                    <span className="text-white text-[10px] font-bold">🏢 Acog. Residencial</span>
+                    <span className="text-white text-[11px] font-bold">🏢 Acog. Residencial</span>
                     <span className="text-amber-950 font-black text-xs bg-white/95 px-2 py-0.5 rounded shadow-2xs">
                       {(upeResumen.arbolTrazabilidad.medidaCar || 371).toLocaleString()}
                     </span>
                   </div>
 
-                  {/* Sin MP (Desprotección) */}
+                  {/* 3. Sin Medida (Sin MP) (centro y = 170 -> top: 152px, height: 36px) */}
                   <div
-                    className="absolute rounded-xl border border-[#eab308] bg-[#fef08a] px-2.5 py-1 flex items-center justify-between shadow-sm"
-                    style={{ left: '805px', top: '174px', width: '165px', height: '36px', zIndex: 2 }}
+                    className="absolute rounded-xl border border-[#eab308] bg-[#fef08a] px-3 py-1 flex items-center justify-between shadow-sm"
+                    style={{ left: '815px', top: '152px', width: '170px', height: '36px', zIndex: 2 }}
                   >
-                    <span className="text-amber-900 text-[10px] font-bold">Sin Medida (Sin MP)</span>
+                    <div className="flex flex-col">
+                      <span className="text-amber-900 text-[10px] font-bold leading-tight">Sin Medida (Sin MP)</span>
+                      <span className="text-[8px] text-amber-700 leading-tight">Medidas de apoyo familiar</span>
+                    </div>
                     <span className="text-amber-950 font-black text-xs bg-white px-2 py-0.5 rounded border border-amber-200">
-                      {(upeResumen.arbolTrazabilidad.desprotSinMp || 5303).toLocaleString()}
+                      {(upeResumen.arbolTrazabilidad.desprotSinMp || 5387).toLocaleString()}
                     </span>
+                  </div>
+
+                  {/* 3. Acogimiento de Hecho (centro y = 205 -> top: 182px, height: 46px) */}
+                  <div
+                    className="absolute rounded-xl border border-[#ca8a04] bg-[#eab308] p-2 flex flex-col justify-center shadow-sm"
+                    style={{ left: '605px', top: '182px', width: '145px', height: '46px', zIndex: 2 }}
+                  >
+                    <div className="text-white text-[10px] font-bold text-center leading-tight">Acogimiento de Hecho</div>
+                    <div className="text-amber-950 font-black text-xs text-center bg-white/95 rounded mt-0.5 py-0.5 shadow-2xs">
+                      {(upeResumen.arbolTrazabilidad.inicioAcogHecho || 24).toLocaleString()}
+                    </div>
                   </div>
 
                   {/* ================= NIVEL INFERIOR: LOS 5 DESTINOS PROCESALES ================= */}
