@@ -21,6 +21,7 @@
 | `POI_DB` | `poi-service` | 2 | Activo |
 | `MAPA_DB` | `mapa-service` | 3 | Activo |
 | `PREVENIR_DB` | `prevenir-service` | 1 | Activo |
+| `GESTION_DATOS_DB` | `gestion-datos-service` | 22 | Activo; contiene datasets DSLD y albergará DPNNA (CAR) |
 
 ## AUTH_DB — Autenticación y usuarios
 
@@ -133,6 +134,26 @@ La estructura de `POI_DATOS` en este esquema tiene 10 columnas, mientras la tabl
 |---|---:|---|
 | `ACTIVIDADES_PREVENIR` | 20 | Actividades del módulo Prevenir para Proteger |
 
+## GESTION_DATOS_DB — Gestión de Datos y Tableros Situacionales
+
+| Tabla | Propósito |
+|---|---|
+| `DATASETS` | Catálogo maestro de datasets disponibles |
+| `DICCIONARIO_CAMPOS` | Diccionario de variables de los datasets |
+| `DSLD_DEMUNAS` | Directorio y estado de DEMUNAs a nivel nacional |
+| `DSLD_SUPERVISIONES` | Supervisiones a DEMUNAs |
+| `DSLD_CAPACITACIONES` | Registro de capacitaciones DSLD |
+| `DSLD_CCONNA` | Consejos Consultivos de Niñas, Niños y Adolescentes |
+| `DSLD_CCONNA_INTEGRANTES` | Integrantes de CCONNA |
+| `DSLD_MODO_NINEZ` | Estrategia Modo Niñez |
+| `DSLD_PIAS_ATENCIONES` | Atenciones en Plataformas Itinerantes (PIAS) |
+| `CAR_CENTROS` | Directorio de 54 centros CAR públicos y privados con capacidad y geolocalización |
+| `CAR_CARGAS` | Registro histórico de auditoría por importación quincenal/mensual |
+| `CAR_CARGA_FILAS_RAW` | Almacenamiento 100% íntegro de la fila en formato JSON/CLOB |
+| `CAR_NNA_CORTES` | Capa analítica de NNA albergados con nombres y documentos encriptados (AES-256) y Blind Index |
+| *(Tablas históricas V1)* | `DSLD_DEMUNAS_V1`, `DSLD_SUPERVISIONES_V1`, `DSLD_CAPACITACIONES_V1`, `DSLD_CCONNA_V1`, `DSLD_MODO_NINEZ_V1`, `DSLD_PIAS_V1` |
+| *(Catálogos y parámetros)* | `DSLD_CAT_ESTADO`, `DSLD_CAT_MODELO`, `DSLD_CAT_SUPERVISOR`, `DSLD_PARAMETROS`, `DSLD_POBLACION`, `DSLD_UBIGEO` |
+
 ## Códigos de módulo para autorización
 
 Los valores de `USUARIO_MODULOS.MODULO` deben normalizarse contra un catálogo único. Códigos propuestos:
@@ -147,6 +168,7 @@ Los valores de `USUARIO_MODULOS.MODULO` deben normalizarse contra un catálogo �
 | `poi-pp117` | `poi-service` / `POI_DB` |
 | `mapa` | `mapa-service` / `MAPA_DB` |
 | `prevenir-proteger` | `prevenir-service` / `PREVENIR_DB` |
+| `gestion-datos` | `gestion-datos-service` / `GESTION_DATOS_DB` |
 
 ## Reglas de mantenimiento
 

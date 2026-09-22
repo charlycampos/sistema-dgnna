@@ -37,15 +37,23 @@ echo [8/11] Iniciando servicio-mapa (puerto 8008)...
 start "Mapa Service" cmd /k "cd servicio-mapa && iniciar.bat"
 timeout /t 5 /nobreak >nul
 
-echo [9/11] Iniciando servicio-prevenir-proteger (puerto 8010)...
+echo [9/13] Iniciando servicio-prevenir-proteger (puerto 8010)...
 start "Prevenir para Proteger Service" cmd /k "cd servicio-prevenir-proteger && iniciar.bat"
 timeout /t 5 /nobreak >nul
 
-echo [10/11] Iniciando API Gateway (puerto 8000)...
+echo [10/13] Iniciando servicio-tableros (puerto 8012)...
+start "Tableros Service" cmd /k "cd servicio-tableros && iniciar.bat"
+timeout /t 5 /nobreak >nul
+
+echo [11/13] Iniciando servicio-gestion-datos (puerto 8014)...
+start "Gestion Datos Service" cmd /k "cd servicio-gestion-datos && iniciar.bat"
+timeout /t 5 /nobreak >nul
+
+echo [12/13] Iniciando API Gateway (puerto 8000)...
 start "API Gateway" cmd /k "cd api-gateway && iniciar.bat"
 timeout /t 5 /nobreak >nul
 
-echo [11/11] Iniciando Frontend Next.js (puerto 3000)...
+echo [13/13] Iniciando Frontend Next.js (puerto 3000)...
 start "Frontend" cmd /k "cd ..\frontend && npm run dev"
 timeout /t 3 /nobreak >nul
 
@@ -63,6 +71,8 @@ echo   Transparencia: http://localhost:8006
 echo   POI-PP117:     http://localhost:8007
 echo   Mapa:          http://localhost:8008
 echo   Prevenir:      http://localhost:8010
+echo   Tableros:      http://localhost:8012
+echo   Gestion Datos: http://localhost:8014
 echo.
 echo   Health check:  http://localhost:8000/health
 echo =====================================================

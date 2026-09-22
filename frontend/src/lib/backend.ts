@@ -210,10 +210,16 @@ export async function proxyMultipartToBackend(
       headers,
       body: formData,
     })
-    const data = await res.json().catch(() => null)
+    const text = await res.text()
+    let data: any = null
+    try {
+      data = text ? JSON.parse(text) : {}
+    } catch {
+      data = { detail: text || `Error HTTP ${res.status}` }
+    }
     return NextResponse.json(data ?? {}, { status: res.status })
   } catch (error) {
     console.error(`Error multipart del backend [${path}]:`, error)
-    return NextResponse.json({ error: 'Error de conexión con el servidor' }, { status: 503 })
+    return NextResponse.json({ error: 'Error de conexión con el servidor', detail: String(error) }, { status: 503 })
   }
 }

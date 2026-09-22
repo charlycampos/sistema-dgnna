@@ -1,19 +1,41 @@
-﻿import os
+import os
+import logging
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.engine import make_url
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "oracle+oracledb://gestion_datos_db:GestionDatos2026@localhost:1521/?service_name=XEPDB1")
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL no encontrada en .env")
+logger = logging.getLogger("gestion_datos_db")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "oracle+oracledb://gestion_datos_db:GestionDatos2026@host.docker.internal:1521/?service_name=XEPDB1"
+)
 
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
+def _init_engine():
+    global DATABASE_URL
+    logger.info(f"Iniciando conexión a Oracle Database...")
+    try:
+        # pool_pre_ping=True verifica la salud de la conexión Oracle antes de cada consulta
+        eng = create_engine(
+            DATABASE_URL,
+            pool_pre_ping=True,
+            pool_recycle=3600,
+        )
+        return eng
+    except Exception as e:
+        logger.error(f"ERROR CRÍTICO: No se pudo conectar a Oracle Database: {e}")
+        raise RuntimeError(
+            f"Fallo de conexión a Oracle ({e}). Verifica que el usuario 'gestion_datos_db' "
+            f"esté creado en XEPDB1 y el listener 1521 esté activo."
+        )
+
+engine = _init_engine()
+SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, expire_on_commit=False)
 
 def get_db():
     db = SessionLocal()

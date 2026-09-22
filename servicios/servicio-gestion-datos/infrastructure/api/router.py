@@ -25,6 +25,37 @@ def get_usuario(token: str = Depends(oauth2_scheme)) -> str:
         return ""
 
 
+def get_usuario_escritura_gestion_datos(token: str = Depends(oauth2_scheme)) -> str:
+    """Exige una sesión con permiso de escritura en el módulo gestión-datos."""
+    if not token:
+        raise HTTPException(status_code=401, detail="Sesión no autenticada")
+    try:
+        payload = jwt.decode(
+            token,
+            os.getenv("SESSION_SECRET", "dgnna-sistema-dgnna-secret-2026"),
+            algorithms=["HS256"],
+        )
+    except Exception:
+        raise HTTPException(status_code=401, detail="Sesión inválida o expirada")
+
+    es_admin = payload.get("rol") == "admin"
+    puede_escribir = any(
+        permiso.get("modulo") == "gestion-datos"
+        and permiso.get("rolModulo") == "registrador"
+        for permiso in (payload.get("modulos") or [])
+        if isinstance(permiso, dict)
+    )
+    if not es_admin and not puede_escribir:
+        raise HTTPException(status_code=403, detail="No tiene permiso para cargar datos")
+
+    return (
+        payload.get("email")
+        or payload.get("nombre")
+        or payload.get("sub")
+        or "USUARIO_AUTENTICADO"
+    )
+
+
 @router.get("/stats")
 def obtener_estadisticas(db: Session = Depends(get_db)):
     total_datasets = db.query(DatasetModel).count()

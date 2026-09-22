@@ -243,6 +243,7 @@ flowchart TD
 | `auditoria-service` | FastAPI, SQLAlchemy | Recibe y almacena los eventos de trazabilidad emitidos por los demás servicios; expone el visor y los reportes. | Productivo |
 | `normativa-service` | FastAPI, SQLAlchemy, NumPy, `pypdf`, SDK de OpenAI / Anthropic / Google | Búsqueda determinista sobre el corpus normativo y asistente RAG Multi-LLM opcional. | Productivo |
 | `tableros-service` | FastAPI, SQLAlchemy, Power BI Embedded | Gestión de catálogo, métricas y tableros analíticos de las Direcciones de Línea (DSLD, DPNNA, DPE, DA). | Productivo (Frontend) / En despliegue |
+| `gestion-datos-service` | FastAPI, SQLAlchemy, oracledb, openpyxl, lector Access propio | Catálogo de datasets y Suite Analítica DSLD: importa DNA.mdb y los Excel de capacitación, CCONNA, Modo Niñez y PIAS, valida su contenido, guarda solo indicadores sin datos personales y expone las métricas del antiguo Power BI DSLD_GENERAL_V3. | Productivo |
 
 ### 3.3. Patrón común de los microservicios
 

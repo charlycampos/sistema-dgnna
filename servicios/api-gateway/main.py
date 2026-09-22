@@ -166,10 +166,11 @@ async def _forward(request: Request, base_url: str, path: str) -> Response:
 
     headers = dict(request.headers)
     headers.pop("host", None)  # evitar conflictos de host
+    headers.pop("content-length", None)  # httpx gestiona el content-length del body automáticamente
 
     body = await request.body()
 
-    async with httpx.AsyncClient(timeout=30) as client:
+    async with httpx.AsyncClient(timeout=120.0) as client:
         try:
             resp = await client.request(
                 method  = request.method,

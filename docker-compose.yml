@@ -388,13 +388,15 @@ services:
       context: ./servicios/servicio-gestion-datos
       dockerfile: Dockerfile
     restart: unless-stopped
-    mem_limit: 200m
+    mem_limit: 512m  # lectura de Excel/Access grandes (PIAS, Capacitación, DNA.mdb)
     ports:
       - "8014:8014"
     environment:
       - PORT=8014
       - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
       - DATABASE_URL=${DATABASE_URL_GESTION_DATOS:-oracle+oracledb://gestion_datos_db:GestionDatos2026@host.docker.internal:1521/?service_name=XEPDB1}
+      # OPCIONAL: clave para seudonimizar el DNI de capacitación (si se deja vacía, el servicio genera una y la guarda en DSLD_PARAMETROS)
+      - DSLD_CLAVE_SEUDONIMO=${DSLD_CLAVE_SEUDONIMO:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:

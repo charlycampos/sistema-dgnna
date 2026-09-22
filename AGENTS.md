@@ -57,8 +57,10 @@ Este documento define los perfiles, responsabilidades, principios de operación 
 1. **Frontend (Next.js / TypeScript):**
    * Código TypeScript fuertemente tipado, sin `@ts-ignore` innecesarios ni casting inseguro.
    * Respetar las directivas arquitectónicas del usuario (mantener archivos monolíticos autocontenidos en rutas principales cuando se indique, sin modularizar en subcarpetas sin autorización).
-2. **Backend & Base de Datos (FastAPI / Oracle / SQLite):**
-   * Modelos SQLAlchemy alineados con esquemas Pydantic y tablas Oracle (`CASOS_SUSTRACION`, `NNA`, `PROCESO_OPERATIVO`, `BITACORA`, `HISTORIAL_JUDICIAL`).
+2. **Backend & Base de Datos (FastAPI / Oracle — EXCLUSIVIDAD ORACLE, PROHIBIDO SQLITE):**
+   * Toda persistencia, procesamiento y consulta debe residir **única y exclusivamente en Oracle Database** (`XEPDB1`).
+   * **Prohibición absoluta de SQLite**: queda prohibido el uso de SQLite (en memoria, archivos locales `.db`/`.sqlite` o mecanismos de fallback encubiertos). Si Oracle no está disponible, el servicio debe lanzar un error explícito de base de datos (`oracledb.DatabaseError`) y no crear bases de datos temporales.
+   * Modelos SQLAlchemy alineados con esquemas Pydantic y tablas Oracle oficiales (`CASOS_SUSTRACION`, `NNA`, `DSLD_DEMUNAS`, `DSLD_SUPERVISIONES`, `DSLD_CAPACITACIONES`, etc.).
    * Prevención de errores de integridad referencial o inserciones nulas (`ORA-01400`).
 3. **Optimización y APIs:**
    * Endpoints REST rápidos, manejo adecuado de sesiones de usuario (`useMe` / JWT) y endpoints de exportación (Excel).

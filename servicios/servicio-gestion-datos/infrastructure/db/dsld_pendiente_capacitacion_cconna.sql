@@ -1,0 +1,12 @@
+-- =============================================================================
+-- DSLD · Pendiente por ejecutar: Capacitación (paso 4) y CCONNA (paso 5)
+-- Ejecutar conectado como GESTION_DATOS_DB en XEPDB1, una sola vez.
+--
+-- Ya ejecutados antes: dsld_01_demuna_supervision.sql, dsld_02_modo_ninez.sql
+-- y dsld_03_pias.sql. NO los vuelva a ejecutar: renombrarían las tablas actuales
+-- a *_V1 y dejarían el tablero vacío hasta volver a importar.
+--
+-- Este script NO borra datos: las tablas anteriores de capacitación y CCONNA
+-- se renombran a *_V1 como respaldo.
+-- =============================================================================
+

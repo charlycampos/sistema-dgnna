@@ -1,1206 +1,1356 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   Building2,
   Award,
   AlertTriangle,
   Users,
-  Home,
+  ShieldAlert,
   FileSpreadsheet,
   Download,
   Filter,
   Search,
-  X,
   Layers,
-  ShieldCheck,
+  HeartPulse,
+  Activity,
+  Calendar,
   Phone,
   Mail,
   MapPin,
-  FileText,
-  Clock,
-  Eye,
   CheckCircle2,
-  XCircle,
+  Clock,
+  Sparkles,
+  RefreshCw,
+  TrendingUp,
+  FileCheck,
   AlertOctagon,
-  ShieldAlert,
+  HelpCircle,
+  ExternalLink,
+  ChevronRight,
+  UploadCloud,
+  X
 } from 'lucide-react'
 import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  PieChart,
+  Pie,
+  Cell,
   XAxis,
   YAxis,
   Tooltip,
   Legend,
-  CartesianGrid,
+  CartesianGrid
 } from 'recharts'
 import * as XLSX from 'xlsx'
 
-export interface CarItem {
-  id: string
+// Tipado del Centro CAR para el Directorio
+export interface CarCentroItem {
+  id: number
   codigo: string
-  centroAcogida: string
-  tipoCar: 'Público' | 'Privado'
-  perfilAtencion: 'Básico' | 'Especializado' | 'Discapacidad Severa' | 'Madres Adolescentes'
+  codigoDgnna: string
+  nombre: string
+  tipo: string
+  tipoEspecifico: string
   departamento: string
   provincia: string
   distrito: string
-  direccion: string
-  institucionAdmin1: string
-  institucionAdmin2: string
-  modalidad: 'Residencial' | 'Familiar' | 'Urgencias'
-  responsable: string
-  capacidadMaxima: number
+  ubigeo: string
+  unidadLinea: string
+  capacidadInstalada: number
+  capacidadReal: number
   poblacionActual: number
-  correoCar: string
-  celular: string
-  telefono: string
-  fechaEnvio: string
-  tieneInfractores: 'Sí' | 'No'
-  fechaRespuesta: string
-  documentoRespuesta: string
-  contenidoInfractores: string
-  expediente: string
-  correo: string
+  tasaOcupacion: number | null
+  estadoSaturacion: 'SOBREDEMANDA' | 'ALERTA' | 'DISPONIBLE' | 'SIN_DATO'
+  acreditado: string
+  nroConstancia: string
+  resolucion: string
+  vigencia: string
+  latitud: string
+  longitud: string
 }
 
-// Mock Data de Centros de Acogida Residencial (CAR)
-const CAR_MOCK_DATA: CarItem[] = [
-  {
-    id: '1',
-    codigo: 'CAR-LIM-001',
-    centroAcogida: 'CAR San Miguel Arcángel',
-    tipoCar: 'Público',
-    perfilAtencion: 'Básico',
-    departamento: 'LIMA',
-    provincia: 'LIMA',
-    distrito: 'SAN MIGUEL',
-    direccion: 'Av. Costanera 1420, San Miguel',
-    institucionAdmin1: 'INABIF',
-    institucionAdmin2: 'MIMP - Dirección de Protección Integral',
-    modalidad: 'Residencial',
-    responsable: 'Lic. Mónica Vega Alvarado',
-    capacidadMaxima: 45,
-    poblacionActual: 38,
-    correoCar: 'car.sanmiguel@inabif.gob.pe',
-    celular: '987654321',
-    telefono: '01 263-4510',
-    fechaEnvio: '2026-01-15',
-    tieneInfractores: 'No',
-    fechaRespuesta: '2026-01-22',
-    documentoRespuesta: 'Oficio N° 045-2026-MIMP/DPNNA',
-    contenidoInfractores: 'Sin antecedentes ni sanciones de NNA infractores.',
-    expediente: 'EXP-2026-DPNNA-00412',
-    correo: 'notificaciones.dpnna@mimp.gob.pe',
-  },
-  {
-    id: '2',
-    codigo: 'CAR-LIM-002',
-    centroAcogida: 'CAR Hogar Santa Rosa',
-    tipoCar: 'Privado',
-    perfilAtencion: 'Discapacidad Severa',
-    departamento: 'LIMA',
-    provincia: 'LIMA',
-    distrito: 'CHORRILLOS',
-    direccion: 'Calle Los Cedros 340, Urb. La Campiña',
-    institucionAdmin1: 'Congregación Religiosa Hermanas Dominicas',
-    institucionAdmin2: 'Obispado de Lurín',
-    modalidad: 'Residencial',
-    responsable: 'Hna. Teresa Morales Silva',
-    capacidadMaxima: 25,
-    poblacionActual: 22,
-    correoCar: 'hogarsantarosa@dominicas.org.pe',
-    celular: '991234567',
-    telefono: '01 254-8890',
-    fechaEnvio: '2026-02-01',
-    tieneInfractores: 'No',
-    fechaRespuesta: '2026-02-08',
-    documentoRespuesta: 'Oficio N° 088-2026-MIMP/DPNNA',
-    contenidoInfractores: 'Atención exclusiva a NNA con multidiscapacidad cognitiva y motora.',
-    expediente: 'EXP-2026-DPNNA-00891',
-    correo: 'direccion.santarosa@dominicas.org.pe',
-  },
-  {
-    id: '3',
-    codigo: 'CAR-AQP-003',
-    centroAcogida: 'CAR Esperanza Juvenil Paucarpata',
-    tipoCar: 'Público',
-    perfilAtencion: 'Especializado',
-    departamento: 'AREQUIPA',
-    provincia: 'AREQUIPA',
-    distrito: 'PAUCARPATA',
-    direccion: 'Av. Las Gardenias 512, Paucarpata',
-    institucionAdmin1: 'Sociedad de Beneficencia de Arequipa',
-    institucionAdmin2: 'Gobierno Regional de Arequipa',
-    modalidad: 'Urgencias',
-    responsable: 'Psic. Carlos Tejada Mendoza',
-    capacidadMaxima: 30,
-    poblacionActual: 30,
-    correoCar: 'esperanzajuvenil@beneficenciaarequipa.org',
-    celular: '958112233',
-    telefono: '054 402010',
-    fechaEnvio: '2026-02-14',
-    tieneInfractores: 'Sí',
-    fechaRespuesta: '2026-02-20',
-    documentoRespuesta: 'Oficio N° 182-2026-PJ/SLA-AQP',
-    contenidoInfractores: '2 NNA con medidas socioeducativas no privativas de libertad remitidos por Juzgado de Familia.',
-    expediente: 'EXP-2026-DPNNA-01205',
-    correo: 'legal.beneficenciaaqp@gmail.com',
-  },
-  {
-    id: '4',
-    codigo: 'CAR-CUS-004',
-    centroAcogida: 'CAR Aldea Infantil SOS Cusco',
-    tipoCar: 'Privado',
-    perfilAtencion: 'Básico',
-    departamento: 'CUSCO',
-    provincia: 'CUSCO',
-    distrito: 'SAN SEBASTIAN',
-    direccion: 'Vía Expresa s/n Km 4.5, San Sebastián',
-    institucionAdmin1: 'Aldeas Infantiles SOS Perú',
-    institucionAdmin2: 'SOS Kinderdorf International',
-    modalidad: 'Familiar',
-    responsable: 'Lic. Raúl Quispe Huamán',
-    capacidadMaxima: 60,
-    poblacionActual: 48,
-    correoCar: 'aldea.cusco@aldeasinfantiles.org.pe',
-    celular: '984556677',
-    telefono: '084 271290',
-    fechaEnvio: '2026-01-20',
-    tieneInfractores: 'No',
-    fechaRespuesta: '2026-01-28',
-    documentoRespuesta: 'Oficio N° 062-2026-MIMP/DPNNA',
-    contenidoInfractores: 'Modelo de familias SOS para acogimiento de hermanos.',
-    expediente: 'EXP-2026-DPNNA-00514',
-    correo: 'contacto.cusco@aldeasinfantiles.org.pe',
-  },
-  {
-    id: '5',
-    codigo: 'CAR-LAL-005',
-    centroAcogida: 'CAR Hogar de la Niña Trujillo',
-    tipoCar: 'Público',
-    perfilAtencion: 'Básico',
-    departamento: 'LA LIBERTAD',
-    provincia: 'TRUJILLO',
-    distrito: 'TRUJILLO',
-    direccion: 'Jr. San Martín 680, Centro Histórico',
-    institucionAdmin1: 'Sociedad de Beneficencia de Trujillo',
-    institucionAdmin2: 'MIMP - INABIF',
-    modalidad: 'Residencial',
-    responsable: 'Dra. Patricia Benites Luján',
-    capacidadMaxima: 50,
-    poblacionActual: 42,
-    correoCar: 'hogarnina@beneficenciatrujillo.gob.pe',
-    celular: '944889900',
-    telefono: '044 241515',
-    fechaEnvio: '2026-02-10',
-    tieneInfractores: 'No',
-    fechaRespuesta: '2026-02-18',
-    documentoRespuesta: 'Oficio N° 145-2026-MIMP/DPNNA',
-    contenidoInfractores: 'Sin incidencias. Acogimiento regular de niñas de 6 a 17 años.',
-    expediente: 'EXP-2026-DPNNA-00994',
-    correo: 'mesadepartes@beneficenciatrujillo.gob.pe',
-  },
-  {
-    id: '6',
-    codigo: 'CAR-JUN-006',
-    centroAcogida: 'CAR Jesús Salvador Huancayo',
-    tipoCar: 'Privado',
-    perfilAtencion: 'Madres Adolescentes',
-    departamento: 'JUNIN',
-    provincia: 'HUANCAYO',
-    distrito: 'EL TAMBO',
-    direccion: 'Av. Huancavelica 1890, El Tambo',
-    institucionAdmin1: 'Asociación Civil Pro Infancia y Familia',
-    institucionAdmin2: 'Arzobispado de Huancayo',
-    modalidad: 'Residencial',
-    responsable: 'Obst. Maritza Flores Castillo',
-    capacidadMaxima: 35,
-    poblacionActual: 29,
-    correoCar: 'jesussalvador@proinfancia.org.pe',
-    celular: '964332211',
-    telefono: '064 251090',
-    fechaEnvio: '2026-01-30',
-    tieneInfractores: 'No',
-    fechaRespuesta: '2026-02-05',
-    documentoRespuesta: 'Oficio N° 092-2026-MIMP/DPNNA',
-    contenidoInfractores: 'Atención integral prenatal y cuidado a adolescentes gestantes y sus bebés.',
-    expediente: 'EXP-2026-DPNNA-00780',
-    correo: 'direccionejecutiva@proinfancia.org.pe',
-  },
-  {
-    id: '7',
-    codigo: 'CAR-PIU-007',
-    centroAcogida: 'CAR San Antonio de Piura',
-    tipoCar: 'Público',
-    perfilAtencion: 'Especializado',
-    departamento: 'PIURA',
-    provincia: 'PIURA',
-    distrito: 'CASTILLA',
-    direccion: 'Calle El Bosque Mz. B Lote 14, Castilla',
-    institucionAdmin1: 'INABIF',
-    institucionAdmin2: 'MIMP DPNNA',
-    modalidad: 'Residencial',
-    responsable: 'Lic. Fernando Prado Ruiz',
-    capacidadMaxima: 40,
-    poblacionActual: 36,
-    correoCar: 'car.sanantonio@inabif.gob.pe',
-    celular: '969778899',
-    telefono: '073 342080',
-    fechaEnvio: '2026-02-05',
-    tieneInfractores: 'Sí',
-    fechaRespuesta: '2026-02-12',
-    documentoRespuesta: 'Oficio N° 130-2026-MIMP/DPNNA',
-    contenidoInfractores: '1 adolescente acogido con mandato judicial de protección especial con falta leve archivada.',
-    expediente: 'EXP-2026-DPNNA-01140',
-    correo: 'piura.inabif@mimp.gob.pe',
-  },
-  {
-    id: '8',
-    codigo: 'CAR-LAM-008',
-    centroAcogida: 'CAR Hogar Belén Chiclayo',
-    tipoCar: 'Privado',
-    perfilAtencion: 'Básico',
-    departamento: 'LAMBAYEQUE',
-    provincia: 'CHICLAYO',
-    distrito: 'LA VICTORIA',
-    direccion: 'Av. Los Incas 740, La Victoria',
-    institucionAdmin1: 'Fundación Niños del Perú',
-    institucionAdmin2: 'Cooperación Internacional Suiza',
-    modalidad: 'Familiar',
-    responsable: 'Lic. Soledad Vargas Díaz',
-    capacidadMaxima: 30,
-    poblacionActual: 24,
-    correoCar: 'hogarbelen@ninosdelperu.org',
-    celular: '979445566',
-    telefono: '074 223040',
-    fechaEnvio: '2026-01-25',
-    tieneInfractores: 'No',
-    fechaRespuesta: '2026-02-02',
-    documentoRespuesta: 'Oficio N° 081-2026-MIMP/DPNNA',
-    contenidoInfractores: 'Protección residencial básica y reinserción educativa.',
-    expediente: 'EXP-2026-DPNNA-00632',
-    correo: 'informes@ninosdelperu.org',
-  },
-  {
-    id: '9',
-    codigo: 'CAR-LOR-009',
-    centroAcogida: 'CAR Santa Lorena de Iquitos',
-    tipoCar: 'Público',
-    perfilAtencion: 'Básico',
-    departamento: 'LORETO',
-    provincia: 'MAYNAS',
-    distrito: 'IQUITOS',
-    direccion: 'Calle Putumayo 1120, Iquitos',
-    institucionAdmin1: 'Sociedad de Beneficencia de Iquitos',
-    institucionAdmin2: 'Gobierno Regional de Loreto',
-    modalidad: 'Residencial',
-    responsable: 'Abg. Javier Panduro Pinedo',
-    capacidadMaxima: 45,
-    poblacionActual: 39,
-    correoCar: 'santalorena@beneficenciaiquitos.gob.pe',
-    celular: '965123489',
-    telefono: '065 231010',
-    fechaEnvio: '2026-02-12',
-    tieneInfractores: 'No',
-    fechaRespuesta: '2026-02-19',
-    documentoRespuesta: 'Oficio N° 165-2026-MIMP/DPNNA',
-    contenidoInfractores: 'Acogimiento de NNA en situación de desprotección de cuencas amazónicas.',
-    expediente: 'EXP-2026-DPNNA-01050',
-    correo: 'beneficencia.iquitos@gmail.com',
-  },
-  {
-    id: '10',
-    codigo: 'CAR-AYA-010',
-    centroAcogida: 'CAR Urpichallay Ayacucho',
-    tipoCar: 'Privado',
-    perfilAtencion: 'Especializado',
-    departamento: 'AYACUCHO',
-    provincia: 'HUAMANGA',
-    distrito: 'SAN JUAN BAUTISTA',
-    direccion: 'Jr. Los Ángeles 280, San Juan Bautista',
-    institucionAdmin1: 'Asociación Solidaria Wari',
-    institucionAdmin2: 'Cáritas Ayacucho',
-    modalidad: 'Residencial',
-    responsable: 'Psic. Gladys Cárdenas Pariona',
-    capacidadMaxima: 28,
-    poblacionActual: 25,
-    correoCar: 'urpichallay@wari.org.pe',
-    celular: '966887744',
-    telefono: '066 321890',
-    fechaEnvio: '2026-01-18',
-    tieneInfractores: 'Sí',
-    fechaRespuesta: '2026-01-26',
-    documentoRespuesta: 'Oficio N° 058-2026-MIMP/DPNNA',
-    contenidoInfractores: 'Atención especializada en trauma complejo y conducta de riesgo.',
-    expediente: 'EXP-2026-DPNNA-00488',
-    correo: 'contacto@wari.org.pe',
-  },
-  {
-    id: '11',
-    codigo: 'CAR-PUN-011',
-    centroAcogida: 'CAR Virgen de Fátima Puno',
-    tipoCar: 'Público',
-    perfilAtencion: 'Básico',
-    departamento: 'PUNO',
-    provincia: 'PUNO',
-    distrito: 'PUNO',
-    direccion: 'Av. Floral 850, Barrio Bellavista',
-    institucionAdmin1: 'INABIF',
-    institucionAdmin2: 'MIMP DPNNA',
-    modalidad: 'Residencial',
-    responsable: 'Lic. Néstor Condori Mamani',
-    capacidadMaxima: 35,
-    poblacionActual: 27,
-    correoCar: 'car.virgenfatima@inabif.gob.pe',
-    celular: '951223344',
-    telefono: '051 364020',
-    fechaEnvio: '2026-02-08',
-    tieneInfractores: 'No',
-    fechaRespuesta: '2026-02-15',
-    documentoRespuesta: 'Oficio N° 139-2026-MIMP/DPNNA',
-    contenidoInfractores: 'Atención integral a NNA en situación de vulnerabilidad extrema por heladas.',
-    expediente: 'EXP-2026-DPNNA-00912',
-    correo: 'puno.inabif@mimp.gob.pe',
-  },
-  {
-    id: '12',
-    codigo: 'CAR-ANC-012',
-    centroAcogida: 'CAR Hogar San Pedrito Chimbote',
-    tipoCar: 'Público',
-    perfilAtencion: 'Básico',
-    departamento: 'ANCASH',
-    provincia: 'SANTA',
-    distrito: 'CHIMBOTE',
-    direccion: 'Av. Pardo 1600, Chimbote',
-    institucionAdmin1: 'Sociedad de Beneficencia del Santa',
-    institucionAdmin2: 'Municipalidad Provincial del Santa',
-    modalidad: 'Residencial',
-    responsable: 'Lic. Rocío Valera Méndez',
-    capacidadMaxima: 40,
-    poblacionActual: 33,
-    correoCar: 'sanpedrito@beneficenciasanta.gob.pe',
-    celular: '943556677',
-    telefono: '043 321550',
-    fechaEnvio: '2026-01-28',
-    tieneInfractores: 'No',
-    fechaRespuesta: '2026-02-04',
-    documentoRespuesta: 'Oficio N° 085-2026-MIMP/DPNNA',
-    contenidoInfractores: 'Acreditación vigente y sin registro de infractores.',
-    expediente: 'EXP-2026-DPNNA-00715',
-    correo: 'mesadepartes@beneficenciasanta.gob.pe',
-  },
-]
+export interface ResumenGlobal {
+  totalCentros: number
+  capacidadInstalada: number
+  capacidadReal: number
+  centrosAcreditados: number
+  centrosNoAcreditados: number
+  totalNna: number
+  tasaOcupacion: number
+  mayor18Meses: number
+  menor18Meses: number
+  pctMayor18Meses: number
+  periodosCorte: string[]
+  distribucionTipoCar: {
+    basico: number
+    especializado: number
+    urgencia: number
+  }
+}
 
-// Estadísticas de Departamentos para el Gráfico
-const DEPTOS_STATS_DATA = [
-  { depto: 'LIMA', publico: 54, privado: 88, total: 142 },
-  { depto: 'AREQUIPA', publico: 16, privado: 22, total: 38 },
-  { depto: 'CUSCO', publico: 14, privado: 18, total: 32 },
-  { depto: 'LA LIBERTAD', publico: 11, privado: 18, total: 29 },
-  { depto: 'JUNIN', publico: 12, privado: 14, total: 26 },
-  { depto: 'PIURA', publico: 8, privado: 14, total: 22 },
-  { depto: 'LAMBAYEQUE', publico: 7, privado: 11, total: 18 },
-  { depto: 'LORETO', publico: 8, privado: 9, total: 17 },
-  { depto: 'AYACUCHO', publico: 6, privado: 10, total: 16 },
-  { depto: 'PUNO', publico: 7, privado: 8, total: 15 },
-  { depto: 'ANCASH', publico: 6, privado: 8, total: 14 },
-  { depto: 'HUANUCO', publico: 5, privado: 7, total: 12 },
-  { depto: 'SAN MARTIN', publico: 4, privado: 7, total: 11 },
-]
+export interface MetricasBasico {
+  totalNna: number
+  permanencia: {
+    mayor18Meses: number
+    menor18Meses: number
+    pctMayor18: number
+  }
+  pti: {
+    aprobado: number
+    pendiente: number
+    sinDato: number
+    pctAprobado: number
+  }
+  demografia: {
+    mujeres: number
+    hombres: number
+    gruposEtarios: { grupo: string; cantidad: number }[]
+  }
+  saludEducacion: {
+    conSeguro: number
+    sinSeguro: number
+    conDiscapacidad: number
+  }
+  topSituacionLegal: { nombre: string; cantidad: number }[]
+}
+
+export interface MetricasEspecializado {
+  totalNna: number
+  conDiscapacidad: number
+  pctDiscapacidad: number
+  mayor18Meses: number
+  pctMayor18: number
+  demografia: {
+    mujeres: number
+    hombres: number
+  }
+  topCentros: { centro: string; cantidad: number }[]
+}
+
+export interface MetricasUrgencia {
+  totalNna: number
+  diasPromedioEstancia: number
+  estanciaProlongadaUrgencia: number
+  pctProlongada: number
+  demografia: {
+    mujeres: number
+    hombres: number
+  }
+  topCentros: { centro: string; cantidad: number }[]
+}
+
+export interface CarCargaItem {
+  id: number
+  tipoCar: string
+  nombreArchivo: string
+  periodoCorte: string
+  usuario: string | null
+  fechaCarga: string | null
+  totalRegistros: number
+  estado: string
+  mensaje: string | null
+}
+
+export interface CarBandejaItem {
+  centro: string
+  codigoCentro: string | null
+  departamento: string | null
+  poblacionActiva: number
+  capacidadReal: number | null
+  ocupacion: number | null
+  mayor18: number
+  ptiPendiente: number
+  sinSeguro: number
+  estanciaPromedio: number | null
+  permanenciaSobreUmbral: number
+}
 
 export default function DpnnaDashboardClient() {
-  // Filtros
-  const [tipoCarFilter, setTipoCarFilter] = useState('Todos')
-  const [perfilFilter, setPerfilFilter] = useState('Todos')
-  const [infractoresFilter, setInfractoresFilter] = useState('Todos')
-  const [selectedDepto, setSelectedDepto] = useState('Todos')
-  const [selectedProv, setSelectedProv] = useState('Todas')
-  const [selectedDist, setSelectedDist] = useState('Todos')
-  const [searchTerm, setSearchTerm] = useState('')
+  // Pestaña activa
+  const [activeTab, setActiveTab] = useState<'resumen' | 'centros' | 'basico' | 'especializado' | 'urgencia' | 'cargas'>('resumen')
 
-  // Modal Ficha Completa
-  const [selectedCar, setSelectedCar] = useState<CarItem | null>(null)
-  const [modalOpen, setModalOpen] = useState(false)
+  // Estados de datos
+  const [resumen, setResumen] = useState<ResumenGlobal | null>(null)
+  const [centros, setCentros] = useState<CarCentroItem[]>([])
+  const [metricasBasico, setMetricasBasico] = useState<MetricasBasico | null>(null)
+  const [metricasEsp, setMetricasEsp] = useState<MetricasEspecializado | null>(null)
+  const [metricasUrg, setMetricasUrg] = useState<MetricasUrgencia | null>(null)
+  const [cargas, setCargas] = useState<CarCargaItem[]>([])
+  const [bandejas, setBandejas] = useState<Record<'BASICO' | 'ESPECIALIZADO' | 'URGENCIA', CarBandejaItem[]>>({ BASICO: [], ESPECIALIZADO: [], URGENCIA: [] })
+  const [loading, setLoading] = useState(true)
+  const [errorCarga, setErrorCarga] = useState<string | null>(null)
 
-  // Lista de Departamentos
-  const deptosList = useMemo(() => {
-    return ['Todos', ...Array.from(new Set(CAR_MOCK_DATA.map(c => c.departamento)))]
+  // Filtros del Directorio de Centros
+  const [busquedaCentro, setBusquedaCentro] = useState('')
+  const [filtroDep, setFiltroDep] = useState('TODOS')
+  const [filtroAcreditado, setFiltroAcreditado] = useState('TODOS')
+  const [filtroSaturacion, setFiltroSaturacion] = useState('TODOS')
+  const [filtroPeriodo, setFiltroPeriodo] = useState('')
+  const [filtroCentro, setFiltroCentro] = useState('TODOS')
+  const [filtroSexo, setFiltroSexo] = useState('TODOS')
+  const [filtroGrupoEtario, setFiltroGrupoEtario] = useState('TODOS')
+
+  // Modal de Importación Periódica
+  const [modalImportar, setModalImportar] = useState(false)
+  const [fileToUpload, setFileToUpload] = useState<File | null>(null)
+  const [tipoImportacion, setTipoImportacion] = useState<'CENTROS' | 'BASICO' | 'ESPECIALIZADO' | 'URGENCIA'>('CENTROS')
+  const [periodoImportacion, setPeriodoImportacion] = useState(() => new Date().toISOString().slice(0, 7))
+  const [importando, setImportando] = useState(false)
+  const [mensajeImportacion, setMensajeImportacion] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
+
+  // Cargar datos
+  const cargarDatos = async () => {
+    setLoading(true)
+    setErrorCarga(null)
+    try {
+      const fetchJson = async (url: string) => {
+        const response = await fetch(url)
+        if (!response.ok) throw new Error(`No se pudo consultar ${url} (${response.status})`)
+        return response.json()
+      }
+      const params = new URLSearchParams()
+      if (filtroPeriodo) params.set('periodo', filtroPeriodo)
+      if (filtroDep !== 'TODOS') params.set('departamento', filtroDep)
+      if (filtroCentro !== 'TODOS') params.set('codCen', filtroCentro)
+      if (filtroSexo !== 'TODOS') params.set('sexo', filtroSexo)
+      if (filtroGrupoEtario !== 'TODOS') params.set('grupoEtario', filtroGrupoEtario)
+      const withFilters = (path: string) => `${path}${params.size ? `?${params.toString()}` : ''}`
+      const [resResumen, resCentros, resBas, resEsp, resUrg, resCargas, bandejaBas, bandejaEsp, bandejaUrg] = await Promise.all([
+        fetchJson(withFilters('/api/gestion-datos/dpnna/resumen')),
+        fetchJson(withFilters('/api/gestion-datos/dpnna/centros')),
+        fetchJson(withFilters('/api/gestion-datos/dpnna/metricas/basico')),
+        fetchJson(withFilters('/api/gestion-datos/dpnna/metricas/especializado')),
+        fetchJson(withFilters('/api/gestion-datos/dpnna/metricas/urgencia')),
+        fetchJson('/api/gestion-datos/dpnna/cargas').catch(() => []),
+        fetchJson(withFilters('/api/gestion-datos/dpnna/bandeja/BASICO')).catch(() => []),
+        fetchJson(withFilters('/api/gestion-datos/dpnna/bandeja/ESPECIALIZADO')).catch(() => []),
+        fetchJson(withFilters('/api/gestion-datos/dpnna/bandeja/URGENCIA')).catch(() => [])
+      ])
+
+      setResumen(resResumen)
+      setCentros(Array.isArray(resCentros) ? resCentros : [])
+      setMetricasBasico(resBas)
+      setMetricasEsp(resEsp)
+      setMetricasUrg(resUrg)
+      setCargas(Array.isArray(resCargas) ? resCargas : [])
+      setBandejas({
+        BASICO: Array.isArray(bandejaBas) ? bandejaBas : [],
+        ESPECIALIZADO: Array.isArray(bandejaEsp) ? bandejaEsp : [],
+        URGENCIA: Array.isArray(bandejaUrg) ? bandejaUrg : [],
+      })
+    } catch (err) {
+      console.error('Error cargando métricas DPNNA:', err)
+      setErrorCarga(err instanceof Error ? err.message : 'No fue posible cargar el tablero')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    cargarDatos()
   }, [])
 
-  // Lista de Provincias
-  const provList = useMemo(() => {
-    if (selectedDepto === 'Todos') {
-      return ['Todas', ...Array.from(new Set(CAR_MOCK_DATA.map(c => c.provincia)))]
-    }
-    const filtered = CAR_MOCK_DATA.filter(c => c.departamento === selectedDepto)
-    return ['Todas', ...Array.from(new Set(filtered.map(c => c.provincia)))]
-  }, [selectedDepto])
-
-  // Filtrado de la tabla y datos
-  const filteredCars = useMemo(() => {
-    return CAR_MOCK_DATA.filter(c => {
-      const matchTipo = tipoCarFilter === 'Todos' || c.tipoCar === tipoCarFilter
-      const matchPerfil = perfilFilter === 'Todos' || c.perfilAtencion === perfilFilter
-      const matchInfractores =
-        infractoresFilter === 'Todos' ||
-        (infractoresFilter === 'Con Infractores' && c.tieneInfractores === 'Sí') ||
-        (infractoresFilter === 'Sin Infractores' && c.tieneInfractores === 'No')
-      const matchDepto = selectedDepto === 'Todos' || c.departamento === selectedDepto
-      const matchProv = selectedProv === 'Todas' || c.provincia === selectedProv
-
-      const matchSearch =
-        c.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.centroAcogida.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.responsable.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.institucionAdmin1.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.expediente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.distrito.toLowerCase().includes(searchTerm.toLowerCase())
-
-      return matchTipo && matchPerfil && matchInfractores && matchDepto && matchProv && matchSearch
+  // Departamentos únicos para el filtro
+  const departamentos = useMemo(() => {
+    const set = new Set<string>()
+    centros.forEach(c => {
+      if (c.departamento) set.add(c.departamento)
     })
-  }, [tipoCarFilter, perfilFilter, infractoresFilter, selectedDepto, selectedProv, searchTerm])
+    return Array.from(set).sort()
+  }, [centros])
 
-  // Totales calculados dinámicamente o basados en universo nacional
-  const totalCarNacional = 412
-  const totalCarPublicos = 158
-  const totalCarPrivados = 254
-  const capacidadTotal = 6850
-  const poblacionTotal = 5210
-  const totalInfractoresCar = 28
+  // Centros filtrados
+  const centrosFiltrados = useMemo(() => {
+    return centros.filter(c => {
+      const matchBusqueda =
+        !busquedaCentro ||
+        c.nombre.toLowerCase().includes(busquedaCentro.toLowerCase()) ||
+        c.codigo.toLowerCase().includes(busquedaCentro.toLowerCase()) ||
+        (c.distrito && c.distrito.toLowerCase().includes(busquedaCentro.toLowerCase()))
 
-  const pctPublicos = ((totalCarPublicos / totalCarNacional) * 100).toFixed(1)
-  const pctPrivados = ((totalCarPrivados / totalCarNacional) * 100).toFixed(1)
-  const pctOcupacion = ((poblacionTotal / capacidadTotal) * 100).toFixed(1)
-  const pctInfractores = ((totalInfractoresCar / totalCarNacional) * 100).toFixed(1)
+      const matchDep = filtroDep === 'TODOS' || c.departamento === filtroDep
+      const matchCentro = filtroCentro === 'TODOS' || c.codigo === filtroCentro
+      const matchAcred = filtroAcreditado === 'TODOS' || c.acreditado === filtroAcreditado
+      const matchSat = filtroSaturacion === 'TODOS' || c.estadoSaturacion === filtroSaturacion
 
-  // Data para gráfico por departamento
-  const chartDeptosData = useMemo(() => {
-    let list = [...DEPTOS_STATS_DATA]
-    if (selectedDepto !== 'Todos') {
-      list = list.filter(d => d.depto === selectedDepto)
+      return matchBusqueda && matchDep && matchCentro && matchAcred && matchSat
+    })
+  }, [centros, busquedaCentro, filtroDep, filtroCentro, filtroAcreditado, filtroSaturacion])
+
+  const resumenCentros = useMemo(() => {
+    const capacidad = centrosFiltrados.reduce((sum, c) => sum + (c.capacidadReal || 0), 0)
+    const poblacion = centrosFiltrados.reduce((sum, c) => sum + (c.poblacionActual || 0), 0)
+    return {
+      total: centrosFiltrados.length,
+      acreditados: centrosFiltrados.filter(c => c.acreditado === 'SI').length,
+      sobreocupados: centrosFiltrados.filter(c => c.estadoSaturacion === 'SOBREDEMANDA').length,
+      sinCapacidad: centrosFiltrados.filter(c => c.estadoSaturacion === 'SIN_DATO').length,
+      capacidad,
+      disponibles: Math.max(capacidad - poblacion, 0),
     }
-    if (tipoCarFilter === 'Públicos') {
-      list = list.map(d => ({ ...d, privado: 0 }))
-    } else if (tipoCarFilter === 'Privados') {
-      list = list.map(d => ({ ...d, publico: 0 }))
-    }
-    return list
-  }, [selectedDepto, tipoCarFilter])
+  }, [centrosFiltrados])
 
-  // Exportar todas las 24 variables a Excel
-  const handleExportExcel = () => {
-    const dataExcel = filteredCars.map(c => ({
-      'Código': c.codigo,
-      'Centro de Acogida Residencial': c.centroAcogida,
-      'Tipo de CAR': c.tipoCar,
-      'Perfil de Atención': c.perfilAtencion,
+  // Exportar a Excel el Directorio
+  const handleExportarExcel = () => {
+    const rows = centrosFiltrados.map(c => ({
+      'Código Centro': c.codigo,
+      'Código DGNNA': c.codigoDgnna,
+      'Nombre del Centro': c.nombre,
+      'Tipo Centro': c.tipo,
+      'Perfil Específico': c.tipoEspecifico,
       'Departamento': c.departamento,
       'Provincia': c.provincia,
       'Distrito': c.distrito,
-      'Dirección': c.direccion,
-      'Institución que administra al CAR': c.institucionAdmin1,
-      'Institución que administra al CAR 2': c.institucionAdmin2,
-      'Modalidad': c.modalidad,
-      'Responsable del CAR': c.responsable,
-      'Capacidad Máxima': c.capacidadMaxima,
-      'Población actual': c.poblacionActual,
-      '% Ocupación': `${Math.round((c.poblacionActual / c.capacidadMaxima) * 100)} %`,
-      'Correo del CAR': c.correoCar,
-      'Número de Celular': c.celular,
-      'Teléfono del CAR': c.telefono,
-      'Fecha de Envío': c.fechaEnvio,
-      'Tiene infractores acogid@s en CAR': c.tieneInfractores,
-      'Fecha de respuesta de la solicitud': c.fechaRespuesta,
-      'Documento de respuesta': c.documentoRespuesta,
-      'Contenido de documento Infractores a la LEY': c.contenidoInfractores,
-      'EXPEDIENTE': c.expediente,
-      'CORREO': c.correo,
+      'Ubigeo': c.ubigeo,
+      'Capacidad Instalada': c.capacidadInstalada,
+      'Capacidad Real': c.capacidadReal,
+      'Población Albergada Actual': c.poblacionActual,
+      '% Ocupación': c.tasaOcupacion === null ? 'SIN DATO' : `${c.tasaOcupacion}%`,
+      'Estado Saturación': c.estadoSaturacion,
+      'Acreditado': c.acreditado,
+      'R.D.': c.resolucion,
+      'Constancia': c.nroConstancia,
+      'Vigencia': c.vigencia
     }))
 
-    const ws = XLSX.utils.json_to_sheet(dataExcel)
+    const ws = XLSX.utils.json_to_sheet(rows)
     const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Directorio CAR DPNNA')
-    XLSX.writeFile(wb, `Reporte_CAR_DPNNA_${new Date().toISOString().slice(0, 10)}.xlsx`)
+    XLSX.utils.book_append_sheet(wb, ws, 'Directorio Centros CAR')
+    XLSX.writeFile(wb, `DPNNA_Directorio_Centros_CAR_${new Date().toISOString().slice(0, 10)}.xlsx`)
   }
 
-  const handleOpenFicha = (car: CarItem) => {
-    setSelectedCar(car)
-    setModalOpen(true)
+  // Manejar importación periódica
+  const handleEjecutarImportacion = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!fileToUpload) return
+
+    setImportando(true)
+    setMensajeImportacion(null)
+
+    const formData = new FormData()
+    formData.append('file', fileToUpload)
+    formData.append('tipo', tipoImportacion)
+    formData.append('periodoCorte', periodoImportacion)
+    formData.append('usuario', 'DIRECTORA_DGNNA')
+
+    try {
+      const res = await fetch('/api/gestion-datos/dpnna/importar', {
+        method: 'POST',
+        body: formData
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.detail || 'Error al procesar el archivo')
+      }
+
+      setMensajeImportacion({
+        tipo: 'ok',
+        texto: `¡Importación completada con éxito! Se procesaron los registros de ${tipoImportacion}.`
+      })
+      setFileToUpload(null)
+      cargarDatos()
+    } catch (err: any) {
+      setMensajeImportacion({
+        tipo: 'error',
+        texto: err.message || 'Ocurrió un error inesperado.'
+      })
+    } finally {
+      setImportando(false)
+    }
+  }
+
+  // Paleta de colores normativos
+  const COLORS = {
+    verde: '#16A34A',
+    rojo: '#DC2626',
+    ambar: '#D97706',
+    azul: '#2563EB',
+    morado: '#7C3AED',
+    gris: '#64748B'
   }
 
   return (
-    <div className="min-h-screen bg-slate-100/60 p-4 md:p-6 space-y-4">
-      {/* ─────────────────────────────────────────────────────────────
-          1. CABECERA INSTITUCIONAL Y FILTROS RÁPIDOS
-      ───────────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-        {/* Logo MIMP & Título */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 pr-4 border-r border-slate-200">
-            <div className="bg-[#D91B24] text-white font-bold px-2.5 py-1 rounded text-xs tracking-wider shadow-sm">
-              PERÚ
-            </div>
-            <div className="text-[11px] leading-tight font-medium text-slate-700 max-w-[140px]">
-              Ministerio de la Mujer y Poblaciones Vulnerables
-            </div>
-          </div>
+    <div className="w-full min-h-screen bg-slate-50 text-slate-900 p-4 md:p-6 lg:p-8 space-y-6">
 
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
-              Situación <span className="text-[#2563EB]">DPNNA</span> — <span className="text-[#D91B24]">CAR</span>
-            </h1>
-            <p className="text-xs text-slate-500 font-medium">
-              Supervisión de Centros de Acogida Residencial (Públicos y Privados) a nivel nacional
-            </p>
+      {/* ─── CABECERA DE ALTO MANDO ────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 border border-slate-800 rounded-2xl p-6 shadow-lg text-white">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-200 mb-1">
+            <ShieldAlert className="w-4 h-4" />
+            Dirección General de Niñas, Niños y Adolescentes (DGNNA) · MIMP
           </div>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+            Situación de los Centros de Acogida Residencial (CAR)
+          </h1>
+          <p className="text-sm text-slate-300 mt-1">
+            Monitoreo del último corte disponible, alertas de seguimiento y directorio oficial de centros.
+          </p>
         </div>
 
-        {/* Filtros Superiores */}
-        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end text-xs">
-          {/* Tipo de CAR */}
-          <div className="flex flex-col">
-            <label className="text-[11px] font-bold text-slate-700">Tipo de CAR</label>
-            <select
-              value={tipoCarFilter}
-              onChange={e => setTipoCarFilter(e.target.value)}
-              className="font-semibold text-slate-800 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-sm min-w-[140px]"
-            >
-              <option value="Todos">Todos (Públicos/Privados)</option>
-              <option value="Público">Públicos (INABIF/Benef)</option>
-              <option value="Privado">Privados (ONG/Iglesias)</option>
-            </select>
-          </div>
-
-          {/* Perfil de Atención */}
-          <div className="flex flex-col">
-            <label className="text-[11px] font-bold text-slate-700">Perfil de Atención</label>
-            <select
-              value={perfilFilter}
-              onChange={e => setPerfilFilter(e.target.value)}
-              className="font-semibold text-slate-800 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-sm min-w-[140px]"
-            >
-              <option value="Todos">Todos los Perfiles</option>
-              <option value="Básico">Básico</option>
-              <option value="Especializado">Especializado</option>
-              <option value="Discapacidad Severa">Discapacidad Severa</option>
-              <option value="Madres Adolescentes">Madres Adolescentes</option>
-            </select>
-          </div>
-
-          {/* Alerta de Infractores */}
-          <div className="flex flex-col">
-            <label className="text-[11px] font-bold text-slate-700">Alerta Infractores</label>
-            <select
-              value={infractoresFilter}
-              onChange={e => setInfractoresFilter(e.target.value)}
-              className="font-semibold text-red-700 bg-red-50 border border-red-300 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-red-500 shadow-sm min-w-[130px]"
-            >
-              <option value="Todos">Todos</option>
-              <option value="Con Infractores">Con Infractores (28)</option>
-              <option value="Sin Infractores">Sin Infractores (384)</option>
-            </select>
-          </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setActiveTab('cargas')}
+            className="flex items-center gap-2 bg-white hover:bg-indigo-50 text-indigo-900 text-sm font-semibold px-4 py-2.5 rounded-lg shadow-sm transition"
+          >
+            <UploadCloud className="w-4 h-4" />
+            Gestionar cargas
+          </button>
+          <button
+            onClick={cargarDatos}
+            disabled={loading}
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white border border-slate-600 text-sm font-semibold px-3 py-2.5 rounded-lg shadow-sm transition"
+            title="Recargar datos de Oracle"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          2. FILA DE 5 TARJETAS KPI PRINCIPALES
-      ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-        {/* KPI 1: Total CAR */}
-        <div className="bg-white rounded-xl border-2 border-blue-600 p-3.5 shadow-sm flex items-center justify-between">
-          <div className="w-12 h-12 rounded-full bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0">
-            <Building2 className="w-6 h-6" />
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-bold text-slate-800 uppercase tracking-tight">Total CAR</p>
-            <p className="text-2xl font-black text-blue-700">{totalCarNacional}</p>
-            <p className="text-[11px] font-semibold text-slate-500">100 % Cobertura</p>
-          </div>
+      {errorCarga && (
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <strong>No se pudieron actualizar los indicadores.</strong> {errorCarga}
         </div>
+      )}
 
-        {/* KPI 2: CAR Públicos */}
-        <div className="bg-white rounded-xl border-2 border-emerald-500 p-3.5 shadow-sm flex items-center justify-between">
-          <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0">
-            <ShieldCheck className="w-6 h-6" />
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-bold text-slate-800">CAR Públicos</p>
-            <p className="text-2xl font-black text-emerald-600">{totalCarPublicos}</p>
-            <p className="text-xs font-bold text-emerald-700">{pctPublicos} %</p>
-          </div>
-        </div>
+      {/* Navegación independiente por pestañas */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
+        <button
+          onClick={() => setActiveTab('resumen')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition ${
+            activeTab === 'resumen'
+              ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+              : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+          }`}
+        >
+          <TrendingUp className="w-4 h-4" />
+          Resumen general
+        </button>
+        <button
+          onClick={() => setActiveTab('centros')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition ${
+            activeTab === 'centros'
+              ? 'bg-cyan-700 text-white shadow-sm'
+              : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+          }`}
+        >
+          <Building2 className="w-4 h-4" />
+          Directorio de Centros ({centros.length})
+        </button>
 
-        {/* KPI 3: CAR Privados */}
-        <div className="bg-white rounded-xl border-2 border-purple-600 p-3.5 shadow-sm flex items-center justify-between">
-          <div className="w-12 h-12 rounded-full bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-600 shrink-0">
-            <Home className="w-6 h-6" />
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-bold text-slate-800">CAR Privados</p>
-            <p className="text-2xl font-black text-purple-700">{totalCarPrivados}</p>
-            <p className="text-xs font-bold text-purple-800">{pctPrivados} %</p>
-          </div>
-        </div>
+        <button
+          onClick={() => setActiveTab('basico')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition ${
+            activeTab === 'basico'
+              ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+              : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          CAR Básico ({resumen?.distribucionTipoCar.basico || 0})
+        </button>
 
-        {/* KPI 4: Capacidad vs Ocupación */}
-        <div className="bg-white rounded-xl border-2 border-amber-500 p-3.5 shadow-sm flex items-center justify-between">
-          <div className="w-12 h-12 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shrink-0">
-            <Users className="w-6 h-6" />
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-bold text-slate-800">Población / Cap.</p>
-            <p className="text-xl font-black text-amber-700">
-              {poblacionTotal.toLocaleString()} <span className="text-xs font-normal text-slate-400">/ {capacidadTotal.toLocaleString()}</span>
-            </p>
-            <p className="text-xs font-bold text-amber-800">{pctOcupacion} % Ocupación</p>
-          </div>
-        </div>
+        <button
+          onClick={() => setActiveTab('especializado')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition ${
+            activeTab === 'especializado'
+              ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
+              : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+          }`}
+        >
+          <HeartPulse className="w-4 h-4" />
+          CAR Especializado ({resumen?.distribucionTipoCar.especializado || 0})
+        </button>
 
-        {/* KPI 5: Con Alerta de Infractores */}
-        <div className="bg-white rounded-xl border-2 border-red-600 p-3.5 shadow-sm flex items-center justify-between">
-          <div className="w-12 h-12 rounded-full bg-red-50 border border-red-200 flex items-center justify-center text-red-600 shrink-0">
-            <ShieldAlert className="w-6 h-6" />
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-bold text-slate-800">Con Infractores</p>
-            <p className="text-2xl font-black text-red-600">{totalInfractoresCar}</p>
-            <p className="text-xs font-bold text-red-700">{pctInfractores} % de CARs</p>
-          </div>
-        </div>
+        <button
+          onClick={() => setActiveTab('urgencia')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition ${
+            activeTab === 'urgencia'
+              ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
+              : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+          }`}
+        >
+          <Activity className="w-4 h-4" />
+          CAR de Urgencia ({resumen?.distribucionTipoCar.urgencia || 0})
+        </button>
+
+        <button
+          onClick={() => setActiveTab('cargas')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition ${
+            activeTab === 'cargas'
+              ? 'bg-slate-800 text-white border-slate-800 shadow-sm'
+              : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+          }`}
+        >
+          <UploadCloud className="w-4 h-4" />
+          Gestión de cargas
+        </button>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          3. SECCIÓN ANALÍTICA: FILTROS TERRITORIALES + GRÁFICOS
-      ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Columna Izquierda: Filtros y Modalidades (4 cols) */}
-        <div className="lg:col-span-4 space-y-4">
-          {/* Filtro Territorial */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5 border-b pb-2">
-              <MapPin className="w-4 h-4 text-slate-500" />
-              Filtro Geográfico Territorial
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 block mb-1">DEPARTAMENTO</label>
-                <select
-                  value={selectedDepto}
-                  onChange={e => {
-                    setSelectedDepto(e.target.value)
-                    setSelectedProv('Todas')
-                  }}
-                  className="w-full font-medium text-slate-800 bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                >
-                  {deptosList.map(d => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 block mb-1">PROVINCIA</label>
-                <select
-                  value={selectedProv}
-                  onChange={e => setSelectedProv(e.target.value)}
-                  className="w-full font-medium text-slate-800 bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                >
-                  {provList.map(p => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-[11px] font-bold text-slate-700 block mb-1">DISTRITO</label>
-                <select
-                  value={selectedDist}
-                  onChange={e => setSelectedDist(e.target.value)}
-                  className="w-full font-medium text-slate-800 bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                >
-                  <option value="Todos">Todos</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Modalidades de Atención */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 text-center">
-              Modalidad de Atención del CAR
-            </h3>
-            <div className="grid grid-cols-3 gap-2 text-center text-xs">
-              <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200">
-                <p className="text-xl font-extrabold text-blue-900">360</p>
-                <span className="text-[10px] font-bold text-slate-600 block mt-0.5">Residencial</span>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200">
-                <p className="text-xl font-extrabold text-emerald-900">32</p>
-                <span className="text-[10px] font-bold text-slate-600 block mt-0.5">Familiar</span>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200">
-                <p className="text-xl font-extrabold text-orange-900">20</p>
-                <span className="text-[10px] font-bold text-slate-600 block mt-0.5">Urgencias</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Principales Administradores */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-2.5">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 border-b pb-1.5">
-              Instituciones Administradoras
-            </h3>
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between py-1 border-b border-slate-100">
-                <span className="font-semibold text-slate-700">INABIF (Público)</span>
-                <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">84 CAR</span>
-              </div>
-              <div className="flex items-center justify-between py-1 border-b border-slate-100">
-                <span className="font-semibold text-slate-700">Sociedades de Beneficencia</span>
-                <span className="font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">74 CAR</span>
-              </div>
-              <div className="flex items-center justify-between py-1 border-b border-slate-100">
-                <span className="font-semibold text-slate-700">ONGs y Fundaciones</span>
-                <span className="font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">162 CAR</span>
-              </div>
-              <div className="flex items-center justify-between py-1">
-                <span className="font-semibold text-slate-700">Asociaciones Religiosas</span>
-                <span className="font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">92 CAR</span>
-              </div>
+      {/* Barra de Filtros analíticos */}
+      {activeTab !== 'cargas' && (
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+            <label className="text-xs font-semibold text-slate-600">Periodo
+              <select value={filtroPeriodo} onChange={e => setFiltroPeriodo(e.target.value)} className="mt-1 w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100">
+                <option value="">Último corte</option>{resumen?.periodosCorte?.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-semibold text-slate-600">Departamento
+              <select value={filtroDep} onChange={e => setFiltroDep(e.target.value)} className="mt-1 w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100">
+                <option value="TODOS">Todos</option>{departamentos.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-semibold text-slate-600">Centro
+              <select value={filtroCentro} onChange={e => setFiltroCentro(e.target.value)} className="mt-1 w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100">
+                <option value="TODOS">Todos</option>{centros.map(c => <option key={c.codigo} value={c.codigo}>{c.nombre}</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-semibold text-slate-600">Sexo
+              <select value={filtroSexo} onChange={e => setFiltroSexo(e.target.value)} className="mt-1 w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"><option value="TODOS">Todos</option><option value="MUJER">Mujer</option><option value="HOMBRE">Hombre</option></select>
+            </label>
+            <label className="text-xs font-semibold text-slate-600">Grupo etario
+              <select value={filtroGrupoEtario} onChange={e => setFiltroGrupoEtario(e.target.value)} className="mt-1 w-full h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"><option value="TODOS">Todos</option><option value="0 - 11 meses">0–11 meses</option><option value="1 - 5 años">1–5 años</option><option value="6 - 11 años">6–11 años</option><option value="12 - 17 años">12–17 años</option><option value="18 - 25 años">18–25 años</option></select>
+            </label>
+            <div className="flex gap-2">
+              <button onClick={cargarDatos} className="h-10 flex-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg px-3 text-sm font-bold">Aplicar</button>
+              <button onClick={() => { setFiltroPeriodo(''); setFiltroDep('TODOS'); setFiltroCentro('TODOS'); setFiltroSexo('TODOS'); setFiltroGrupoEtario('TODOS') }} className="h-10 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg px-3 text-sm font-semibold text-slate-700">Limpiar</button>
             </div>
           </div>
         </div>
+      )}
 
-        {/* Columna Derecha: Gráficos Comparativos (8 cols) */}
-        <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Gráfico 1: Público vs Privado por Departamento */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between border-b pb-2 mb-2">
-                <h3 className="text-xs font-extrabold text-blue-900 uppercase tracking-wider">
-                  CAR PÚBLICOS VS PRIVADOS POR DEPARTAMENTO
-                </h3>
+      {/* ─── PESTAÑA 0: RESUMEN GENERAL EJECUTIVO ─────────────────────────── */}
+      {activeTab === 'resumen' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Total Centros */}
+            <div className="bg-gradient-to-br from-white to-indigo-50 border border-indigo-200 border-l-4 border-l-indigo-600 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+              <div className="flex items-center justify-between text-slate-500 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider">Directorio de Centros</span>
+                <Building2 className="w-5 h-5 text-indigo-600" />
               </div>
-              <div className="flex items-center gap-3 text-[10px] font-bold pb-2">
-                <span className="inline-flex items-center gap-1 text-emerald-600">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> PÚBLICO
+              <div className="text-3xl font-black text-slate-900">
+                {resumen ? resumen.totalCentros : '...'}
+              </div>
+              <div className="mt-3 flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-100">
+                <span className="flex items-center gap-1 font-medium text-emerald-700">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  {resumen ? resumen.centrosAcreditados : 0} Acreditados (RD)
                 </span>
-                <span className="inline-flex items-center gap-1 text-purple-600">
-                  <span className="w-2.5 h-2.5 rounded-full bg-purple-500" /> PRIVADO
+                <span className="text-slate-400">
+                  {resumen ? resumen.centrosNoAcreditados : 0} sin acreditación
                 </span>
               </div>
+            </div>
 
-              <div className="h-[360px] w-full text-xs">
+            {/* Población vs Capacidad */}
+            <div className="bg-gradient-to-br from-white to-blue-50 border border-blue-200 border-l-4 border-l-blue-600 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+              <div className="flex items-center justify-between text-slate-500 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider">Tasa de Ocupación Global</span>
+                <TrendingUp className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-black text-slate-900">
+                  {resumen ? `${resumen.tasaOcupacion}%` : '...'}
+                </span>
+                <span className="text-xs font-semibold text-slate-500">
+                  ({resumen ? resumen.totalNna.toLocaleString() : 0} NNA)
+                </span>
+              </div>
+              <div className="mt-3 flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-100">
+                <span>Cap. Instalada: <strong>{resumen ? resumen.capacidadInstalada.toLocaleString() : 0}</strong></span>
+                <span>Cap. Real: <strong>{resumen ? resumen.capacidadReal.toLocaleString() : 0}</strong></span>
+              </div>
+            </div>
+
+            {/* ALERTA CRÍTICA SLA: > 18 MESES */}
+            <div className="bg-gradient-to-br from-white to-amber-50 border border-amber-300 border-l-4 border-l-amber-500 rounded-xl p-5 shadow-sm flex flex-col justify-between relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-2 h-full bg-amber-500" />
+              <div className="flex items-center justify-between text-slate-600 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-600" />
+                  Seguimiento: &gt; 18 Meses
+                </span>
+                <span className="text-xs font-black bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                  {resumen ? `${resumen.pctMayor18Meses}%` : '...'}
+                </span>
+              </div>
+              <div className="text-3xl font-black text-amber-900">
+                {resumen ? resumen.mayor18Meses.toLocaleString() : '...'}
+                <span className="text-xs font-normal text-slate-500 ml-2">NNA para revisión</span>
+              </div>
+              <div className="mt-3 text-xs text-slate-500 pt-3 border-t border-slate-100">
+                Indicador de seguimiento; su aplicación depende de la medida y situación individual.
+              </div>
+            </div>
+
+            {/* Distribución por Tipo de CAR */}
+            <div className="bg-gradient-to-br from-white to-violet-50 border border-violet-200 border-l-4 border-l-violet-600 rounded-xl p-5 shadow-sm flex flex-col justify-between">
+              <div className="flex items-center justify-between text-slate-500 mb-2">
+                <span className="text-xs font-bold uppercase tracking-wider">Distribución por Servicio</span>
+                <Layers className="w-5 h-5 text-purple-600" />
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="flex items-center gap-1.5 text-slate-700">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600" /> CAR Básico:
+                  </span>
+                  <strong className="text-slate-900">{resumen ? resumen.distribucionTipoCar.basico : 0} ({resumen ? roundPct(resumen.distribucionTipoCar.basico, resumen.totalNna) : 0}%)</strong>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="flex items-center gap-1.5 text-slate-700">
+                    <span className="w-2.5 h-2.5 rounded-full bg-purple-600" /> CAR Especializado:
+                  </span>
+                  <strong className="text-slate-900">{resumen ? resumen.distribucionTipoCar.especializado : 0} ({resumen ? roundPct(resumen.distribucionTipoCar.especializado, resumen.totalNna) : 0}%)</strong>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="flex items-center gap-1.5 text-slate-700">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> CAR Urgencia:
+                  </span>
+                  <strong className="text-slate-900">{resumen ? resumen.distribucionTipoCar.urgencia : 0} ({resumen ? roundPct(resumen.distribucionTipoCar.urgencia, resumen.totalNna) : 0}%)</strong>
+                </div>
+              </div>
+              <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-400 text-right">
+                Total corte: {resumen ? resumen.totalNna.toLocaleString() : 0} NNA
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 border-l-4 border-l-cyan-600 rounded-xl p-5 shadow-sm">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Capacidad instalada</div>
+              <div className="text-3xl font-bold tabular-nums text-slate-900 mt-2">{resumen?.capacidadInstalada?.toLocaleString() || 0}</div>
+              <div className="text-xs text-slate-500 mt-2">Plazas declaradas en el directorio</div>
+            </div>
+            <div className="bg-white border border-slate-200 border-l-4 border-l-blue-600 rounded-xl p-5 shadow-sm">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Capacidad real</div>
+              <div className="text-3xl font-bold tabular-nums text-slate-900 mt-2">{resumen?.capacidadReal?.toLocaleString() || 0}</div>
+              <div className="text-xs text-slate-500 mt-2">Denominador de ocupación</div>
+            </div>
+            <div className="bg-white border border-red-300 border-l-4 border-l-red-600 rounded-xl p-5 shadow-sm">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Centros sobreocupados</div>
+              <div className="text-3xl font-bold tabular-nums text-red-700 mt-2">{resumenCentros.sobreocupados}</div>
+              <div className="text-xs text-slate-500 mt-2">Población activa sobre capacidad real</div>
+            </div>
+            <div className="bg-white border border-green-200 border-l-4 border-l-green-600 rounded-xl p-5 shadow-sm">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Plazas disponibles</div>
+              <div className="text-3xl font-bold tabular-nums text-green-700 mt-2">{resumenCentros.disponibles.toLocaleString()}</div>
+              <div className="text-xs text-slate-500 mt-2">Estimación con capacidad real</div>
+            </div>
+          </div>
+
+          {/* Gráficos Ejecutivos y Acceso Rápido para Dirección DGNNA */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Gráfico 1: Población por Tipo de CAR */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <h3 className="font-bold text-slate-800 text-sm mb-1">
+                Población por Tipo de Acogimiento
+              </h3>
+              <p className="text-xs text-slate-500 mb-4">Corte activo en los 54 centros</p>
+              <div className="h-56">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    layout="vertical"
-                    data={chartDeptosData}
-                    margin={{ top: 5, right: 10, left: 35, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                    <XAxis type="number" fontSize={10} stroke="#94a3b8" />
-                    <YAxis
-                      type="category"
-                      dataKey="depto"
-                      fontSize={9}
-                      fontWeight="bold"
-                      stroke="#475569"
-                      tickLine={false}
-                      width={75}
-                    />
-                    <Tooltip
-                      formatter={(val, name) => [val, name === 'publico' ? 'CAR Público' : 'CAR Privado']}
-                      contentStyle={{ fontSize: '11px', borderRadius: '8px' }}
-                    />
-                    <Bar dataKey="publico" stackId="car" fill="#10b981" />
-                    <Bar dataKey="privado" stackId="car" fill="#a855f7" />
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Básico', value: resumen?.distribucionTipoCar.basico || 0, color: '#2563EB' },
+                        { name: 'Especializado', value: resumen?.distribucionTipoCar.especializado || 0, color: '#7C3AED' },
+                        { name: 'Urgencia', value: resumen?.distribucionTipoCar.urgencia || 0, color: '#D97706' },
+                      ]}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={75}
+                      paddingAngle={4}
+                    >
+                      {[
+                        { name: 'Básico', color: '#2563EB' },
+                        { name: 'Especializado', color: '#7C3AED' },
+                        { name: 'Urgencia', color: '#D97706' },
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Gráfico 2: Situación de Saturación de Centros */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <h3 className="font-bold text-slate-800 text-sm mb-1">
+                Estado de Capacidad de Centros
+              </h3>
+              <p className="text-xs text-slate-500 mb-4">Nivel de demanda sobre capacidad real</p>
+              <div className="space-y-3 pt-2">
+                <div>
+                  <div className="flex justify-between text-xs font-semibold mb-1">
+                    <span className="text-emerald-700 flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" /> Disponibles (&lt;85%)</span>
+                    <span>{centros.filter(c => c.estadoSaturacion === 'DISPONIBLE').length} centros</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-3">
+                    <div className="bg-emerald-500 h-3 rounded-full" style={{ width: `${roundPct(centros.filter(c => c.estadoSaturacion === 'DISPONIBLE').length, centros.length)}%` }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs font-semibold mb-1">
+                    <span className="text-amber-700 flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> En Alerta (85% - 100%)</span>
+                    <span>{centros.filter(c => c.estadoSaturacion === 'ALERTA').length} centros</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-3">
+                    <div className="bg-amber-500 h-3 rounded-full" style={{ width: `${roundPct(centros.filter(c => c.estadoSaturacion === 'ALERTA').length, centros.length)}%` }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs font-semibold mb-1">
+                    <span className="text-red-700 flex items-center gap-1.5"><AlertOctagon className="w-3.5 h-3.5" /> Sobredemanda (&gt;100%)</span>
+                    <span>{centros.filter(c => c.estadoSaturacion === 'SOBREDEMANDA').length} centros</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-3">
+                    <div className="bg-red-500 h-3 rounded-full" style={{ width: `${roundPct(centros.filter(c => c.estadoSaturacion === 'SOBREDEMANDA').length, centros.length)}%` }} />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs font-semibold mb-1">
+                    <span className="text-slate-500 flex items-center gap-1.5"><HelpCircle className="w-3.5 h-3.5" /> Sin Capacidad Informada</span>
+                    <span>{centros.filter(c => c.estadoSaturacion === 'SIN_DATO').length} centros</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-3">
+                    <div className="bg-slate-400 h-3 rounded-full" style={{ width: `${roundPct(centros.filter(c => c.estadoSaturacion === 'SIN_DATO').length, centros.length)}%` }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tarjeta 3: Resumen de Decisiones de Alto Mando */}
+            <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-xl p-5 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-bold text-indigo-300 uppercase tracking-wider mb-2">
+                  <Sparkles className="w-4 h-4" /> Enfoque de Dirección General
+                </div>
+                <h3 className="font-bold text-base text-white">
+                  Monitoreo Integral de Medidas
+                </h3>
+                <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+                  El sistema consolida la información de <strong>{centros.length} Centros CAR</strong> a nivel nacional con <strong>{resumen?.totalNna.toLocaleString() || 0} NNA</strong> albergados, garantizando la anonimización de datos y el monitoreo estricto de permanencia.
+                </p>
+              </div>
+
+              <div className="pt-4 border-t border-slate-700/60 flex flex-col gap-2">
+                <button
+                  onClick={() => setActiveTab('centros')}
+                  className="w-full flex items-center justify-between bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-3 py-2 rounded-lg transition"
+                >
+                  <span>Ver Directorio Oficial de Centros</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setActiveTab('basico')}
+                  className="w-full flex items-center justify-between bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 text-xs font-semibold px-3 py-2 rounded-lg transition"
+                >
+                  <span>Revisar Alertas de Permanencia (&gt;18m)</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── PESTAÑA 1: DIRECTORIO DE CENTROS CAR (NOMINAL DE CENTROS) ────── */}
+      {activeTab === 'centros' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            {[
+              ['Centros visibles', resumenCentros.total, 'text-slate-900'],
+              ['Acreditados', resumenCentros.acreditados, 'text-emerald-700'],
+              ['Capacidad real', resumenCentros.capacidad, 'text-blue-700'],
+              ['Plazas disponibles', resumenCentros.disponibles, 'text-emerald-700'],
+              ['Sobreocupados', resumenCentros.sobreocupados, 'text-red-700'],
+            ].map(([label, value, color]) => (
+              <div key={String(label)} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                <div className="text-[11px] uppercase tracking-wide font-bold text-slate-500">{label}</div>
+                <div className={`text-2xl font-black mt-1 ${color}`}>{value}</div>
+              </div>
+            ))}
+          </div>
+          {resumenCentros.sinCapacidad > 0 && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+              {resumenCentros.sinCapacidad} centro(s) no tienen capacidad real informada; no se clasifican como disponibles.
+            </div>
+          )}
+          {/* Filtros de Centros */}
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
+            <div className="flex flex-1 w-full md:w-auto items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
+              <Search className="w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar centro por nombre, código o distrito..."
+                value={busquedaCentro}
+                onChange={e => setBusquedaCentro(e.target.value)}
+                className="bg-transparent border-none text-sm w-full outline-none text-slate-800 placeholder-slate-400"
+              />
+              {busquedaCentro && (
+                <button onClick={() => setBusquedaCentro('')}>
+                  <X className="w-4 h-4 text-slate-400 hover:text-slate-600" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+              {/* Filtro Departamento */}
+              <select
+                value={filtroDep}
+                onChange={e => setFiltroDep(e.target.value)}
+                className="bg-white border border-slate-200 text-xs font-semibold text-slate-700 px-3 py-2.5 rounded-lg outline-none"
+              >
+                <option value="TODOS">Todos los Departamentos</option>
+                {departamentos.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+
+              {/* Filtro Acreditación */}
+              <select
+                value={filtroAcreditado}
+                onChange={e => setFiltroAcreditado(e.target.value)}
+                className="bg-white border border-slate-200 text-xs font-semibold text-slate-700 px-3 py-2.5 rounded-lg outline-none"
+              >
+                <option value="TODOS">Acreditación: Todos</option>
+                <option value="SI">Acreditados (SI)</option>
+                <option value="NO">No Acreditados (NO)</option>
+              </select>
+
+              {/* Filtro Saturación */}
+              <select
+                value={filtroSaturacion}
+                onChange={e => setFiltroSaturacion(e.target.value)}
+                className="bg-white border border-slate-200 text-xs font-semibold text-slate-700 px-3 py-2.5 rounded-lg outline-none"
+              >
+                <option value="TODOS">Saturación: Todas</option>
+                <option value="SOBREDEMANDA">Sobredemanda (&gt;100%)</option>
+                <option value="ALERTA">Alerta (85% - 100%)</option>
+                <option value="DISPONIBLE">Disponible (&lt;85%)</option>
+              </select>
+
+              {/* Exportar Excel */}
+              <button
+                onClick={handleExportarExcel}
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-2.5 rounded-lg transition"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Exportar Excel
+              </button>
+            </div>
+          </div>
+
+          {/* Tabla de Centros */}
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h3 className="font-bold text-slate-800 text-sm">
+                Directorio Oficial ({centrosFiltrados.length} centros encontrados)
+              </h3>
+              <span className="text-xs text-slate-500">
+                Fuente: Registro Nacional de CAR (New Report 2026) · Oracle GESTION_DATOS_DB
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+                  <tr>
+                    <th className="py-3 px-4">Cód.</th>
+                    <th className="py-3 px-4">Centro de Acogida Residencial</th>
+                    <th className="py-3 px-4">Ubicación</th>
+                    <th className="py-3 px-4 text-center">Capacidad</th>
+                    <th className="py-3 px-4 text-center">Población Activa</th>
+                    <th className="py-3 px-4 text-center">% Ocupación</th>
+                    <th className="py-3 px-4 text-center">Acreditado</th>
+                    <th className="py-3 px-4">Resolución / Vigencia</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-700">
+                  {centrosFiltrados.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="text-center py-8 text-slate-400">
+                        No se encontraron centros con los filtros seleccionados.
+                      </td>
+                    </tr>
+                  ) : (
+                    centrosFiltrados.map(c => (
+                      <tr key={c.id} className="hover:bg-slate-50/80 transition">
+                        <td className="py-3 px-4 font-mono font-semibold text-slate-500">{c.codigo}</td>
+                        <td className="py-3 px-4 font-bold text-slate-900">
+                          <div>{c.nombre}</div>
+                          <div className="text-[11px] font-normal text-slate-500">{c.tipo} · {c.unidadLinea || 'USPNNA'}</div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div>{c.departamento} / {c.provincia}</div>
+                          <div className="text-[11px] text-slate-400">{c.distrito} (Ubigeo: {c.ubigeo})</div>
+                        </td>
+                        <td className="py-3 px-4 text-center font-medium">
+                          Instalada: {c.capacidadInstalada} <br/>
+                          <span className="text-[11px] text-slate-400">Real: {c.capacidadReal}</span>
+                        </td>
+                        <td className="py-3 px-4 text-center font-black text-slate-800 text-sm">
+                          {c.poblacionActual}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <span className={`inline-flex px-2 py-0.5 rounded-full font-bold text-[11px] ${
+                            c.estadoSaturacion === 'SIN_DATO'
+                              ? 'bg-slate-100 text-slate-600'
+                              : c.estadoSaturacion === 'SOBREDEMANDA'
+                              ? 'bg-red-100 text-red-800'
+                              : c.estadoSaturacion === 'ALERTA'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-emerald-100 text-emerald-800'
+                          }`}>
+                            {c.tasaOcupacion === null ? 'SIN DATO' : `${c.tasaOcupacion}%`}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          {c.acreditado === 'SI' ? (
+                            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">
+                              <CheckCircle2 className="w-3 h-3" /> ACREDITADO
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full text-[11px]">
+                              NO ACRED.
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="font-medium text-slate-800">{c.resolucion || '---'}</div>
+                          <div className="text-[11px] text-slate-400">Vigencia: {c.vigencia || '-'}</div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── PESTAÑA 2: CAR BÁSICO (ANÁLISIS CUANTITATIVO AGREGADO) ──────── */}
+      {activeTab === 'basico' && metricasBasico && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Alerta de Desinstitucionalización */}
+            <div className="bg-white border border-amber-300 border-l-4 border-l-amber-600 rounded-xl p-5 shadow-sm">
+              <h4 className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <AlertOctagon className="w-4 h-4 text-amber-600" />
+                Estancia Prolongada (&gt;18 Meses)
+              </h4>
+              <div className="text-3xl font-black text-amber-800 tabular-nums">
+                {metricasBasico.permanencia.mayor18Meses} NNA
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Representa el <strong>{metricasBasico.permanencia.pctMayor18}%</strong> del total en CAR Básico ({metricasBasico.totalNna} NNA).
+              </p>
+              <div className="mt-3 bg-amber-50 text-amber-800 text-xs p-2.5 rounded-lg">
+                Prioridad de revisión para los equipos de la DPNNA y articulación con UPE para reinserción familiar o adopción.
+              </div>
+            </div>
+
+            {/* Plan de Trabajo Individual (PTI) */}
+            <div className="bg-gradient-to-br from-white to-green-50 border border-green-200 border-l-4 border-l-green-600 rounded-xl p-5 shadow-sm">
+              <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <FileCheck className="w-4 h-4 text-indigo-600" />
+                PTI registrado
+              </h4>
+              <div className="text-3xl font-black text-slate-900">
+                {metricasBasico.pti.aprobado} NNA
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                <strong>{metricasBasico.pti.pctAprobado}%</strong> registra respuesta afirmativa en la fuente; no implica vigencia documental.
+              </p>
+              <div className="mt-3 bg-slate-50 text-slate-600 text-xs p-2.5 rounded-lg flex justify-between">
+                <span>No registrado / pendiente:</span>
+                <strong className="text-amber-700">{metricasBasico.pti.pendiente} NNA</strong>
+              </div>
+              {metricasBasico.pti.sinDato > 0 && <div className="text-[11px] text-slate-500 mt-2">Sin dato: {metricasBasico.pti.sinDato}</div>}
+            </div>
+
+            {/* Composición por Sexo */}
+            <div className="bg-gradient-to-br from-white to-blue-50 border border-blue-200 border-l-4 border-l-blue-600 rounded-xl p-5 shadow-sm">
+              <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-blue-600" />
+                Distribución por Sexo
+              </h4>
+              <div className="text-3xl font-black text-slate-900">
+                {metricasBasico.demografia.mujeres} <span className="text-sm font-normal text-slate-500">Mujeres</span> / {metricasBasico.demografia.hombres} <span className="text-sm font-normal text-slate-500">Hombres</span>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <div
+                  style={{ width: `${roundPct(metricasBasico.demografia.mujeres, metricasBasico.totalNna)}%` }}
+                  className="bg-purple-600 h-3 rounded-l-full"
+                  title="Mujeres"
+                />
+                <div
+                  style={{ width: `${roundPct(metricasBasico.demografia.hombres, metricasBasico.totalNna)}%` }}
+                  className="bg-blue-600 h-3 rounded-r-full"
+                  title="Hombres"
+                />
+              </div>
+              <div className="mt-2 flex justify-between text-xs text-slate-500">
+                <span>Mujeres: {roundPct(metricasBasico.demografia.mujeres, metricasBasico.totalNna)}%</span>
+                <span>Hombres: {roundPct(metricasBasico.demografia.hombres, metricasBasico.totalNna)}%</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white border border-green-200 border-l-4 border-l-green-600 rounded-xl p-4 shadow-sm">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Con seguro de salud</div>
+              <div className="text-2xl font-bold tabular-nums text-green-700 mt-2">{metricasBasico.saludEducacion.conSeguro}</div>
+            </div>
+            <div className="bg-white border border-red-200 border-l-4 border-l-red-600 rounded-xl p-4 shadow-sm">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Sin seguro de salud</div>
+              <div className="text-2xl font-bold tabular-nums text-red-700 mt-2">{metricasBasico.saludEducacion.sinSeguro}</div>
+            </div>
+            <div className="bg-white border border-slate-200 border-l-4 border-l-slate-500 rounded-xl p-4 shadow-sm">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Discapacidad registrada</div>
+              <div className="text-2xl font-bold tabular-nums text-slate-800 mt-2">{metricasBasico.saludEducacion.conDiscapacidad}</div>
+              <div className="text-xs text-slate-500 mt-1">Solo registros explícitos de la fuente</div>
+            </div>
+          </div>
+
+          {/* Gráfico y Top Situación Legal */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Grupos Etarios */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <h3 className="font-bold text-slate-800 text-sm mb-4">
+                Población por Grupos Etarios en CAR Básico
+              </h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={metricasBasico.demografia.gruposEtarios}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="grupo" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip />
+                    <Bar dataKey="cantidad" fill="#2563EB" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
-          </div>
 
-          {/* Gráfico 2: Distribución por Perfil de Atención */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between border-b pb-2 mb-2">
-                <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">
-                  DISTRIBUCIÓN POR PERFIL DE ATENCIÓN
-                </h3>
-              </div>
-
-              <div className="space-y-4 pt-2 text-xs">
-                <div>
-                  <div className="flex justify-between font-semibold text-slate-700 mb-1">
-                    <span>Básico (Protección Integral)</span>
-                    <span className="font-bold text-blue-700">238 CAR (57.8 %)</span>
-                  </div>
-                  <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                    <div style={{ width: '57.8%' }} className="bg-blue-600 h-full rounded-full" />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between font-semibold text-slate-700 mb-1">
-                    <span>Especializado (Conductual / Salud)</span>
-                    <span className="font-bold text-indigo-700">76 CAR (18.4 %)</span>
-                  </div>
-                  <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                    <div style={{ width: '18.4%' }} className="bg-indigo-600 h-full rounded-full" />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between font-semibold text-slate-700 mb-1">
-                    <span>Discapacidad Severa / Multi-discapacidad</span>
-                    <span className="font-bold text-amber-700">54 CAR (13.1 %)</span>
-                  </div>
-                  <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                    <div style={{ width: '13.1%' }} className="bg-amber-500 h-full rounded-full" />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between font-semibold text-slate-700 mb-1">
-                    <span>Madres Adolescentes y Gestantes</span>
-                    <span className="font-bold text-pink-700">44 CAR (10.7 %)</span>
-                  </div>
-                  <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                    <div style={{ width: '10.7%' }} className="bg-pink-500 h-full rounded-full" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Alerta Especial */}
-            <div className="mt-4 p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-center justify-between">
-              <div className="text-xs">
-                <span className="font-bold text-red-800 flex items-center gap-1">
-                  <AlertOctagon className="w-4 h-4 text-red-600" />
-                  Reporte de Acogidos Infractores a la Ley:
-                </span>
-                <span className="text-red-700 text-[11px] block mt-0.5">
-                  28 CAR a nivel nacional reportan NNA con medidas socioeducativas o antecedentes.
-                </span>
-              </div>
-              <button
-                onClick={() => setInfractoresFilter('Con Infractores')}
-                className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition shrink-0 ml-2"
-              >
-                Filtrar
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ─────────────────────────────────────────────────────────────
-          4. DIRECTORIO MAESTRO DE CAR (TABLA CON 24 VARIABLES)
-      ───────────────────────────────────────────────────────────── */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-blue-50 text-blue-600 font-bold">
-              <FileSpreadsheet className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-extrabold text-slate-900">
-                Directorio Maestro de Centros de Acogida Residencial (CAR)
+            {/* Situación Legal */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <h3 className="font-bold text-slate-800 text-sm mb-4">
+                Top Causales de Situación Legal (Medidas de Ingreso)
               </h3>
-              <p className="text-[11px] text-slate-500">
-                Mostrando {filteredCars.length} registros según los filtros seleccionados
+              <div className="space-y-3">
+                {metricasBasico.topSituacionLegal.map((item, idx) => (
+                  <div key={idx} className="bg-slate-50 border border-slate-100 p-3 rounded-lg flex justify-between items-center text-xs">
+                    <span className="font-medium text-slate-700 max-w-[80%] line-clamp-2">
+                      {item.nombre}
+                    </span>
+                    <span className="font-black text-slate-900 bg-white border border-slate-200 px-2 py-1 rounded">
+                      {item.cantidad} NNA
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <BandejaCentros titulo="Bandeja prioritaria de CAR Básico" tipo="BASICO" filas={bandejas.BASICO} />
+        </div>
+      )}
+
+      {/* ─── PESTAÑA 3: CAR ESPECIALIZADO (SALUD Y DISCAPACIDAD) ─────────── */}
+      {activeTab === 'especializado' && metricasEsp && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Composición por sexo */}
+            <div className="bg-gradient-to-br from-white to-violet-50 border border-violet-200 border-l-4 border-l-violet-600 rounded-xl p-5 shadow-sm">
+              <h4 className="text-xs font-bold text-violet-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-violet-600" />
+                Composición del corte
+              </h4>
+              <div className="text-3xl font-black text-slate-900">
+                {metricasEsp.demografia.mujeres} <span className="text-sm font-normal text-slate-500">Mujeres</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                {metricasEsp.demografia.hombres} hombres; el indicador evita inferir severidad no registrada por la fuente.
+              </p>
+            </div>
+
+            {/* Permanencia > 18 meses */}
+            <div className="bg-white border border-amber-300 border-l-4 border-l-amber-600 rounded-xl p-5 shadow-sm">
+              <h4 className="text-xs font-bold text-amber-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-amber-600" />
+                Permanencia &gt; 18 Meses
+              </h4>
+              <div className="text-3xl font-black text-amber-900">
+                {metricasEsp.mayor18Meses} NNA
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                <strong>{metricasEsp.pctMayor18}%</strong> del total en centros especializados ({metricasEsp.totalNna} NNA).
+              </p>
+            </div>
+
+            {/* Total Población */}
+            <div className="bg-gradient-to-br from-white to-violet-50 border border-violet-200 border-l-4 border-l-violet-600 rounded-xl p-5 shadow-sm">
+              <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Building2 className="w-4 h-4 text-indigo-600" />
+                NNA activos especializados
+              </h4>
+              <div className="text-3xl font-black text-slate-900">
+                {metricasEsp.totalNna} NNA
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Registros activos del último corte disponible.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Buscar código, nombre, responsable, expediente..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+          {/* Centros con Mayor Carga Especializada */}
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <h3 className="font-bold text-slate-800 text-sm mb-4">
+              Centros especializados con mayor población activa
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {metricasEsp.topCentros.map((c, i) => (
+                <div key={i} className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex justify-between items-center">
+                  <div>
+                    <div className="font-bold text-slate-900 text-xs">{c.centro}</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">Revisar junto con capacidad real y necesidades de atención</div>
+                  </div>
+                  <div className="text-lg font-black text-violet-700 bg-white border border-violet-200 px-3 py-1 rounded-lg tabular-nums">
+                    {c.cantidad}
+                  </div>
+                </div>
+              ))}
             </div>
-            <button
-              onClick={handleExportExcel}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm whitespace-nowrap"
-            >
-              <Download className="w-3.5 h-3.5" /> Exportar 24 Variables
+          </div>
+          <BandejaCentros titulo="Necesidades por centro especializado" tipo="ESPECIALIZADO" filas={bandejas.ESPECIALIZADO} />
+        </div>
+      )}
+
+      {/* ─── PESTAÑA 4: CAR URGENCIA (TRANSITORIEDAD Y DERIVACIONES) ──────── */}
+      {activeTab === 'urgencia' && metricasUrg && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {/* Días promedio de estancia */}
+            <div className="bg-gradient-to-br from-white to-orange-50 border border-orange-200 border-l-4 border-l-orange-600 rounded-xl p-5 shadow-sm">
+              <h4 className="text-xs font-bold text-orange-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-orange-600" />
+                Días Promedio de Estancia
+              </h4>
+              <div className="text-3xl font-black text-slate-900">
+                {metricasUrg.diasPromedioEstancia} <span className="text-sm font-normal text-slate-500">días</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Tiempo promedio de permanencia transitoria en centros de urgencia.
+              </p>
+            </div>
+
+            {/* Estancia prolongada > 30 días */}
+            <div className="bg-white border border-amber-300 border-l-4 border-l-amber-600 rounded-xl p-5 shadow-sm">
+              <h4 className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <AlertOctagon className="w-4 h-4 text-amber-600" />
+                Permanencia sobre umbral (&gt; 30 días)
+              </h4>
+              <div className="text-3xl font-black text-amber-800 tabular-nums">
+                {metricasUrg.estanciaProlongadaUrgencia} NNA
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                <strong>{metricasUrg.pctProlongada}%</strong> superan el umbral de gestión configurable; requiere revisión, no implica por sí solo incumplimiento.
+              </p>
+            </div>
+
+            {/* Total Urgencias */}
+            <div className="bg-gradient-to-br from-white to-orange-50 border border-orange-200 border-l-4 border-l-orange-600 rounded-xl p-5 shadow-sm">
+              <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Activity className="w-4 h-4 text-orange-600" />
+                Población Total en Urgencia
+              </h4>
+              <div className="text-3xl font-black text-slate-900">
+                {metricasUrg.totalNna} NNA
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Atención contingente activa en el corte actual.
+              </p>
+            </div>
+            <div className="bg-white border border-orange-200 border-l-4 border-l-orange-600 rounded-xl p-5 shadow-sm">
+              <h4 className="text-xs font-bold text-orange-700 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Users className="w-4 h-4" />Composición por sexo</h4>
+              <div className="text-2xl font-black text-slate-900 tabular-nums">{metricasUrg.demografia.mujeres} <span className="text-sm font-normal text-slate-500">Mujeres</span></div>
+              <div className="text-sm text-slate-600 mt-2">{metricasUrg.demografia.hombres} hombres · {Math.max(metricasUrg.totalNna - metricasUrg.demografia.mujeres - metricasUrg.demografia.hombres, 0)} sin dato</div>
+            </div>
+          </div>
+
+          {/* Centros de Urgencia */}
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <h3 className="font-bold text-slate-800 text-sm mb-4">
+              Centros de Acogida Residencial de Urgencia
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {metricasUrg.topCentros.map((c, i) => (
+                <div key={i} className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex justify-between items-center">
+                  <div>
+                    <div className="font-bold text-slate-900 text-xs">{c.centro}</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">Disponibilidad de acogimiento de urgencia</div>
+                  </div>
+                  <div className="text-lg font-black text-orange-700 bg-white border border-orange-200 px-3 py-1 rounded-lg tabular-nums">
+                    {c.cantidad} NNA
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <BandejaCentros titulo="Bandeja de permanencia sobre umbral" tipo="URGENCIA" filas={bandejas.URGENCIA} />
+        </div>
+      )}
+
+      {activeTab === 'cargas' && (
+        <div className="space-y-6">
+          <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-bold">Gestión de cargas periódicas</h2>
+              <p className="text-sm text-slate-300 mt-1">Valida e importa los archivos oficiales y consulta su trazabilidad en Oracle.</p>
+            </div>
+            <button onClick={() => setModalImportar(true)} className="inline-flex items-center justify-center gap-2 bg-white text-indigo-900 hover:bg-indigo-50 px-4 py-2.5 rounded-lg text-sm font-bold">
+              <UploadCloud className="w-4 h-4" /> Nueva carga
             </button>
           </div>
-        </div>
 
-        {/* Tabla */}
-        <div className="overflow-x-auto rounded-xl border border-slate-200">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-700 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200">
-              <tr>
-                <th className="py-3 px-3">Código</th>
-                <th className="py-3 px-3">Centro de Acogida (CAR)</th>
-                <th className="py-3 px-3">Tipo / Modalidad</th>
-                <th className="py-3 px-3">Perfil de Atención</th>
-                <th className="py-3 px-3">Ubicación</th>
-                <th className="py-3 px-3">Institución Administradora</th>
-                <th className="py-3 px-3 text-center">Capacidad / Ocup.</th>
-                <th className="py-3 px-3 text-center">Infractores</th>
-                <th className="py-3 px-3 text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredCars.map(car => {
-                const pct = Math.round((car.poblacionActual / car.capacidadMaxima) * 100)
-                const isOver = pct >= 90
-                return (
-                  <tr key={car.id} className="hover:bg-slate-50 transition">
-                    <td className="py-3 px-3 font-mono font-bold text-blue-700">
-                      {car.codigo}
-                    </td>
-                    <td className="py-3 px-3">
-                      <div className="font-bold text-slate-900">{car.centroAcogida}</div>
-                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                        {car.expediente} | Resp: {car.responsable}
-                      </div>
-                    </td>
-                    <td className="py-3 px-3">
-                      <span
-                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
-                          car.tipoCar === 'Público'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-purple-50 text-purple-700 border border-purple-200'
-                        }`}
-                      >
-                        {car.tipoCar.toUpperCase()}
-                      </span>
-                      <div className="text-[10px] text-slate-500 mt-0.5">{car.modalidad}</div>
-                    </td>
-                    <td className="py-3 px-3">
-                      <span className="font-medium text-slate-800">{car.perfilAtencion}</span>
-                    </td>
-                    <td className="py-3 px-3">
-                      <span className="font-bold text-slate-800">{car.departamento}</span>
-                      <div className="text-[10px] text-slate-400">{car.provincia} - {car.distrito}</div>
-                    </td>
-                    <td className="py-3 px-3 max-w-[180px] truncate" title={car.institucionAdmin1}>
-                      <span className="font-medium text-slate-700">{car.institucionAdmin1}</span>
-                      {car.institucionAdmin2 && (
-                        <div className="text-[10px] text-slate-400 truncate">{car.institucionAdmin2}</div>
-                      )}
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      <div className="font-bold text-slate-800">
-                        {car.poblacionActual} / {car.capacidadMaxima}
-                      </div>
-                      <div className="w-16 mx-auto h-1.5 bg-slate-200 rounded-full mt-1 overflow-hidden">
-                        <div
-                          style={{ width: `${pct}%` }}
-                          className={`h-full ${isOver ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-emerald-500'}`}
-                        />
-                      </div>
-                      <span className="text-[9px] text-slate-400">{pct}%</span>
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      {car.tieneInfractores === 'Sí' ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-red-100 text-red-700 border border-red-200">
-                          ⚠️ SÍ
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500">
-                          NO
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-3 text-right">
-                      <button
-                        onClick={() => handleOpenFicha(car)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-[11px] transition"
-                      >
-                        <Eye className="w-3.5 h-3.5" /> Ficha
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* ─────────────────────────────────────────────────────────────
-          5. BANNER INFERIOR OFICIAL DPNNA
-      ───────────────────────────────────────────────────────────── */}
-      <div className="bg-[#2563EB] rounded-xl px-6 py-2.5 text-white flex items-center justify-between shadow-md">
-        <div className="text-xs font-semibold tracking-wide flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-blue-200" />
-          <span>Sistema Integrado DGNNA</span>
-        </div>
-        <div className="text-sm font-bold tracking-tight">
-          Dirección de Políticas de Niñas, Niños y Adolescentes (DPNNA)
-        </div>
-      </div>
-
-      {/* ─────────────────────────────────────────────────────────────
-          MODAL: FICHA TÉCNICA COMPLETA DE CAR (TODAS LAS VARIABLES)
-      ───────────────────────────────────────────────────────────── */}
-      {modalOpen && selectedCar && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
-            {/* Header */}
-            <div className="px-6 py-4 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs bg-blue-500/30 text-blue-200 px-2 py-0.5 rounded border border-blue-400/30">
-                    {selectedCar.codigo}
-                  </span>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded font-bold ${
-                      selectedCar.tipoCar === 'Público' ? 'bg-emerald-500 text-white' : 'bg-purple-500 text-white'
-                    }`}
-                  >
-                    CAR {selectedCar.tipoCar.toUpperCase()}
-                  </span>
-                </div>
-                <h2 className="text-lg font-bold mt-1">{selectedCar.centroAcogida}</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              ['Cargas registradas', cargas.length, 'text-slate-900'],
+              ['Exitosas', cargas.filter(c => c.estado === 'EXITOSA').length, 'text-green-700'],
+              ['Con observaciones', cargas.filter(c => c.estado === 'OBSERVADA').length, 'text-amber-700'],
+              ['Fallidas', cargas.filter(c => c.estado === 'ERROR' || c.estado === 'FALLIDA').length, 'text-red-700'],
+            ].map(([label, value, color]) => (
+              <div key={String(label)} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                <div className="text-xs uppercase tracking-wide font-semibold text-slate-500">{label}</div>
+                <div className={`text-3xl font-bold tabular-nums mt-1 ${color}`}>{value}</div>
               </div>
-              <button
-                onClick={() => setModalOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
-              >
+            ))}
+          </div>
+
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="font-bold text-slate-900">Historial de cargas</h3>
+              <span className="text-xs text-slate-500">Fuente: CAR_CARGAS · Oracle</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs min-w-[820px]">
+                <thead className="bg-slate-100 text-slate-600 uppercase tracking-wide font-semibold">
+                  <tr><th className="px-4 py-3">Fecha</th><th className="px-4 py-3">Archivo</th><th className="px-4 py-3">Tipo</th><th className="px-4 py-3">Periodo</th><th className="px-4 py-3">Registros</th><th className="px-4 py-3">Usuario</th><th className="px-4 py-3">Estado</th></tr>
+                </thead>
+                <tbody>
+                  {cargas.length === 0 ? (
+                    <tr><td colSpan={7} className="px-4 py-10 text-center text-slate-500">No hay historial disponible o el servicio aún no expone las cargas.</td></tr>
+                  ) : cargas.map(c => (
+                    <tr key={c.id} className="border-t border-slate-100 hover:bg-slate-50">
+                      <td className="px-4 py-3 whitespace-nowrap">{c.fechaCarga ? new Date(c.fechaCarga).toLocaleString('es-PE') : 'Sin dato'}</td>
+                      <td className="px-4 py-3 font-medium text-slate-800">{c.nombreArchivo}</td>
+                      <td className="px-4 py-3">{c.tipoCar}</td><td className="px-4 py-3">{c.periodoCorte}</td><td className="px-4 py-3 tabular-nums">{c.totalRegistros}</td><td className="px-4 py-3">{c.usuario || 'Sistema'}</td>
+                      <td className="px-4 py-3"><span className={`inline-flex px-2 py-1 rounded-full border font-bold ${c.estado === 'EXITOSA' ? 'bg-green-100 text-green-800 border-green-200' : c.estado === 'OBSERVADA' ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-red-100 text-red-800 border-red-200'}`}>{c.estado}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL DE IMPORTACIÓN PERIÓDICA DE EXCEL ─────────────────────── */}
+      {modalImportar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <UploadCloud className="w-5 h-5 text-indigo-600" />
+                Importar Corte Periódico DPNNA (Excel)
+              </h3>
+              <button onClick={() => setModalImportar(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Contenido en Bloques */}
-            <div className="p-6 overflow-y-auto space-y-5 flex-1 text-xs">
-              {/* Bloque 1: Ubicación y Contacto */}
-              <div className="space-y-2">
-                <h4 className="font-bold uppercase tracking-wider text-blue-700 border-b pb-1 flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4" /> 1. Identificación, Ubicación y Contacto
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <div>
-                    <span className="text-slate-400 font-medium block">Departamento / Provincia</span>
-                    <span className="font-bold text-slate-800">{selectedCar.departamento} - {selectedCar.provincia}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block">Distrito</span>
-                    <span className="font-bold text-slate-800">{selectedCar.distrito}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block">Dirección</span>
-                    <span className="font-semibold text-slate-800">{selectedCar.direccion}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block">Responsable del CAR</span>
-                    <span className="font-bold text-slate-800">{selectedCar.responsable}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block">Teléfono / Celular</span>
-                    <span className="font-semibold text-slate-800">{selectedCar.telefono} / {selectedCar.celular}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block">Correo Institucional</span>
-                    <span className="font-semibold text-blue-700">{selectedCar.correoCar}</span>
-                  </div>
-                </div>
+            <form onSubmit={handleEjecutarImportacion} className="mt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Tipo de Archivo / Catálogo:
+                </label>
+                <select
+                  value={tipoImportacion}
+                  onChange={e => setTipoImportacion(e.target.value as any)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-medium outline-none"
+                >
+                  <option value="CENTROS">Catálogo de Centros CAR (New Report 2026 - 25 variables)</option>
+                  <option value="BASICO">NNA CAR Básico (EDNE CAR BÁSICO - 143 variables)</option>
+                  <option value="ESPECIALIZADO">NNA CAR Especializado (EDNE CAR ESP - 141 variables)</option>
+                  <option value="URGENCIA">NNA CAR Urgencia (EDNE CAR URGENCIAS - 64 variables)</option>
+                </select>
               </div>
 
-              {/* Bloque 2: Administración y Capacidad */}
-              <div className="space-y-2">
-                <h4 className="font-bold uppercase tracking-wider text-blue-700 border-b pb-1 flex items-center gap-1.5">
-                  <Building2 className="w-4 h-4" /> 2. Administración, Modalidad y Capacidad Operativa
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <div className="sm:col-span-2">
-                    <span className="text-slate-400 font-medium block">Institución que administra al CAR</span>
-                    <span className="font-bold text-slate-800">{selectedCar.institucionAdmin1}</span>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <span className="text-slate-400 font-medium block">Institución que administra al CAR 2</span>
-                    <span className="font-semibold text-slate-700">{selectedCar.institucionAdmin2 || '-'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block">Modalidad</span>
-                    <span className="font-bold text-slate-800">{selectedCar.modalidad}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block">Perfil de Atención</span>
-                    <span className="font-bold text-slate-800">{selectedCar.perfilAtencion}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block">Capacidad Máxima</span>
-                    <span className="font-bold text-slate-800">{selectedCar.capacidadMaxima} plazas</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block">Población Actual</span>
-                    <span className="font-extrabold text-blue-700">{selectedCar.poblacionActual} NNA</span>
-                  </div>
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Periodo del Corte (AAAA-MM o Quincena):
+                </label>
+                <input
+                  type="text"
+                  value={periodoImportacion}
+                  onChange={e => setPeriodoImportacion(e.target.value)}
+                  placeholder="Ej. 2026-06 o 2026-07-Q1"
+                  className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-medium outline-none"
+                  required
+                />
               </div>
 
-              {/* Bloque 3: Reporte de Infractores y Aspectos Legales */}
-              <div className="space-y-2">
-                <h4 className="font-bold uppercase tracking-wider text-red-700 border-b border-red-200 pb-1 flex items-center gap-1.5">
-                  <ShieldAlert className="w-4 h-4" /> 3. Situación Legal y Reporte de NNA Infractores a la Ley
-                </h4>
-                <div className={`p-4 rounded-xl border ${selectedCar.tieneInfractores === 'Sí' ? 'bg-red-50/70 border-red-200' : 'bg-slate-50 border-slate-200'} space-y-3`}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-slate-500 font-medium block">¿Tiene infractores acogid@s en CAR?</span>
-                      <span
-                        className={`inline-block mt-0.5 px-3 py-1 rounded-lg text-xs font-black ${
-                          selectedCar.tieneInfractores === 'Sí'
-                            ? 'bg-red-600 text-white'
-                            : 'bg-emerald-600 text-white'
-                        }`}
-                      >
-                        {selectedCar.tieneInfractores.toUpperCase()}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 font-medium block">Expediente Oficial</span>
-                      <span className="font-mono font-bold text-slate-900">{selectedCar.expediente}</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <span className="text-slate-500 font-medium block">Contenido de documento Infractores a la LEY:</span>
-                    <p className="text-slate-800 font-medium mt-0.5 bg-white p-2.5 rounded-lg border border-slate-200">
-                      {selectedCar.contenidoInfractores}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] pt-1 border-t border-slate-200">
-                    <div>
-                      <span className="text-slate-400 block">Fecha de Envío:</span>
-                      <span className="font-semibold text-slate-700">{selectedCar.fechaEnvio}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block">Fecha de Respuesta:</span>
-                      <span className="font-semibold text-slate-700">{selectedCar.fechaRespuesta}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block">Documento de Respuesta:</span>
-                      <span className="font-semibold text-slate-700">{selectedCar.documentoRespuesta}</span>
-                    </div>
-                  </div>
-                </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Seleccionar archivo Excel (.xlsx):
+                </label>
+                <input
+                  type="file"
+                  accept=".xlsx, .xls"
+                  onChange={e => setFileToUpload(e.target.files ? e.target.files[0] : null)}
+                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                  required
+                />
               </div>
-            </div>
 
-            {/* Footer Modal */}
-            <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
-              <span className="text-slate-400 text-xs font-mono">{selectedCar.correo}</span>
-              <button
-                onClick={() => setModalOpen(false)}
-                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition shadow"
-              >
-                Cerrar Ficha
-              </button>
-            </div>
+              {mensajeImportacion && (
+                <div className={`p-3 rounded-lg text-xs font-medium ${
+                  mensajeImportacion.tipo === 'ok' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'
+                }`}>
+                  {mensajeImportacion.texto}
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModalImportar(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                >
+                  Cerrar
+                </button>
+                <button
+                  type="submit"
+                  disabled={importando || !fileToUpload}
+                  className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-xs font-bold rounded-lg shadow-sm transition"
+                >
+                  {importando && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  {importando ? 'Procesando en Oracle...' : 'Iniciar Importación'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -1208,3 +1358,35 @@ export default function DpnnaDashboardClient() {
   )
 }
 
+function BandejaCentros({ titulo, tipo, filas }: { titulo: string; tipo: 'BASICO' | 'ESPECIALIZADO' | 'URGENCIA'; filas: CarBandejaItem[] }) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="px-5 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div><h3 className="font-bold text-slate-900">{titulo}</h3><p className="text-xs text-slate-500 mt-1">Agregado por centro, sin exponer datos personales de NNA.</p></div>
+        <span className="text-xs font-semibold text-slate-500">{filas.length} centros</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-xs min-w-[820px]">
+          <thead className="sticky top-0 z-10 bg-slate-100 text-slate-600 uppercase tracking-wide font-semibold">
+            <tr><th className="px-4 py-3">Centro</th><th className="px-4 py-3">Departamento</th><th className="px-4 py-3">NNA activos</th><th className="px-4 py-3">Cap. real</th><th className="px-4 py-3">Ocupación</th><th className="px-4 py-3">{tipo === 'URGENCIA' ? 'Sobre umbral' : '>18 meses'}</th>{tipo === 'BASICO' && <><th className="px-4 py-3">PTI pendiente</th><th className="px-4 py-3">Sin seguro</th></>}</tr>
+          </thead>
+          <tbody>
+            {filas.length === 0 ? <tr><td colSpan={tipo === 'BASICO' ? 8 : 6} className="px-4 py-10 text-center text-slate-500">No existen registros para los filtros seleccionados.</td></tr> : filas.map((fila, index) => (
+              <tr key={`${fila.codigoCentro || fila.centro}-${index}`} className="border-t border-slate-100 hover:bg-slate-50">
+                <td className="px-4 py-3"><div className="font-semibold text-slate-800">{fila.centro}</div><div className="text-slate-400">{fila.codigoCentro || 'Sin código'}</div></td>
+                <td className="px-4 py-3">{fila.departamento || 'Sin dato'}</td><td className="px-4 py-3 tabular-nums font-bold">{fila.poblacionActiva}</td><td className="px-4 py-3 tabular-nums">{fila.capacidadReal ?? 'Sin dato'}</td>
+                <td className="px-4 py-3"><span className={`inline-flex rounded-full border px-2 py-1 font-bold ${fila.ocupacion === null ? 'bg-slate-100 text-slate-600 border-slate-200' : fila.ocupacion > 100 ? 'bg-red-100 text-red-800 border-red-200' : fila.ocupacion >= 85 ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-green-100 text-green-800 border-green-200'}`}>{fila.ocupacion === null ? 'Sin dato' : `${fila.ocupacion}%`}</span></td>
+                <td className="px-4 py-3 tabular-nums font-bold text-amber-700">{tipo === 'URGENCIA' ? fila.permanenciaSobreUmbral : fila.mayor18}</td>{tipo === 'BASICO' && <><td className="px-4 py-3 tabular-nums">{fila.ptiPendiente}</td><td className="px-4 py-3 tabular-nums">{fila.sinSeguro}</td></>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function roundPct(val: number, total: number) {
+  if (!total) return 0
+  return Math.round((val / total) * 100)
+}

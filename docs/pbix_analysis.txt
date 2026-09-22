@@ -1,0 +1,96 @@
+============================================================
+TODAS LAS TABLAS / ENTIDADES DETECTADAS:
+============================================================
+ - DNA_SUPERVISION
+ - Estado_CCONNA
+ - LocalDateTable_31184d40-0c5a-4539-90ee-b90a9a762a45
+ - LocalDateTable_ca96483f-a41a-4e8e-9699-96236ecebfb1
+ - MEDIDA RESUMEN
+ - MEDIDADS_PIAS
+ - MEDIDAS
+ - MEDIDAS_MODO_NIÑEZ
+ - MEDIDA_CCONNA
+ - TB_CAPA_DEMUNA
+ - TB_CCONNA_NIÑOS
+ - TB_DEPARTAMENTO
+ - TB_DISTRITO
+ - TB_MODO_NINEZ_COMPLETO
+ - TB_MODO_NINEZ_DISTRITAL
+ - TB_MODO_NINEZ_PROVINCIAL
+ - TB_MODO_NINEZ_REGIONAL
+ - TB_PIAS_PADRE_AUTORIDADES
+ - TB_PROVINCIA
+ - dna
+ - estadodna
+
+============================================================
+TABLAS Y CAMPOS POR PAGINA:
+============================================================
+
+[PAGINA] CCONNA
+   Tablas: ['Estado_CCONNA', 'MEDIDAS', 'MEDIDA_CCONNA', 'TB_DEPARTAMENTO', 'TB_DISTRITO', 'TB_PROVINCIA', 'dna', 'estadodna']
+   Campos/Metricas: ['% Acreditadas', '% No Acreditadas', '% No Operativas', '% Operativas', 'Color_Estado', 'DEPARTAMENTO', 'DEPARTAMENTO_MOD', 'DISTRITO', 'Departamento_Texto', 'Estado', 'Estado_CCONNA_Distrito', 'Header_Distrito', 'PROVINCIA', 'Provincia_Texto', 'Tot_municipalidades', 'Total_acreditadas', 'Total_no_acreditadas', 'Total_no_operativas', 'Total_operativas', 'UBIGEO', 'Valor_Departamental_Estado', 'Valor_Distrital_Estado', 'Valor_Provincial_Estado', 'codigo', 'estado', 'estado_acreditacion']
+
+[PAGINA] CONNAN DETALLE
+   Tablas: ['MEDIDAS', 'TB_DEPARTAMENTO', 'TB_DISTRITO', 'TB_PROVINCIA']
+   Campos/Metricas: ['Color_Estado', 'DEPARTAMENTO', 'DEPARTAMENTO_MOD', 'DISTRITO', 'Estado_CCONNA_Distrito', 'Header_Distrito', 'PROVINCIA', 'Tot_municipalidades', 'Total_Cconna_distrital', 'Total_Cconna_provincial', 'Total_Cconna_regional', 'UBIGEO']
+
+[PAGINA] DEMUNA
+   Tablas: ['MEDIDAS', 'TB_DEPARTAMENTO', 'TB_DISTRITO', 'TB_PIAS_PADRE_AUTORIDADES', 'TB_PROVINCIA', 'dna', 'estadodna']
+   Campos/Metricas: ['% Acreditadas', '% No Acreditadas', '% No Operativas', '% Operativas', 'Color_Estado', 'DEPARTAMENTO', 'DEPARTAMENTO_MOD', 'DISTRITO', 'Header_Distrito', 'Header_Distrito_MOD', 'PROVINCIA', 'TIPO_GOBIERNO', 'Tot_municipalidades', 'Total_Distritales', 'Total_Provinciales', 'Total_acreditadas', 'Total_no_acreditadas', 'Total_no_operativas', 'Total_operativas', 'UBIGEO', 'Ultima_Actualizacion_acred', 'estado', 'estado_acreditacion', 'f_acreditacion']
+
+[PAGINA] DEMUNA CAPACITACIÓN
+   Tablas: ['MEDIDAS', 'TB_CAPA_DEMUNA', 'TB_DEPARTAMENTO', 'TB_DISTRITO', 'TB_PIAS_PADRE_AUTORIDADES', 'TB_PROVINCIA', 'dna', 'estadodna']
+   Campos/Metricas: ['% Acreditadas', '% Cobertura Distrital', '% Cobertura_Departamental', '% Cobertura_Provincial', '% No Acreditadas', '% No Operativas', '% Operativas', '% Pct_Presencial', '% Pct_Virtual', 'Año_Capacitacion', 'Color_Estado', 'DEPARTAMENTO', 'DEPARTAMENTO_MOD', 'DISTRITO', 'Distritos_capacitados', 'Estado de aprobación', 'Estado_Supervision', 'Header_Distrito', 'Header_Distrito_MOD_2', 'PROVINCIA', 'Participaciones_Capacitacion', 'Personas_Capacitadas', 'Presencial_K', 'Provincias_Capacitadas', 'Regiones_Capacitadas', 'TIPO DE CAPACITACIÓN', 'Tot_municipalidades', 'Total_acreditadas', 'Total_no_acreditadas', 'Total_no_operativas', 'Total_operativas', 'UBIGEO', 'Ultima_Actualizacion_Texto', 'Virtual_K', 'codigo', 'estado', 'f_acreditacion']
+
+[PAGINA] DEMUNA DETALLE
+   Tablas: ['LocalDateTable_ca96483f-a41a-4e8e-9699-96236ecebfb1', 'MEDIDAS', 'TB_DEPARTAMENTO', 'TB_DISTRITO', 'TB_PIAS_PADRE_AUTORIDADES', 'TB_PROVINCIA', 'dna', 'estadodna']
+   Campos/Metricas: ['% Acreditadas', '% No Acreditadas', '% No Operativas', '% Operativas', 'Año', 'Año Acreditación', 'Color_Estado', 'DEPARTAMENTO', 'DEPARTAMENTO_MOD', 'DISTRITO', 'Header_Distrito', 'Header_Distrito_MOD', 'Mes', 'PROVINCIA', 'TIPO_GOBIERNO', 'Tot_municipalidades', 'Total_Distritales', 'Total_Distritos', 'Total_Provinciales', 'Total_acreditadas', 'Total_no_acreditadas', 'Total_no_operativas', 'Total_operativas', 'UBIGEO', 'Ultima_Actualizacion_acred', 'estado', 'f_acreditacion']
+
+[PAGINA] DEMUNA ESTADO CAPACITACIÓN 
+   Tablas: ['MEDIDAS', 'TB_CAPA_DEMUNA', 'TB_DEPARTAMENTO', 'TB_DISTRITO', 'TB_PIAS_PADRE_AUTORIDADES', 'TB_PROVINCIA', 'dna', 'estadodna']
+   Campos/Metricas: ['% Acreditadas', '% Cobertura Distrital', '% Cobertura_Departamental', '% Cobertura_Provincial', '% No Acreditadas', '% No Operativas', '% Operativas', 'Año_Capacitacion', 'Color_Estado', 'DEPARTAMENTO', 'DEPARTAMENTO_MOD', 'DISTRITO', 'Distritos_capacitados', 'Estado de aprobación', 'Estado_Capacitacion', 'Estado_Supervision', 'Header_Distrito', 'Header_Distrito_MOD', 'Header_Distrito_MOD_2', 'PROVINCIA', 'Participaciones_Capacitacion', 'Personas_Capacitadas', 'Provincias_Capacitadas', 'Regiones_Capacitadas', 'Tot_municipalidades', 'Total_acreditadas', 'Total_no_acreditadas', 'Total_no_operativas', 'Total_operativas', 'UBIGEO', 'Ultima_Actualizacion_Texto', 'codigo', 'estado', 'f_acreditacion']
+
+[PAGINA] DEMUNA SUPERVISIÓN
+   Tablas: ['MEDIDAS', 'TB_DEPARTAMENTO', 'TB_DISTRITO', 'TB_PIAS_PADRE_AUTORIDADES', 'TB_PROVINCIA', 'dna', 'estadodna']
+   Campos/Metricas: ['% Acreditadas', '% Cobertura Distrital SUPERVISADOS', '% No Acreditadas', '% No Operativas', '% Operativas', '% Supervision_Departamental', '% Supervision_Provincial', 'Año_ultima_fecha', 'Color_Estado', 'DEMUNA', 'DEMUNA_Supervisadas', 'DEPARTAMENTO', 'DEPARTAMENTO_MOD', 'DISTRITO', 'Departamentos_Supervisados', 'Estado_Capacitacion', 'Estado_Supervision', 'Estado_Supervision_PERIODO', 'Header_Distrito', 'Header_Distrito_MOD_2', 'PROVINCIA', 'Provincias_Supervisadas', 'Tot_municipalidades', 'Total_acreditadas', 'Total_no_acreditadas', 'Total_no_operativas', 'Total_operativas', 'UBIGEO', 'Ultima_Actualizacion_Supervisión', 'Ultima_Fecha_Supervision', 'codigo', 'dist', 'dpto', 'estado', 'f_acreditacion', 'prov', 'ubigeo']
+
+[PAGINA] Directorio DEMUNA
+   Tablas: ['MEDIDAS', 'TB_DEPARTAMENTO', 'TB_DISTRITO', 'TB_PIAS_PADRE_AUTORIDADES', 'TB_PROVINCIA', 'dna', 'estadodna']
+   Campos/Metricas: ['DEPARTAMENTO', 'DEPARTAMENTO_MOD', 'DISTRITO', 'POBLACION_NNA', 'PROVINCIA', 'TIPO_GOBIERNO', 'UBIGEO', 'Ultima_Actualizacion_acred', 'codigo', 'dist', 'dpto', 'estado', 'f_acreditacion', 'fono1', 'prov', 'resolución_acreditación']
+
+[PAGINA] MODO NIÑEZ
+   Tablas: ['MEDIDAS', 'MEDIDAS_MODO_NIÑEZ', 'TB_DEPARTAMENTO', 'TB_DISTRITO', 'TB_MODO_NINEZ_COMPLETO', 'TB_MODO_NINEZ_DISTRITAL', 'TB_MODO_NINEZ_PROVINCIAL', 'TB_MODO_NINEZ_REGIONAL']
+   Campos/Metricas: ['Acumulado_completo', 'Acumulado_distrital', 'Acumulado_provincial', 'Acumulado_regional', 'AÑO QUE SE SUMÓ A LA ESTRATEGIA', 'Color_Estado', 'DEPARTAMENTO', 'DEPARTAMENTO_MOD', 'DISTRITO', 'Estado_CCONNA_Distrito', 'FECHA DE PRESENTACIÓN', 'Nº', 'PROVINCIA', 'UBIGEO']
+
+[PAGINA] MODO NIÑEZ DETALLE
+   Tablas: ['TB_MODO_NINEZ_COMPLETO', 'TB_MODO_NINEZ_DISTRITAL', 'TB_MODO_NINEZ_PROVINCIAL', 'TB_MODO_NINEZ_REGIONAL']
+   Campos/Metricas: ['DEPARTAMENTO', 'DISTRITO', 'FECHA DE ACTA DE COMPROMISO', 'FECHA DE PRESENTACIÓN', 'MACROREGIÓN', 'NOMBRE DE GOBIERNO', 'Nº', 'PROVINCIA', 'TIPO DE GOBIERNO', 'UBIGEO']
+
+[PAGINA] PIAS v2
+   Tablas: ['MEDIDADS_PIAS', 'MEDIDAS', 'TB_DEPARTAMENTO', 'TB_DISTRITO', 'TB_PIAS_PADRE_AUTORIDADES', 'TB_PROVINCIA', 'dna', 'estadodna']
+   Campos/Metricas: ['% Acreditadas', '% Autoridades pias', '% NNA pias', '% No Acreditadas', '% No Operativas', '% Operativas', '% Padres pias', 'Color_Estado', 'DEPARTAMENTO_MOD', 'DEPAR_CA', 'DISTRITO', 'DISTR_CA', 'FEC_EPE', 'NOM_CA', 'PERSONAS_ATENTIDAS_PIAS', 'PROVINCIA', 'PROVIN_CA', 'Total_acreditadas', 'Total_autoridades_pias', 'Total_nna_pias', 'Total_no_acreditadas', 'Total_no_operativas', 'Total_operativas', 'Total_padres_pias', 'UBIGEO', 'Ultima_Actualizacion_pias', 'codigo', 'estado', 'f_acreditacion']
+
+[PAGINA] RESUMEN DSLD
+   Tablas: ['LocalDateTable_ca96483f-a41a-4e8e-9699-96236ecebfb1', 'MEDIDA RESUMEN', 'MEDIDAS', 'dna']
+   Campos/Metricas: ['Año', 'Comparado 2024 Var % Texto', 'Corte Último Mes', 'DEMUNA Acreditadas 2025', 'DEMUNA Acreditadas 2026', 'Dif Texto', 'Mes', 'Texto Corte Último Mes', 'Texto Resumen Corte Último Mes', 'Total_Distritales', 'Total_Provinciales', 'Total_acreditadas', 'Ultima_Actualizacion_acred', 'f_acreditacion']
+
+[PAGINA] RESUMEN MODO NIÑEZ
+   Tablas: ['LocalDateTable_31184d40-0c5a-4539-90ee-b90a9a762a45', 'MEDIDA RESUMEN', 'MEDIDAS', 'MEDIDAS_MODO_NIÑEZ', 'TB_MODO_NINEZ_COMPLETO']
+   Campos/Metricas: ['Acumulado_completo', 'Acumulado_distrital', 'Acumulado_provincial', 'Acumulado_regional', 'Año', 'Corte Último Mes', 'DEPARTAMENTO', 'DISTRITO', 'FECHA DE PRESENTACIÓN', 'Mes', 'Nº', 'PROVINCIA', 'Ultima_Actualizacion_acred']
+
+[PAGINA] RESUMEN PIAS
+   Tablas: ['MEDIDA RESUMEN', 'MEDIDADS_PIAS', 'MEDIDAS', 'TB_PIAS_PADRE_AUTORIDADES']
+   Campos/Metricas: ['% Autoridades pias', '% NNA pias', '% Padres pias', 'Corte Último Mes', 'FEC_EPE', 'PERSONAS_ATENTIDAS_PIAS', 'Total_autoridades_pias', 'Total_nna_pias', 'Total_padres_pias', 'Ultima_Actualizacion_acred']
+
+[PAGINA] RESUMEN_CAPACITACION
+   Tablas: ['MEDIDA RESUMEN', 'MEDIDAS', 'TB_CAPA_DEMUNA']
+   Campos/Metricas: ['Año_Capacitacion', 'Comparado 2024 Capa Var % Texto', 'Corte Último Mes capa', 'DEMUNA Capacitadas 2024', 'DEMUNA Capacitadas 2025', 'DEMUNA Capacitadas 2026', 'FECHA INICIO CURSO', 'Participaciones_Capacitacion', 'Personas_Capacitadas', 'Texto Comparativo Corte Capa', 'Texto Corte Último Mes CAPA', 'Total_capa_2026', 'Ultima_Actualizacion_capacitacion']
+
+[PAGINA] RESUMEN_CCONNA
+   Tablas: ['Estado_CCONNA', 'MEDIDA RESUMEN', 'MEDIDAS', 'MEDIDA_CCONNA', 'TB_CCONNA_NIÑOS', 'TB_DEPARTAMENTO', 'TB_DISTRITO']
+   Campos/Metricas: ['Corte Último Mes', 'DEPARTAMENTO', 'Estado', 'N°', 'SEXO', 'Total_Cconna_distrital', 'Total_Cconna_provincial', 'Total_Cconna_regional', 'Ultima_Actualizacion_acred', 'Valor_Departamental_Estado', 'Valor_Distrital_Estado', 'Valor_Provincial_Estado']
+
+[PAGINA] RESUMEN_SUPERVISION
+   Tablas: ['DNA_SUPERVISION', 'MEDIDA RESUMEN', 'MEDIDAS']
+   Campos/Metricas: ['Comparado 2024 Sup Var % Texto', 'Corte Último Mes Supervisión', 'DEMUNA Supervisada 2026', 'DEMUNA Supervisadas 2025', 'Dif Texto sup 2024', 'Nota Supervisadas Año Actual', 'Texto Comparativo Corte Supervision', 'Texto Corte Último Mes Supervision', 'Total_acreditadas', 'Total_supervisadas', 'Ultima_Actualizacion_Supervisión', 'f_supervision']

@@ -108,6 +108,7 @@ El Sistema Integral DGNNA es una plataforma web modular que centraliza la gesti�
 | 9 | Auditoría y trazabilidad | Registro de actividades, comparador de cambios y reportes. |
 | 10 | Consulta normativa y asistente RAG | Búsqueda sobre el DL 1297 y su Reglamento, con asistente Multi-LLM opcional. |
 | 11 | Autenticación y control de accesos | Gestión de usuarios, roles y permisos por módulo (RBAC). |
+| 12 | Gestión de datos y Suite Analítica DSLD | Catálogo de datasets e indicadores de la Dirección de Sistemas Locales y Defensorías: situación y supervisión de DEMUNA, capacitación, CCONNA, Ponte en Modo Niñez y PIAS. Reemplaza el tablero Power BI DSLD_GENERAL_V3 (sección 9.4). |
 
 ### 4.2. Pila tecnológica
 
@@ -226,9 +227,11 @@ flowchart TD
 | 13 | `normativa-service` | 8011 | 8011 | `NORMATIVA_DB` | `python:3.11-slim` | 512 MB |
 | 14 | `tableros-service` | 8012 | 8012 | `TABLEROS_DB` | `python:3.11-slim` | 200 MB |
 | 15 | `ayuda-memoria-service` | 8013 | 8013 | `AYUDA_MEMORIA_DB` | `python:3.11-slim` | 200 MB |
-| 16 | `gestion-datos-service` | 8014 | 8014 | `GESTION_DATOS_DB` | `python:3.11-slim` | 200 MB |
+| 16 | `gestion-datos-service` | 8014 | 8014 | `GESTION_DATOS_DB` | `python:3.11-slim` | 512 MB |
 
-**Consumo total de memoria comprometido:** aproximadamente **3.7 GB** en límites declarados.
+**Consumo total de memoria comprometido:** aproximadamente **4.0 GB** en límites declarados.
+
+> El límite de `gestion-datos-service` es de 512 MB porque procesa la importación de archivos Excel y Access grandes tanto para la Suite DSLD (capacitación y Access de 31 MB) como para la Suite DPNNA CAR (archivos periódicos de hasta 61 MB de NNA albergados, encriptación AES-256 y Blind Indexing en Oracle).
 
 ### 6.1. Mapa de enrutamiento del Gateway
 
@@ -327,6 +330,8 @@ Todas las variables se declaran en un archivo `.env` ubicado en la **raíz del p
 | `DATABASE_URL_AUDITORIA` | **Sí** | Cadena de conexión a `AUDITORIA_DB`. | *(mismo formato)* | **Sí** |
 | `DATABASE_URL_PREVENIR` | **Sí** | Cadena de conexión a `PREVENIR_DB`. | *(mismo formato)* | **Sí** |
 | `DATABASE_URL_NORMATIVA` | **Sí** | Cadena de conexión a `NORMATIVA_DB`. | *(mismo formato)* | **Sí** |
+| `DATABASE_URL_GESTION_DATOS` | **Sí** | Cadena de conexión a `GESTION_DATOS_DB`. | *(mismo formato)* | **Sí** |
+| `DSLD_CLAVE_SEUDONIMO` | No | Clave con la que la Suite DSLD convierte el DNI de capacitación en un código irreversible; el DNI no se almacena. Si se deja vacía, el servicio genera una y la guarda en `GESTION_DATOS_DB.DSLD_PARAMETROS`. Si se cambia, hay que volver a importar el Excel de capacitación. | Cadena aleatoria de 64 caracteres | **Sí** |
 | `IA_HABILITADA` | No | Activa el asistente RAG del módulo normativo. `true` / `false`. | `false` | No |
 | `LLM_DEFAULT_PROVIDER` | No | Proveedor LLM por defecto: `openai`, `gemini` o `anthropic`. | `openai` | No |
 | `OPENAI_API_KEY` | No | Clave de API de OpenAI. Solo si `IA_HABILITADA=true`. | — | **Sí** |
@@ -430,6 +435,8 @@ GRANT CREATE PROCEDURE    TO auth_db;
 GRANT CREATE TRIGGER      TO auth_db;
 ```
 
+> **No otorgar el rol `DBA` a estas cuentas.** Durante el desarrollo, `gestion_datos_db` se creó con `GRANT DBA`, lo que le permitía leer y modificar cualquier esquema de la base. Para corregirlo en una instalación existente, ejecutar `servicios/servicio-gestion-datos/infrastructure/db/dsld_00_permisos_minimos.sql`, que revoca ese rol y deja solo los privilegios de la plantilla anterior.
+
 Lista completa de usuarios a crear:
 
 | Usuario / esquema | Microservicio que lo consume |
@@ -445,6 +452,7 @@ Lista completa de usuarios a crear:
 | `auditoria_db` | `auditoria-service` |
 | `prevenir_db` | `prevenir-service` |
 | `normativa_db` | `normativa-service` |
+| `gestion_datos_db` | `gestion-datos-service` |
 
 ### 9.3. Verificación de los esquemas
 
@@ -454,14 +462,33 @@ FROM   dba_users
 WHERE  username IN (
   'AUTH_DB','APELACIONES_DB','SUSTRACION_DB','SALA_DB',
   'PROYECTOS_LEY_DB','TRANSPARENCIA_DB','POI_DB','MAPA_DB',
-  'AUDITORIA_DB','PREVENIR_DB','NORMATIVA_DB'
+  'AUDITORIA_DB','PREVENIR_DB','NORMATIVA_DB','GESTION_DATOS_DB'
 )
 ORDER BY username;
 ```
 
-**Resultado esperado:** once filas, todas con `ACCOUNT_STATUS = OPEN`.
+**Resultado esperado:** doce filas, todas con `ACCOUNT_STATUS = OPEN`.
 
-### 9.4. Política de expiración de contraseñas
+### 9.4. Esquema de la Suite Analítica DSLD
+
+El servicio crea sus tablas al arrancar, así que el tablero funciona sin pasos adicionales. Sin embargo, esas tablas automáticas **no incluyen los índices, las restricciones de validación ni las vistas de consulta**. Para dejarlas completas, el DBA ejecuta los siguientes scripts, ubicados en `servicios/servicio-gestion-datos/infrastructure/db/`, conectado como `GESTION_DATOS_DB`:
+
+| Orden | Script | Crea |
+| :-: | :--- | :--- |
+| 1 | `crear_schema_oracle.sql` | Usuario, privilegios y catálogo de datasets |
+| 2 | `dsld_01_demuna_supervision.sql` | Padrón DEMUNA, supervisiones, ubigeo, población, catálogos y registro de cargas |
+| 3 | `dsld_02_modo_ninez.sql` | Ponte en Modo Niñez |
+| 4 | `dsld_03_pias.sql` | Atenciones PIAS |
+| 5 | `dsld_04_capacitacion.sql` | Capacitación y tabla de parámetros del servicio |
+| 6 | `dsld_05_cconna.sql` | CCONNA y conteos de integrantes |
+
+Cada script renombra la tabla anterior del mismo eje a `*_V1` antes de crear la nueva, de modo que no se pierde información. **Por eso no deben ejecutarse dos veces:** la segunda ejecución renombraría la tabla vigente y dejaría el eje vacío hasta volver a importar el archivo.
+
+Después de ejecutarlos, reiniciar el servicio (`docker compose restart gestion-datos-service`) y volver a cargar los archivos de los ejes afectados desde el propio tablero. Las tablas `*_V1` pueden eliminarse cuando la DSLD valide las cifras.
+
+El procedimiento de actualización de datos, que ejecuta la propia DSLD desde el tablero, está en `docs/DSLD_INSTRUCTIVO_ACTUALIZACION.md`. El detalle de cada eje (origen, columnas, reglas del Power BI y cifras de validación) está en `docs/DSLD_ESQUEMA_*.md`.
+
+### 9.5. Política de expiración de contraseñas
 
 Por defecto, el perfil `DEFAULT` de Oracle expira las contraseñas a los 180 días, lo que dejaría el sistema fuera de servicio sin previo aviso. Se recomienda asignar a estas cuentas un perfil de servicio sin expiración automática, o incorporar la rotación de estas claves al procedimiento de mantenimiento programado de la OGTI.
 
@@ -676,7 +703,7 @@ FROM   dba_tables
 WHERE  owner IN (
   'AUTH_DB','APELACIONES_DB','SUSTRACION_DB','SALA_DB',
   'PROYECTOS_LEY_DB','TRANSPARENCIA_DB','POI_DB','MAPA_DB',
-  'AUDITORIA_DB','PREVENIR_DB','NORMATIVA_DB'
+  'AUDITORIA_DB','PREVENIR_DB','NORMATIVA_DB','GESTION_DATOS_DB'
 )
 GROUP BY owner
 ORDER BY owner;
