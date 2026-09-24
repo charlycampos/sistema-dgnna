@@ -60,6 +60,7 @@ ROUTE_MAP = [
     ("/api/reportes",       "apelaciones"),
     ("/api/procedencia",    "apelaciones"),
     ("/api/revisores",      "apelaciones"),
+    ("/api/asignacion",     "apelaciones"),
     ("/api/sustracion",     "sustracion"),
     ("/api/sala-reuniones", "sala"),
     ("/api/proyectos-ley",  "proyectos-ley"),

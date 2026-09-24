@@ -24,9 +24,9 @@ import {
 } from '@/components/ui/alert-dialog'
 import { ArrowLeft, Save, AlertTriangle, Plus, Trash2, User, Building, Search } from 'lucide-react'
 import Link from 'next/link'
-import type { ComplejidadJuridica, CargaAbogado, Procedencia } from '@/types'
+import type { ComplejidadJuridica, CargaAbogado, Procedencia, AsignacionAutomaticaPreview } from '@/types'
 import type { z } from 'zod'
-import { PanelAsignacion } from '@/components/panel-asignacion'
+import { PanelAsignacionNueva } from '@/components/panel-asignacion-nueva'
 import { toast } from 'sonner'
 import { Appellant, serializeAppellants, deserializeAppellants, NnaCarItem, serializeNnaCar, deserializeNnaCar } from '@/lib/utils'
 
@@ -189,6 +189,8 @@ export default function NuevaApelacionPage() {
     const [complejidades, setComplejidades] = useState<ComplejidadJuridica[]>([])
     const [procedencias, setProcedencias] = useState<Procedencia[]>([])
     const [cargaAbogados, setCargaAbogados] = useState<CargaAbogado[]>([])
+    const [asignacionPreview, setAsignacionPreview] = useState<AsignacionAutomaticaPreview | null>(null)
+    const [asignacionLoading, setAsignacionLoading] = useState(false)
     const [expedienteDuplicado, setExpedienteDuplicado] = useState(false)
     const [expedientesExistentes, setExpedientesExistentes] = useState<string[]>([])
     const [listaApelacionesCompleta, setListaApelacionesCompleta] = useState<any[]>([])
@@ -580,7 +582,8 @@ export default function NuevaApelacionPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...pendingData,
-                    abogadoId: abogadoIdVinculado, // Sobrescribir abogado!
+                    abogadoId: abogadoIdVinculado, // Referencial: el backend toma el abogado de la apelación vinculada
+                    apelacionVinculadaId: selectedExpedienteVinculo.id,
                     fechaIngreso: pendingData.fechaIngreso.toISOString(),
                     fechaAsignacion: pendingData.fechaAsignacion.toISOString(),
                     fechaResolucion: pendingData.fechaResolucion?.toISOString() ?? null,
@@ -713,14 +716,24 @@ export default function NuevaApelacionPage() {
     const puntosComplejidad = complejidadSeleccionada?.puntos || 0
     const puntosTotal = puntosExtension + puntosComplejidad
 
-    const abogadoAsignado = cargaAbogados.length > 0
-        ? cargaAbogados.reduce((min, curr) => curr.puntosActivos < min.puntosActivos ? curr : min)
-        : null
-
     useEffect(() => {
-        if (abogadoAsignado) form.setValue('abogadoId', abogadoAsignado.abogado.id)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [abogadoAsignado?.abogado.id])
+        if (!complejidadId || !Number.isInteger(folios) || folios < 1) { setAsignacionPreview(null); form.setValue('abogadoId', ''); return }
+        const controller = new AbortController()
+        setAsignacionPreview(null)
+        form.setValue('abogadoId', '')
+        const timer = setTimeout(async () => {
+            setAsignacionLoading(true)
+            try {
+                const response = await fetch(`/api/asignacion?complejidadId=${encodeURIComponent(complejidadId)}&folios=${folios}`, { signal: controller.signal })
+                if (!response.ok) throw new Error('No se pudo calcular la asignación')
+                const preview: AsignacionAutomaticaPreview = await response.json()
+                setAsignacionPreview(preview)
+                form.setValue('abogadoId', preview.abogadoId, { shouldValidate: true })
+            } catch (error) { if (!controller.signal.aborted) { setAsignacionPreview(null); form.setValue('abogadoId', ''); } }
+            finally { if (!controller.signal.aborted) setAsignacionLoading(false) }
+        }, 250)
+        return () => { controller.abort(); clearTimeout(timer) }
+    }, [complejidadId, folios, form])
 
     return (
         <div className="min-h-screen bg-background">
@@ -1308,7 +1321,7 @@ export default function NuevaApelacionPage() {
                                                                         }} 
                                                                     />
                                                                 </FormControl>
-                                                                <FormDescription>Puntos por extensión: {puntosExtension}</FormDescription>
+                                                                <FormDescription>Los folios se usan para identificar expedientes mayores de 500.</FormDescription>
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
@@ -1328,12 +1341,12 @@ export default function NuevaApelacionPage() {
                                                                     <SelectContent>
                                                                         {complejidades.map((comp) => (
                                                                             <SelectItem key={comp.id} value={comp.id}>
-                                                                                {comp.nombre} ({comp.puntos} pts)
+                                                                                {comp.nombre}
                                                                             </SelectItem>
                                                                         ))}
                                                                     </SelectContent>
                                                                 </Select>
-                                                                <FormDescription>Puntos por complejidad: {puntosComplejidad}</FormDescription>
+                                                                <FormDescription>La complejidad jurídica equilibra la distribución entre abogados.</FormDescription>
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
@@ -1484,13 +1497,13 @@ export default function NuevaApelacionPage() {
 
                     {/* Panel Lateral */}
                     <div className="lg:col-span-1 space-y-6">
-                        <PanelAsignacion cargaAbogados={cargaAbogados} />
+                        <PanelAsignacionNueva preview={asignacionPreview} complejidades={complejidades} loading={asignacionLoading} />
 
-                        {/* Resumen de Puntos */}
+                        {/* Datos de la asignación */}
                         <Card className="sticky top-4">
                                 <CardHeader>
-                                    <CardTitle>Resumen de Puntos</CardTitle>
-                                    <CardDescription>Cálculo automático del triaje</CardDescription>
+                                    <CardTitle>Datos para la asignación</CardTitle>
+                                    <CardDescription>La asignación no usa puntos.</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="space-y-2">
@@ -1499,8 +1512,8 @@ export default function NuevaApelacionPage() {
                                             <span className="font-medium">{folios || 0}</span>
                                         </div>
                                         <div className="flex justify-between text-sm">
-                                            <span className="text-muted-foreground">Puntos por extensión:</span>
-                                            <span className="font-semibold">{puntosExtension}</span>
+                                            <span className="text-muted-foreground">Volumen:</span>
+                                            <span className="font-semibold">{(folios || 0) > 500 ? 'Más de 500 folios' : 'Hasta 500 folios'}</span>
                                         </div>
                                     </div>
                                     <div className="h-px bg-border" />
@@ -1510,19 +1523,13 @@ export default function NuevaApelacionPage() {
                                             <span className="font-medium">{complejidadSeleccionada?.nombre || '-'}</span>
                                         </div>
                                         <div className="flex justify-between text-sm">
-                                            <span className="text-muted-foreground">Puntos por complejidad:</span>
-                                            <span className="font-semibold">{puntosComplejidad}</span>
+                                            <span className="text-muted-foreground">Criterio actual:</span>
+                                            <span className="font-semibold text-right">{asignacionPreview?.criterio || 'Complete los datos'}</span>
                                         </div>
                                     </div>
-                                    <div className="h-px bg-border" />
-                                    <div className="flex justify-between">
-                                        <span className="font-semibold">Total de Puntos:</span>
-                                        <span className="text-2xl font-bold text-primary">{puntosTotal}</span>
-                                    </div>
                                     <div className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
-                                        <p className="font-medium mb-1">Rango de puntos:</p>
-                                        <p>Mínimo: 2 puntos</p>
-                                        <p>Máximo: 8 puntos</p>
+                                        <p className="font-medium mb-1">Orden de decisión:</p>
+                                        <p>Total → misma complejidad → más de 500 folios → turno.</p>
                                     </div>
                                 </CardContent>
                         </Card>
@@ -1538,10 +1545,10 @@ export default function NuevaApelacionPage() {
                         <AlertDialogDescription asChild>
                             <div className="space-y-3 text-sm">
                                 <p>La apelación será asignada automáticamente a:</p>
-                                {abogadoAsignado && (
+                                {asignacionPreview && (
                                     <div className="rounded-lg border bg-muted/50 px-4 py-3">
-                                        <p className="font-semibold text-foreground text-base">{abogadoAsignado.abogado.nombre}</p>
-                                        <p className="text-muted-foreground text-xs mt-0.5">{abogadoAsignado.puntosActivos} pts activos actualmente</p>
+                                        <p className="font-semibold text-foreground text-base">{asignacionPreview.abogadoNombre}</p>
+                                        <p className="text-muted-foreground text-xs mt-0.5">{asignacionPreview.criterio}. La asignación final se valida al guardar.</p>
                                     </div>
                                 )}
                                 <p className="text-muted-foreground">¿Desea continuar y guardar la apelación?</p>
@@ -1664,7 +1671,7 @@ export default function NuevaApelacionPage() {
                                                 Opción A: Aceptar y Vincular
                                             </h4>
                                             <p className="text-[11px] text-muted-foreground">
-                                                Registra la apelación y la vincula directamente al abogado <strong>{selectedExpedienteVinculo?.abogadoNombre || '(Seleccione un caso arriba)'}</strong>, quien ya está viendo este caso. Se omitirá la asignación automática por puntos.
+                                                Registra la apelación vinculada al expediente seleccionado. Se asigna al mismo abogado de ese expediente y suma a su carga en la nueva modalidad.
                                             </p>
                                         </div>
                                         <div className="mt-4">

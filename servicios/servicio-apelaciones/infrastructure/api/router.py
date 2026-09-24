@@ -13,6 +13,7 @@ from infrastructure.db.complejidad_repository_impl import ComplejidadRepositoryI
 from infrastructure.api.schemas import ApelacionCreate, ApelacionUpdate, ApelacionOut
 from domain.services.apelacion_service import ApelacionService
 from infrastructure.api.audit_client import registrar_auditoria
+from infrastructure.services.asignacion_nueva_service import AsignacionNuevaService
 
 router = APIRouter(prefix="/api/apelaciones", tags=["apelaciones"])
 
@@ -59,9 +60,10 @@ def obtener(id: str, db: Session = Depends(get_db)):
 
 @router.post("", response_model=ApelacionOut, status_code=201)
 def crear(body: ApelacionCreate, db: Session = Depends(get_db)):
-    service = get_service(db)
     try:
-        entidad = service.registrar(body.model_dump())
+        # El abogado enviado por el navegador es solo una propuesta visual.
+        # La decisión definitiva se recalcula bajo bloqueo en Oracle.
+        entidad = AsignacionNuevaService(db).registrar(body.model_dump())
         res = _query_con_relaciones(db).filter(ApelacionModel.id == entidad.id).first()
         registrar_auditoria(
             modulo="apelaciones",
@@ -76,10 +78,12 @@ def crear(body: ApelacionCreate, db: Session = Depends(get_db)):
             },
             usuario_nombre="Especialista Apelaciones"
         )
+        db.commit()
         return res
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        db.rollback()
         if "UNIQUE" in str(e).upper():
             raise HTTPException(status_code=400, detail="El número de expediente ya existe")
         raise HTTPException(status_code=500, detail="Error al registrar apelación")
@@ -93,6 +97,9 @@ def actualizar(id: str, body: ApelacionUpdate, db: Session = Depends(get_db)):
         previos = {k: getattr(ap_anterior, k, None) for k in body.model_dump().keys()} if ap_anterior else None
         
         entidad = service.actualizar(id, body.model_dump())
+        # Reasignación: la cuenta de la nueva modalidad sigue al abogado actual.
+        AsignacionNuevaService(db).sincronizar(id, body.abogadoId, body.complejidadId, body.folios)
+        db.commit()
         res = _query_con_relaciones(db).filter(ApelacionModel.id == entidad.id).first()
         
         registrar_auditoria(
@@ -119,8 +126,11 @@ def actualizar(id: str, body: ApelacionUpdate, db: Session = Depends(get_db)):
 
 
 @router.delete("/{id}")
-def eliminar(id: str, service: ApelacionService = Depends(get_service)):
+def eliminar(id: str, db: Session = Depends(get_db)):
+    service = get_service(db)
     try:
+        # Primero se quita su evento de asignación (FK); el commit lo hace el repositorio.
+        AsignacionNuevaService(db).quitar(id)
         service.eliminar(id)
         registrar_auditoria(
             modulo="apelaciones",
@@ -131,4 +141,5 @@ def eliminar(id: str, service: ApelacionService = Depends(get_service)):
         )
         return {"success": True}
     except ValueError as e:
+        db.rollback()
         raise HTTPException(status_code=404, detail=str(e))

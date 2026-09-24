@@ -81,6 +81,9 @@ class ApelacionCreate(BaseModel):
     fechaRevisor:      Optional[datetime] = None
     apelantes:         Optional[List[ApelanteDetalleCreate]] = None
     nnas:              Optional[List[NnaDetalleCreate]] = None
+    # Solo en altas: id de la apelación existente con la que se vincula.
+    # Si viene, el caso va al mismo abogado de esa apelación.
+    apelacionVinculadaId: Optional[str] = None
 
 
 class ApelacionUpdate(ApelacionCreate):
@@ -286,6 +289,17 @@ class DashboardOut(BaseModel):
     cargaPorAbogado:       List[CargaAbogado]
     casosPorComplejidad:   List[dict]
     casosPorProcedencia:   List[dict]
+
+
+class AsignacionPropuestaOut(BaseModel):
+    modalidadId: str
+    abogadoId: str
+    abogadoNombre: str
+    criterio: str
+    turnoReferenciaId: str
+    siguienteSecuencia: int
+    esMayor500: bool
+    abogados: List[dict]
 
 
 # ── Reportes ──────────────────────────────────────────────────────────────────

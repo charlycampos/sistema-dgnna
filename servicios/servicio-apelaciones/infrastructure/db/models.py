@@ -6,7 +6,7 @@ para compatibilidad con Oracle (que no preserva case sin comillas).
 """
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from infrastructure.db.database import Base
 
@@ -137,3 +137,34 @@ class ApelacionModel(Base):
     revisor     = relationship("RevisorModel", back_populates="apelaciones")
     apelantes   = relationship("ApelanteDetalleModel", back_populates="apelacion", cascade="all, delete-orphan")
     nnas        = relationship("NnaDetalleModel", back_populates="apelacion", cascade="all, delete-orphan")
+
+
+class AsignacionModalidadModel(Base):
+    """Control persistente de la modalidad nueva; el historial previo no participa."""
+    __tablename__ = "asignacion_modalidades"
+
+    id               = Column("id", String(36), primary_key=True, default=_new_id)
+    activo           = Column("activo", Boolean, nullable=False, default=True)
+    karlaId          = Column("karlaid", String(36), ForeignKey("abogados.id"), nullable=False)
+    karolId          = Column("karolid", String(36), ForeignKey("abogados.id"), nullable=False)
+    claraId          = Column("claraid", String(36), ForeignKey("abogados.id"), nullable=False)
+    ultimoAbogadoId  = Column("ultimoabogadoid", String(36), ForeignKey("abogados.id"), nullable=True)
+    ultimaSecuencia  = Column("ultimasecuencia", Integer, nullable=False, default=0)
+    iniciadoEn       = Column("iniciadoen", DateTime, nullable=False, default=datetime.utcnow)
+
+
+class AsignacionEventoModel(Base):
+    """Ledger de asignaciones nuevas: parte vacío y nunca incorpora expedientes históricos."""
+    __tablename__ = "asignacion_eventos"
+    __table_args__ = (UniqueConstraint("modalidadid", "secuencia", name="uq_asignacion_evento_secuencia"),)
+
+    id              = Column("id", String(36), primary_key=True, default=_new_id)
+    modalidadId     = Column("modalidadid", String(36), ForeignKey("asignacion_modalidades.id"), nullable=False)
+    secuencia       = Column("secuencia", Integer, nullable=False)
+    apelacionId     = Column("apelacionid", String(36), ForeignKey("apelaciones.id"), nullable=False, unique=True)
+    abogadoId       = Column("abogadoid", String(36), ForeignKey("abogados.id"), nullable=False)
+    complejidadId   = Column("complejidadid", String(36), ForeignKey("complejidades_juridicas.id"), nullable=False)
+    folios          = Column("folios", Integer, nullable=False)
+    esMayor500      = Column("esmayor500", Boolean, nullable=False)
+    criterio        = Column("criterio", String(200), nullable=False)
+    asignadoEn      = Column("asignadoen", DateTime, nullable=False, default=datetime.utcnow)

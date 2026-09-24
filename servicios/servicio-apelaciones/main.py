@@ -25,6 +25,7 @@ from infrastructure.api.router_procedencia import router as router_procedencia
 from infrastructure.api.router_revisores   import router as router_revisores
 from infrastructure.api.router_apelantes   import router as router_apelantes
 from infrastructure.api.router_nna         import router as router_nna
+from infrastructure.api.router_asignacion  import router as router_asignacion
 
 
 # Crear tablas si no existen
@@ -79,6 +80,36 @@ def seed_revisores():
 
 seed_revisores()
 
+def seed_modalidad_asignacion():
+    """Crea una modalidad vacía; por diseño no toma ninguna apelación histórica."""
+    from infrastructure.db.models import AbogadoModel, AsignacionModalidadModel
+    from infrastructure.db.database import SessionLocal
+    db = SessionLocal()
+    try:
+        modalidad_id = "asignacion-nueva-desde-cero"
+        if db.query(AsignacionModalidadModel).filter(AsignacionModalidadModel.id == modalidad_id).first():
+            return
+        requeridos = ["Karla Garcia", "Karol Castro", "Clara Michaud"]
+        encontrados = {a.nombre.strip().casefold(): a for a in db.query(AbogadoModel).all()}
+        faltan = [n for n in requeridos if n.casefold() not in encontrados]
+        if faltan:
+            print(f"[asignacion] Pendiente de configurar abogadas: {', '.join(faltan)}")
+            return
+        db.add(AsignacionModalidadModel(
+            id=modalidad_id,
+            karlaId=encontrados["karla garcia"].id,
+            karolId=encontrados["karol castro"].id,
+            claraId=encontrados["clara michaud"].id,
+        ))
+        db.commit()
+        print("[asignacion] Modalidad nueva iniciada desde cero.")
+    except Exception as e:
+        db.rollback(); print(f"[asignacion] No se pudo iniciar modalidad: {e}")
+    finally:
+        db.close()
+
+seed_modalidad_asignacion()
+
 app = FastAPI(
     title="Servicio Apelaciones — DGNNA",
     description="Microservicio de gestión de apelaciones (Arquitectura Hexagonal)",
@@ -103,6 +134,7 @@ app.include_router(router_procedencia)
 app.include_router(router_revisores)
 app.include_router(router_apelantes)
 app.include_router(router_nna)
+app.include_router(router_asignacion)
 
 
 @app.get("/")

@@ -138,6 +138,23 @@ export interface ApelacionFormData {
   observaciones?: string
 }
 
+export interface AsignacionAutomaticaPreview {
+  modalidadId: string
+  abogadoId: string
+  abogadoNombre: string
+  criterio: string
+  turnoReferenciaId: string
+  siguienteSecuencia: number
+  esMayor500: boolean
+  abogados: Array<{
+    abogado: Pick<Abogado, 'id' | 'nombre' | 'activo'>
+    total: number
+    mayores500: number
+    porComplejidad: Record<string, number>
+    ultimasAsignaciones: Array<{ secuencia: number; complejidadId: string; folios: number; esMayor500: boolean; criterio: string; asignadoEn: string }>
+  }>
+}
+
 export type ResultadoResolucion =
   | 'FUNDADO'
   | 'FUNDADO_EN_PARTE'
