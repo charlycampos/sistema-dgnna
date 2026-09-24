@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tablero de asignación de apelaciones</title><style>
+:root{color-scheme:light dark;font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;--font-size-base:16px;--background:#f4f7fb;--foreground:#17233a;--card:#fff;--muted-foreground:#58657a;--border:#dce3ed;--viz-series-1:#2563eb;--viz-series-2:#ea8c30}
+@media(prefers-color-scheme:dark){:root{--background:#101827;--foreground:#edf3fb;--card:#192438;--muted-foreground:#b2c0d3;--border:#33445f;--viz-series-1:#68a8ff;--viz-series-2:#ffb56f}}
+*{box-sizing:border-box}body{margin:0;background:var(--background);color:var(--foreground);padding:24px}#tablero-apelaciones{max-width:1100px;margin:auto}h2{font-size:1.55rem;margin:0 0 18px}h3{font-size:1.1rem}.viz-controls,.viz-row{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:15px 0}.form-label{display:flex;flex-direction:column;gap:6px;font-weight:500}.form-control,.form-select,.btn{font:inherit;border:1px solid var(--border);border-radius:9px;padding:10px 12px;background:var(--card);color:var(--foreground)}.btn{cursor:pointer}.btn:hover:not(:disabled){filter:brightness(.94)}.btn:disabled{opacity:.45;cursor:default}.btn-primary{background:#2156c8;color:#fff;border-color:#2156c8}.btn-ghost{background:transparent}.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}.viz-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}.table-responsive{overflow-x:auto}.table{border-collapse:collapse;width:100%}.table th,.table td{padding:10px 8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}.table th{font-weight:500}.text-end{text-align:right!important}.text-small{font-size:.85rem}.text-muted{color:var(--muted-foreground)}.text-destructive{color:#ba3030}.tabular-nums{font-variant-numeric:tabular-nums}#ta-error:empty{display:none}@media(max-width:650px){body{padding:14px}.viz-grid{grid-template-columns:1fr}.viz-controls>*{flex:1 1 170px}.viz-controls .btn{flex:1 1 100%}}
+</style></head>
+<body>
+<div id="tablero-apelaciones">
+  <h2>Distribución de expedientes</h2>
+  <div class="viz-controls">
+    <label class="form-label">Tipo de expediente
+      <select class="form-select" id="ta-type"><option>PAS</option><option>UPE</option><option>Adopciones</option><option>Declinación de competencias</option></select>
+    </label>
+    <label class="form-label">Número de folios
+      <input class="form-control" id="ta-pages" type="number" min="1" step="1" value="1000" inputmode="numeric">
+    </label>
+    <button class="btn btn-primary" id="ta-add" type="button">Asignar expediente</button>
+  </div>
+  <p id="ta-error" class="text-destructive" role="alert"></p>
+  <div class="card" id="ta-preview" aria-live="polite"></div>
+  <div class="viz-grid" id="ta-people"></div>
+  <div class="viz-row">
+    <h3>Historial</h3>
+    <button class="btn" id="ta-example" type="button">Cargar ejemplo</button>
+    <button class="btn" id="ta-undo" type="button">Deshacer último</button>
+    <button class="btn btn-ghost" id="ta-clear" type="button">Empezar de cero</button>
+  </div>
+  <div class="table-responsive"><table class="table table-sm">
+    <thead><tr><th>N.º</th><th>Tipo</th><th class="text-end">Folios</th><th>Asignado a</th><th>Motivo</th></tr></thead>
+    <tbody id="ta-history"></tbody>
+  </table></div>
+  <p class="text-small text-muted">Criterios en orden: cantidad total → tipo → expedientes de más de 500 folios → turno. El siguiente turno continúa después de quien recibió el último expediente. Puedes deshacer entradas o comenzar de cero.</p>
+</div>
+<style>
+#tablero-apelaciones .ta-person{min-width:0}
+#tablero-apelaciones .ta-person h3{margin:0 0 6px}
+#tablero-apelaciones .ta-number{font-size:calc(var(--font-size-base) * 1.8);font-weight:500}
+#tablero-apelaciones .ta-stacks{display:flex;flex-direction:column-reverse;gap:5px;min-height:112px;justify-content:flex-start;margin:10px 0;padding-bottom:6px;border-bottom:1px solid var(--border)}
+#tablero-apelaciones .ta-case{padding:6px 8px;border-radius:5px;background:color-mix(in srgb,var(--viz-series-1) 14%,var(--card));overflow-wrap:anywhere}
+#tablero-apelaciones .ta-case[data-large="true"]{background:color-mix(in srgb,var(--viz-series-2) 21%,var(--card))}
+#tablero-apelaciones .ta-line{display:flex;justify-content:space-between;gap:8px}
+#tablero-apelaciones .ta-breakdown{display:grid;grid-template-columns:1fr auto;gap:3px 8px}
+#tablero-apelaciones .ta-person p{margin:3px 0}
+#tablero-apelaciones .ta-muted{color:var(--muted-foreground)}
+#tablero-apelaciones #ta-preview p{margin:4px 0}
+#tablero-apelaciones .viz-row h3{margin:0 auto 0 0}
+@media(max-width:650px){#tablero-apelaciones .viz-grid{grid-template-columns:1fr}}
+</style>
+<script>
+(() => {
+ const root=document.getElementById('tablero-apelaciones');
+ const names=['Carla','Karol','Clara'];
+ const types=['PAS','UPE','Adopciones','Declinación de competencias'];
+ const sample=[['PAS',1000],['UPE',200],['Adopciones',300],['PAS',150],['UPE',700],['Adopciones',200],['Declinación de competencias',650],['Declinación de competencias',100],['PAS',600]];
+ const $=id=>root.querySelector('#'+id);let entries=[];
+ const span=v=>Math.max(...v)-Math.min(...v);
+ function state(){const p=names.map(name=>({name,total:0,large:0,by:Object.fromEntries(types.map(t=>[t,0])),cases:[]}));for(const e of entries){let x=p[e.to];x.total++;x.by[e.type]++;x.large+=Number(e.pages>500);x.cases.push(e)}return p}
+ function decide(type,pages){let p=state(),turn=entries.length?(entries.at(-1).to+1)%3:0,large=pages>500;
+  if(entries.length===0)return {to:0,turn,why:'Primer expediente: inicia Carla.'};
+  const arr=p.map((x,i)=>({i,rank:[span(p.map((v,j)=>v.total+(j===i?1:0))),span(p.map((v,j)=>v.by[type]+(j===i?1:0))),large?span(p.map((v,j)=>v.large+(j===i?1:0))):0,(i-turn+3)%3]}));
+  arr.sort((a,b)=>{for(let k=0;k<4;k++)if(a.rank[k]!==b.rank[k])return a.rank[k]-b.rank[k];return 0});
+  let w=arr[0], a=arr.filter(z=>z.rank[0]===w.rank[0]), b=a.filter(z=>z.rank[1]===w.rank[1]), c=b.filter(z=>z.rank[2]===w.rank[2]);
+  let why=a.length===1?'Equilibrio de cantidad total.':b.length===1?'Equilibrio del tipo '+type+'.':c.length===1?'Equilibrio de expedientes de más de 500 folios.':'Empate en los tres criterios: decide el turno.';
+  return {to:w.i,turn,why};
+ }
+ function valid(){const pages=Number($('ta-pages').value);const okay=Number.isSafeInteger(pages)&&pages>0&&pages<=1000000;$('ta-error').textContent=okay?'':'Ingresa un número entero de folios entre 1 y 1 000 000.';return okay?pages:null}
+ function render(){const people=state(), type=$('ta-type').value,pages=valid();
+  if(pages!==null){const d=decide(type,pages);$('ta-preview').innerHTML='<p class="text-small text-muted">Próximo expediente · '+type+' · '+pages.toLocaleString('es-PE')+' folios'+(pages>500?' · más de 500':'')+'</p><p><strong>Asignación propuesta: '+names[d.to]+'</strong> · turno de referencia: '+names[d.turn]+'</p><p>'+d.why+'</p>'}else $('ta-preview').textContent='Ingresa los folios para ver la propuesta.';
+  $('ta-people').innerHTML=people.map((p,i)=>'<section class="card ta-person"><div class="ta-line"><h3>'+p.name+'</h3><span class="ta-number tabular-nums">'+p.total+'</span></div><p class="text-small text-muted">expedientes asignados</p><div class="ta-stacks">'+(p.cases.length?p.cases.map(e=>'<div class="ta-case" data-large="'+(e.pages>500)+'"><span class="text-small">#'+e.n+'</span> · '+e.type+' · <span class="tabular-nums">'+e.pages.toLocaleString('es-PE')+'</span> folios</div>').join(''):'<p class="ta-muted">Sin expedientes</p>')+'</div><div class="ta-breakdown">'+types.map(t=>'<span>'+t+'</span><span class="tabular-nums">'+p.by[t]+'</span>').join('')+'<strong>Más de 500 folios</strong><strong class="tabular-nums">'+p.large+'</strong></div></section>').join('');
+  $('ta-history').innerHTML=entries.length?entries.map(e=>'<tr><td>'+e.n+'</td><td>'+e.type+'</td><td class="text-end tabular-nums">'+e.pages.toLocaleString('es-PE')+'</td><td>'+names[e.to]+'</td><td>'+e.why+'</td></tr>').join(''):'<tr><td colspan="5" class="text-muted">Ingresa el primer expediente o carga el ejemplo.</td></tr>';
+  $('ta-undo').disabled=!entries.length;$('ta-clear').disabled=!entries.length;
+ }
+ function add(type,pages){const d=decide(type,pages);entries.push({n:entries.length+1,type,pages,to:d.to,why:d.why});render()}
+ $('ta-add').addEventListener('click',()=>{const pages=valid();if(pages!==null)add($('ta-type').value,pages)});
+ $('ta-type').addEventListener('change',render);$('ta-pages').addEventListener('input',render);
+ $('ta-pages').addEventListener('keydown',e=>{if(e.key==='Enter')$('ta-add').click()});
+ $('ta-example').addEventListener('click',()=>{entries=[];for(const [t,f] of sample){const d=decide(t,f);entries.push({n:entries.length+1,type:t,pages:f,to:d.to,why:d.why})}render()});
+ $('ta-undo').addEventListener('click',()=>{entries.pop();render()});
+ $('ta-clear').addEventListener('click',()=>{entries=[];$('ta-type').value='PAS';$('ta-pages').value='1000';render()});
+ render();
+})();
+</script>
+
+</body></html>
