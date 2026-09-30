@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tablero de asignación de apelaciones — Sistema DGNNA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:#F6F8FB;color:#0F172A;-webkit-font-smoothing:antialiased}
+.mono{font-family:'DM Mono',monospace}
+button{cursor:pointer;font-family:inherit}input{font-family:inherit}
+a{color:#2563EB}a:hover{color:#1E40AF}
+@keyframes drop{0%{transform:translateY(-70px);opacity:0}65%{transform:translateY(4px);opacity:1}82%{transform:translateY(-2px)}100%{transform:translateY(0)}}
+@keyframes slide{0%{transform:translateY(-46px);opacity:0}70%{transform:translateY(3px);opacity:1}100%{transform:translateY(0)}}
+@keyframes ghost{0%,100%{opacity:.4}50%{opacity:.95}}
+@keyframes grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.drop{animation:drop .6s cubic-bezier(.2,.8,.3,1) both}
+.slide{animation:slide .5s cubic-bezier(.2,.8,.3,1) both}
+.ghost{animation:ghost 1.4s ease-in-out infinite}
+.blk{position:relative;transition:transform .16s ease,box-shadow .16s ease}
+.blk.newest{transform:translateX(6px)}
+.blk:hover{transform:translateX(11px);z-index:6;box-shadow:0 6px 14px rgba(15,23,42,.18)!important}
+.tip{display:none;position:absolute;left:0;bottom:calc(100% + 6px);z-index:30;background:#0F172A;color:#fff;font-size:10.5px;line-height:1.45;padding:7px 9px;border-radius:7px;white-space:nowrap;pointer-events:none;box-shadow:0 8px 20px rgba(15,23,42,.25)}
+.blk:hover .tip{display:block}
+.fold{transition:filter .15s}.fold:hover{filter:brightness(1.12)}
+.seg{transition:filter .15s}.seg:hover{filter:brightness(1.1)}
+.card-ab{transition:border-color .15s,box-shadow .15s}
+.card-ab:hover{box-shadow:0 4px 16px rgba(15,23,42,.07)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useMemo}=React;
+
+/* ══ TOKENS ══ */
+const AZ='#1E40AF',BL='#2563EB',SURF='#FFF',BR='#E2E8F0',TX='#0F172A',TX2='#475569',TX3='#94A3B8';
+const AB=[{id:'karla',nombre:'Karla Garcia',ini:'KG'},{id:'karol',nombre:'Karol Castro',ini:'KC'},{id:'clara',nombre:'Clara Michaud',ini:'CM'}];
+const CX=[
+  {id:'pas',n:'PAS',corto:'PAS',c:'#2F5BD3'},
+  {id:'upe',n:'UPE',corto:'UPE',c:'#0F8B8D'},
+  {id:'adopciones',n:'Adopciones',corto:'Adopciones',c:'#7A5AE0'},
+  {id:'declinacion',n:'Declinación de competencias',corto:'Declinación',c:'#8A6A4F'},
+];
+const cxOf=id=>CX.find(c=>c.id===id)||CX[0];
+const tier=f=>f<=200?0:f<=500?1:2;
+const TIER_TXT=['Delgado · hasta 200 folios','Medio · 201 a 500 folios','Voluminoso · más de 500 folios'];
+const claro=c=>`color-mix(in oklch, ${c} 72%, white)`;
+const oscuro=c=>`color-mix(in oklch, ${c} 72%, black)`;
+const fmtN=n=>n.toLocaleString('es-PE');
+const HOY=new Intl.DateTimeFormat('es-PE').format(new Date());
+
+/* ══ MOTOR DE ASIGNACIÓN (reglas originales) ══ */
+const brecha=v=>Math.max(...v)-Math.min(...v);
+function estado(regs){
+  return AB.map(a=>{
+    const casos=regs.filter(r=>r.ab===a.id);
+    return {...a,casos,total:casos.length,m500:casos.filter(r=>r.f>500).length,
+      porC:Object.fromEntries(CX.map(c=>[c.id,casos.filter(r=>r.c===c.id).length])),
+      m500C:Object.fromEntries(CX.map(c=>[c.id,casos.filter(r=>r.c===c.id&&r.f>500).length]))};
+  });
+}
+const turnoDe=regs=>regs.length?(AB.findIndex(a=>a.id===regs.at(-1).ab)+1)%AB.length:0;
+function decidir(regs,cid,f){
+  const act=estado(regs),turno=turnoDe(regs);
+  if(!regs.length)return {i:0,turno,crit:'Primer registro de la nueva modalidad',paso:0};
+  const g=f>500,n=AB.length;
+  const cand=act.map((_,i)=>({i,r:[
+    brecha(act.map((a,j)=>a.total+(i===j?1:0))),
+    brecha(act.map((a,j)=>a.porC[cid]+(i===j?1:0))),
+    g?brecha(act.map((a,j)=>a.m500+(i===j?1:0))):0,
+    (i-turno+n)%n]}));
+  cand.sort((a,b)=>{for(let k=0;k<4;k++)if(a.r[k]!==b.r[k])return a.r[k]-b.r[k];return 0});
+  const w=cand[0],p1=cand.filter(c=>c.r[0]===w.r[0]),p2=p1.filter(c=>c.r[1]===w.r[1]),p3=p2.filter(c=>c.r[2]===w.r[2]);
+  const paso=p1.length===1?1:p2.length===1?2:p3.length===1?3:4;
+  const crit=['','Equilibrio de cantidad total',`Equilibrio de la complejidad ${cxOf(cid).n}`,'Equilibrio de expedientes con más de 500 folios','Empate: decide el turno circular'][paso];
+  return {i:w.i,turno,crit,paso};
+}
+function agregar(regs,cid,f){
+  const d=decidir(regs,cid,f);
+  return [...regs,{n:regs.length+1,c:cid,f,ab:AB[d.i].id,crit:d.crit,fecha:HOY}];
+}
+const INICIAL=[['pas',1000],['upe',200],['adopciones',300],['pas',150],['upe',700],['adopciones',200],['declinacion',650],['declinacion',100],['pas',600],
+  ['upe',120],['pas',340],['adopciones',820],['pas',90],['declinacion',260],['upe',540],['pas',180],['adopciones',410],['upe',60]]
+  .reduce((r,[c,f])=>agregar(r,c,f),[]);
+
+/* ══ PIEZAS COMUNES ══ */
+function Tip({r}){
+  const c=cxOf(r.c);
+  return <span className="tip"><b>Expediente N.º {r.n}</b><br/>{c.n} · {fmtN(r.f)} folios<br/><span style={{color:'#93C5FD'}}>{r.crit}</span></span>;
+}
+function Composicion({a}){
+  return(
+    <div style={{padding:'13px 16px 15px',borderTop:`1px solid ${BR}`}}>
+      <div style={{display:'flex',height:8,borderRadius:99,overflow:'hidden',background:'#F1F5F9',gap:a.total?2:0}}>
+        {CX.map(c=>a.porC[c.id]>0&&<div key={c.id} title={`${c.n}: ${a.porC[c.id]}`} style={{flex:a.porC[c.id],background:c.c}}/>)}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:'6px 12px',marginTop:11}}>
+        {CX.map(c=>(
+          <div key={c.id} style={{display:'flex',alignItems:'center',gap:6,fontSize:11,color:TX2,minWidth:0}}>
+            <span style={{width:8,height:8,borderRadius:2,background:c.c,flexShrink:0}}/>
+            <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.corto}</span>
+            <b style={{marginLeft:'auto',color:TX,fontWeight:800}}>{a.porC[c.id]}</b>
+          </div>
+        ))}
+      </div>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:10,paddingTop:9,borderTop:`1px dashed ${BR}`,fontSize:11,color:TX2}}>
+        <span style={{display:'flex',alignItems:'center',gap:6}}><span style={{width:14,height:8,borderRadius:2,background:'repeating-linear-gradient(135deg,#94A3B8 0 2px,#E2E8F0 2px 4px)'}}/>Más de 500 folios</span>
+        <b style={{color:TX,fontWeight:800}}>{a.m500}</b>
+      </div>
+    </div>
+  );
+}
+function CardAbogado({a,idx,turno,propuesto,sel,onSel,children}){
+  const esTurno=idx===turno;
+  return(
+    <article className="card-ab" onClick={onSel} style={{background:SURF,border:`1px solid ${sel?BL:BR}`,borderRadius:14,overflow:'visible',cursor:'pointer',position:'relative',
+      boxShadow:sel?'0 0 0 3px #DBEAFE':'0 1px 2px rgba(15,23,42,.04)'}}>
+      {esTurno&&<div style={{position:'absolute',top:-1,left:14,right:14,height:3,background:BL,borderRadius:'0 0 3px 3px'}}/>}
+      <div style={{padding:'16px 16px 12px',display:'flex',alignItems:'center',gap:11}}>
+        <div style={{width:38,height:38,borderRadius:'50%',background:propuesto?`linear-gradient(140deg,${AZ},${BL})`:'#EEF2F7',color:propuesto?'#fff':TX2,
+          display:'flex',alignItems:'center',justifyContent:'center',fontSize:12.5,fontWeight:800,flexShrink:0,transition:'background .2s'}}>{a.ini}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:14,fontWeight:800,color:TX,letterSpacing:'-.01em'}}>{a.nombre}</div>
+          <div style={{display:'flex',gap:5,marginTop:3,flexWrap:'wrap'}}>
+            {esTurno&&<span style={{fontSize:9.5,fontWeight:800,color:AZ,background:'#EFF6FF',border:'1px solid #BFDBFE',borderRadius:99,padding:'1px 7px'}}>TURNO DE REFERENCIA</span>}
+            {propuesto&&<span style={{fontSize:9.5,fontWeight:800,color:'#fff',background:BL,borderRadius:99,padding:'1px 7px'}}>RECIBE EL SIGUIENTE</span>}
+          </div>
+        </div>
+        <div style={{textAlign:'right'}}>
+          <div style={{fontSize:30,fontWeight:800,color:TX,lineHeight:1,letterSpacing:'-.03em'}}>{a.total}</div>
+          <div style={{fontSize:10,color:TX3,marginTop:2}}>asignadas</div>
+        </div>
+      </div>
+      {children}
+      <Composicion a={a}/>
+    </article>
+  );
+}
+
+/* ══ FIGURA A · EXPEDIENTES APILADOS ══ */
+const TH=[14,22,32], HA=330;
+function PilaApilada({a,esc,avgPx,ghost,anim,prom,numeros}){
+  return(
+    <div style={{position:'relative',height:HA+26,margin:'0 16px 14px',background:'linear-gradient(180deg,#FBFCFE,#F3F6FA)',borderRadius:10,border:`1px solid ${BR}`}}>
+      {prom&&<div style={{position:'absolute',left:0,right:0,bottom:18+avgPx,borderTop:'1.5px dashed #94A3B8',zIndex:4,pointerEvents:'none'}}>
+        <span style={{position:'absolute',right:6,top:-16,fontSize:9,fontWeight:800,color:TX3,letterSpacing:'.05em'}}>PROMEDIO</span>
+      </div>}
+      <div style={{position:'absolute',left:'9%',right:'9%',bottom:18,display:'flex',flexDirection:'column-reverse',alignItems:'stretch'}}>
+        {a.casos.map((r,i)=>{
+          const c=cxOf(r.c).c, h=Math.max(4,TH[tier(r.f)]*esc), nuevo=r.n===anim;
+          return(
+            <div key={r.n} className={nuevo?'drop':''} style={{position:'relative',zIndex:i+1}}>
+              <div className={`blk ${i===a.casos.length-1?'newest':''}`} style={{height:h,borderRadius:4,marginTop:1,
+                background:`linear-gradient(180deg,${claro(c)},${c} 55%)`,boxShadow:'0 1px 0 rgba(15,23,42,.1)'}}>
+                <div style={{position:'absolute',left:0,top:0,bottom:0,width:7,background:oscuro(c),borderRadius:'4px 0 0 4px'}}/>
+                {r.f>500&&<div style={{position:'absolute',right:34,top:0,bottom:0,width:18,background:'repeating-linear-gradient(180deg,rgba(255,255,255,.6) 0 1px,transparent 1px 3px)'}}/>}
+                {numeros&&h>=12&&<span className="mono" style={{position:'absolute',right:4,top:'50%',transform:'translateY(-50%)',fontSize:9,fontWeight:500,color:'#fff',background:oscuro(c),borderRadius:3,padding:'0 5px',lineHeight:'13px'}}>{r.n}</span>}
+                <Tip r={r}/>
+              </div>
+            </div>
+          );
+        })}
+        {ghost&&<div className="ghost" style={{height:Math.max(4,TH[ghost.t]*esc),marginTop:2,borderRadius:4,border:`1.5px dashed ${ghost.c}`,background:`color-mix(in oklch, ${ghost.c} 18%, transparent)`,transform:'translateX(6px)'}}/>}
+      </div>
+      <div style={{position:'absolute',left:'4%',right:'4%',bottom:6,height:12,borderRadius:4,background:'linear-gradient(180deg,#CBD5E1,#94A3B8)',boxShadow:'0 3px 6px rgba(15,23,42,.14)'}}/>
+      {a.total===0&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,color:TX3,textAlign:'center',padding:20}}>La bandeja está lista para<br/>recibir su primer expediente</div>}
+    </div>
+  );
+}
+
+/* ══ FIGURA B · ARCHIVADOR VERTICAL ══ */
+const TW=[5,8,13];
+function PilaArchivador({a,cap,avgPct,ghost,anim,prom}){
+  return(
+    <div style={{margin:'0 16px 14px'}}>
+      <div style={{background:'linear-gradient(180deg,#E8EDF4,#DCE3EC)',borderRadius:'10px 10px 4px 4px',padding:'10px 10px 0',boxShadow:'inset 0 1px 0 #fff'}}>
+        <div style={{position:'relative',height:236,background:'linear-gradient(180deg,#F7F9FC,#EEF2F7)',borderRadius:'6px 6px 0 0',boxShadow:'inset 0 3px 8px rgba(15,23,42,.08)',overflow:'hidden'}}>
+          <div style={{position:'absolute',left:0,right:0,top:52,height:2,background:'#CBD5E1'}}/>
+          {prom&&<div style={{position:'absolute',top:0,bottom:0,left:`calc(8px + ${avgPct}%)`,borderLeft:'1.5px dashed #94A3B8',zIndex:5}}>
+            <span style={{position:'absolute',left:4,top:4,fontSize:9,fontWeight:800,color:TX3,letterSpacing:'.05em',whiteSpace:'nowrap'}}>PROMEDIO</span>
+          </div>}
+          <div style={{position:'absolute',left:8,right:8,bottom:0,top:30,display:'flex',alignItems:'flex-end'}}>
+            {a.casos.map((r,i)=>{
+              const c=cxOf(r.c).c,w=TW[tier(r.f)]/cap*100,tab=10+(i%3)*8;
+              return(
+                <div key={r.n} className={`fold ${r.n===anim?'slide':''}`} title={`N.º ${r.n} · ${cxOf(r.c).n} · ${fmtN(r.f)} folios`}
+                  style={{position:'relative',width:`${w}%`,height:'86%',flexShrink:0,borderRight:'1px solid rgba(255,255,255,.55)',
+                    background:r.f>500?`repeating-linear-gradient(180deg,${c} 0 3px,${claro(c)} 3px 4px)`:`linear-gradient(90deg,${oscuro(c)},${c} 30%,${claro(c)})`}}>
+                  <div style={{position:'absolute',left:0,right:0,top:-tab,height:tab,background:c,borderRadius:'3px 3px 0 0',opacity:.95}}/>
+                </div>
+              );
+            })}
+            {ghost&&<div className="ghost" style={{width:`${TW[ghost.t]/cap*100}%`,height:'86%',flexShrink:0,marginLeft:2,border:`1.5px dashed ${ghost.c}`,background:`color-mix(in oklch, ${ghost.c} 18%, transparent)`}}/>}
+          </div>
+          {a.total===0&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,color:TX3}}>Cajón vacío</div>}
+        </div>
+      </div>
+      <div style={{background:'linear-gradient(180deg,#D5DDE8,#C3CEDC)',borderRadius:'0 0 10px 10px',padding:'12px 0 13px',display:'flex',flexDirection:'column',alignItems:'center',gap:8,boxShadow:'0 4px 10px rgba(15,23,42,.1)'}}>
+        <div style={{background:'#F8FAFC',border:'1px solid #AEBBCB',borderRadius:4,padding:'2px 12px',fontSize:10,fontWeight:800,color:TX2,letterSpacing:'.06em'}}>{a.nombre.toUpperCase()} · {a.total}</div>
+        <div style={{width:'34%',height:9,borderRadius:99,background:'linear-gradient(180deg,#94A3B8,#64748B)',boxShadow:'0 2px 3px rgba(15,23,42,.2)'}}/>
+      </div>
+    </div>
+  );
+}
+
+/* ══ FIGURA C · COLUMNAS DE VOLUMEN ══ */
+const HC=300;
+function PilaColumnas({a,capN,avg,ghost,prom}){
+  const u=HC/capN;
+  let acc=0;
+  const ticks=Array.from({length:capN/2+1},(_,i)=>i*2);
+  return(
+    <div style={{position:'relative',height:HC+22,margin:'0 16px 14px 16px'}}>
+      {ticks.map(t=>(
+        <div key={t} style={{position:'absolute',left:24,right:0,bottom:22+t*u,borderTop:`1px solid ${t?'#EEF2F7':BR}`}}>
+          <span className="mono" style={{position:'absolute',left:-24,top:-7,fontSize:9,color:TX3,width:18,textAlign:'right'}}>{t}</span>
+        </div>
+      ))}
+      {prom&&<div style={{position:'absolute',left:24,right:0,bottom:22+avg*u,borderTop:'1.5px dashed #64748B',zIndex:4}}>
+        <span style={{position:'absolute',right:0,top:-15,fontSize:9,fontWeight:800,color:TX2,letterSpacing:'.05em'}}>PROMEDIO {avg.toFixed(1)}</span>
+      </div>}
+      <div style={{position:'absolute',left:'calc(24px + 22%)',right:'22%',bottom:22,display:'flex',flexDirection:'column-reverse'}}>
+        {CX.map(c=>{
+          const n=a.porC[c.id]; if(!n)return null;
+          const m5=a.m500C[c.id], h=n*u; acc+=n;
+          const top=acc===a.total&&!ghost;
+          return(
+            <div key={c.id} className="seg" title={`${c.n}: ${n} (${m5} con más de 500 folios)`}
+              style={{position:'relative',height:h,background:`linear-gradient(90deg,${c.c},${claro(c.c)})`,borderTop:'2px solid #fff',
+                borderRadius:top?'8px 8px 0 0':0,transition:'height .45s cubic-bezier(.2,.8,.3,1)',overflow:'hidden'}}>
+              {m5>0&&<div style={{position:'absolute',left:0,right:0,top:0,height:m5*u,background:'repeating-linear-gradient(135deg,rgba(255,255,255,.42) 0 3px,transparent 3px 7px)'}}/>}
+              {h>=18&&<span style={{position:'absolute',left:0,right:0,top:'50%',transform:'translateY(-50%)',textAlign:'center',fontSize:12,fontWeight:800,color:'#fff',textShadow:'0 1px 2px rgba(0,0,0,.2)'}}>{n}</span>}
+            </div>
+          );
+        })}
+        {ghost&&<div className="ghost" style={{height:u,border:`1.5px dashed ${ghost.c}`,borderBottom:0,borderRadius:'8px 8px 0 0',background:`color-mix(in oklch, ${ghost.c} 20%, transparent)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,color:ghost.c}}>+1</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ══ ESCENARIO ══ */
+function Escenario({figura,stats,regs,ghostI,ghost,anim,prom,numeros,turno,sel,setSel}){
+  let calc={};
+  if(figura==='apilada'){
+    const vol=stats.map((a,i)=>a.casos.reduce((s,r)=>s+TH[tier(r.f)]+1,0)+(i===ghostI&&ghost?TH[ghost.t]+2:0));
+    const esc=Math.min(1,(HA-14)/Math.max(...vol,1));
+    const avg=stats.reduce((s,a)=>s+a.casos.reduce((t,r)=>t+TH[tier(r.f)]+1,0),0)/stats.length;
+    calc={esc,avgPx:avg*esc};
+  }else if(figura==='archivador'){
+    const vol=stats.map((a,i)=>a.casos.reduce((s,r)=>s+TW[tier(r.f)],0)+(i===ghostI&&ghost?TW[ghost.t]:0));
+    const cap=Math.max(Math.max(...vol)*1.08,150);
+    const avg=stats.reduce((s,a)=>s+a.casos.reduce((t,r)=>t+TW[tier(r.f)],0),0)/stats.length;
+    calc={cap,avgPct:avg/cap*100*((100-0)/100)};
+  }else{
+    const mx=Math.max(...stats.map((a,i)=>a.total+(i===ghostI&&ghost?1:0)));
+    calc={capN:Math.max(6,Math.ceil((mx+1)/2)*2),avg:stats.reduce((s,a)=>s+a.total,0)/stats.length};
+  }
+  return(
+    <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:16}}>
+      {stats.map((a,i)=>{
+        const g=i===ghostI?ghost:null;
+        const props={a,ghost:g,anim,prom};
+        return(
+          <CardAbogado key={a.id} a={a} idx={i} turno={turno} propuesto={i===ghostI&&!!ghost} sel={sel===a.id} onSel={()=>setSel(sel===a.id?null:a.id)}>
+            {figura==='apilada'&&<PilaApilada {...props} esc={calc.esc} avgPx={calc.avgPx} numeros={numeros}/>}
+            {figura==='archivador'&&<PilaArchivador {...props} cap={calc.cap} avgPct={calc.avgPct}/>}
+            {figura==='columnas'&&<PilaColumnas {...props} capN={calc.capN} avg={calc.avg}/>}
+          </CardAbogado>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ══ SELECTOR DE FIGURA ══ */
+function Glifo({t,on}){
+  const c=on?BL:'#94A3B8';
+  if(t==='apilada')return <div style={{width:22,display:'flex',flexDirection:'column-reverse',gap:1.5}}>{[5,3,6,4].map((h,i)=><div key={i} style={{height:h,background:c,borderRadius:1.5,opacity:1-i*.15,transform:i===3?'translateX(2px)':'none'}}/>)}</div>;
+  if(t==='archivador')return <div style={{width:22,height:18,display:'flex',alignItems:'flex-end',gap:1,borderBottom:`2px solid ${c}`}}>{[2,3,2,4,2,3].map((w,i)=><div key={i} style={{width:w,height:12+(i%3)*2,background:c,opacity:.55+(i%2)*.4}}/>)}</div>;
+  return <div style={{width:22,height:18,display:'flex',alignItems:'flex-end',gap:3}}>{[10,16,7].map((h,i)=><div key={i} style={{flex:1,height:h,background:c,borderRadius:'2px 2px 0 0'}}/>)}</div>;
+}
+const FIGURAS=[
+  {id:'apilada',l:'Expedientes apilados',d:'Bloques de canto sobre bandeja'},
+  {id:'archivador',l:'Archivador vertical',d:'Carpetas colgantes en cajón'},
+  {id:'columnas',l:'Columnas de volumen',d:'Barras apiladas por complejidad'},
+];
+
+/* ══ APP ══ */
+const TWEAK_DEFAULTS=/*EDITMODE-BEGIN*/{
+  "figura": "columnas",
+  "promedio": true,
+  "numeros": true
+}/*EDITMODE-END*/;
+
+function App(){
+  const [t,setTweak]=useTweaks(TWEAK_DEFAULTS);
+  const [regs,setRegs]=useState(INICIAL);
+  const [cx,setCx]=useState('pas');
+  const [folios,setFolios]=useState('1000');
+  const [anim,setAnim]=useState(null);
+  const [sel,setSel]=useState(null);
+
+  const f=Number(folios), valido=Number.isSafeInteger(f)&&f>=1&&f<=1000000;
+  const stats=useMemo(()=>estado(regs),[regs]);
+  const d=valido?decidir(regs,cx,f):null;
+  const turno=turnoDe(regs);
+  const ghost=valido?{t:tier(f),c:cxOf(cx).c}:null;
+  const brechas=[
+    ['Cantidad total',brecha(stats.map(a=>a.total))],
+    [`Complejidad ${cxOf(cx).corto}`,brecha(stats.map(a=>a.porC[cx]))],
+    ['Más de 500 folios',brecha(stats.map(a=>a.m500))],
+  ];
+
+  const asignar=()=>{if(!valido)return;const nr=agregar(regs,cx,f);setRegs(nr);setAnim(nr.at(-1).n)};
+  const hist=[...regs].reverse().filter(r=>!sel||r.ab===sel);
+
+  return(
+    <div style={{maxWidth:1340,margin:'0 auto',padding:'26px 26px 40px'}}>
+      <header style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',gap:20,marginBottom:18}}>
+        <div>
+          <div style={{fontSize:10.5,fontWeight:800,letterSpacing:'.1em',color:BL,textTransform:'uppercase'}}>Sistema DGNNA · Módulo de apelaciones</div>
+          <h1 style={{fontSize:25,fontWeight:800,letterSpacing:'-.02em',margin:'5px 0 4px'}}>Tablero de asignación de apelaciones</h1>
+          <p style={{fontSize:12.5,color:TX2}}>Distribución equilibrada por cantidad, complejidad jurídica, volumen y turno.</p>
+        </div>
+        <span style={{whiteSpace:'nowrap',padding:'7px 12px',border:'1px solid #BBF7D0',borderRadius:99,background:'#DCFCE7',color:'#166534',fontSize:11.5,fontWeight:700}}>Nueva modalidad · Sin puntos</span>
+      </header>
+
+      {/* ── REGISTRO + PROPUESTA ── */}
+      <section style={{marginBottom:16}}>
+        <div style={{background:`linear-gradient(150deg,${AZ},${BL})`,borderRadius:14,padding:18,color:'#fff',display:'flex',flexDirection:'column'}}>
+          <div style={{fontSize:10,fontWeight:800,letterSpacing:'.08em',opacity:.75}}>ASIGNACIÓN PROPUESTA · N.º {regs.length+1}</div>
+          <div style={{display:'flex',alignItems:'center',gap:12,marginTop:10}}>
+            <div style={{width:42,height:42,borderRadius:'50%',background:'rgba(255,255,255,.16)',border:'1.5px solid rgba(255,255,255,.35)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13.5,fontWeight:800}}>{d?AB[d.i].ini:'—'}</div>
+            <div>
+              <div style={{fontSize:20,fontWeight:800,letterSpacing:'-.015em'}}>{d?AB[d.i].nombre:'Complete los datos'}</div>
+              <div style={{fontSize:11.5,opacity:.8,marginTop:1}}>{d?d.crit:'Folios no válidos'}</div>
+            </div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6,marginTop:'auto',paddingTop:16}}>
+            {['Cantidad','Complejidad','+500 folios','Turno'].map((l,i)=>{
+              const on=d&&d.paso===i+1, pas=d&&d.paso>i+1;
+              return(
+                <div key={l} style={{padding:'8px 8px 7px',borderRadius:8,background:on?'#fff':pas?'rgba(255,255,255,.12)':'rgba(255,255,255,.06)',color:on?AZ:'#fff',border:`1px solid ${on?'#fff':'rgba(255,255,255,.18)'}`}}>
+                  <div style={{fontSize:9,fontWeight:800,opacity:on?1:.7}}>CRITERIO {i+1}</div>
+                  <div style={{fontSize:11,fontWeight:800,marginTop:2}}>{l}</div>
+                  <div style={{fontSize:9,marginTop:2,opacity:.75}}>{on?'Decisivo':pas?'Empate':d&&d.paso===0?'—':'No evaluado'}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── SELECTOR DE FIGURA + BRECHAS ── */}
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:16,marginBottom:14,flexWrap:'wrap'}}>
+        <div>
+          <h2 style={{fontSize:16,fontWeight:800,letterSpacing:'-.01em'}}>Pilas de asignaciones por abogada</h2>
+          <p style={{fontSize:11.5,color:TX3,marginTop:3}}>Las tres pilas comparten la misma escala · el bloque punteado indica dónde caerá el siguiente expediente.</p>
+        </div>
+
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:14}}>
+        {brechas.map(([l,v])=>{
+          const c=v<=1?'#16A34A':v<=2?'#D97706':'#DC2626', bg=v<=1?'#DCFCE7':v<=2?'#FEF3C7':'#FEE2E2';
+          return(
+            <div key={l} style={{display:'flex',alignItems:'center',gap:10,background:SURF,border:`1px solid ${BR}`,borderRadius:10,padding:'9px 13px'}}>
+              <span style={{fontSize:11.5,color:TX2,fontWeight:600}}>Brecha · {l}</span>
+              <span style={{marginLeft:'auto',fontSize:11,fontWeight:800,color:c,background:bg,borderRadius:99,padding:'2px 10px'}}>{v===0?'Equilibrado':`± ${v}`}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      <Escenario figura="columnas" stats={stats} regs={regs} ghostI={d?d.i:-1} ghost={ghost} anim={anim} prom={t.promedio} numeros={t.numeros} turno={turno} sel={sel} setSel={setSel}/>
+
+      <div style={{display:'flex',gap:16,flexWrap:'wrap',alignItems:'center',margin:'14px 2px 0',fontSize:11,color:TX2}}>
+        {CX.map(c=><span key={c.id} style={{display:'flex',alignItems:'center',gap:6}}><span style={{width:14,height:10,borderRadius:2,background:`linear-gradient(180deg,${claro(c.c)},${c.c})`,borderLeft:`3px solid ${oscuro(c.c)}`}}/>{c.n}</span>)}
+        <span style={{display:'flex',alignItems:'center',gap:6}}><span style={{width:14,height:10,borderRadius:2,background:'repeating-linear-gradient(135deg,#94A3B8 0 2px,#E2E8F0 2px 4px)'}}/>Más de 500 folios</span>
+      </div>
+
+      {/* ── HISTORIAL ── */}
+      <div style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between',gap:14,margin:'28px 0 12px'}}>
+        <div>
+          <h2 style={{fontSize:16,fontWeight:800,letterSpacing:'-.01em'}}>Historial de asignaciones</h2>
+          <p style={{fontSize:11.5,color:TX3,marginTop:3}}>{sel?<>Filtrado por <b style={{color:TX2}}>{AB.find(a=>a.id===sel).nombre}</b> · <a href="#" onClick={e=>{e.preventDefault();setSel(null)}}>quitar filtro</a></>:'Haga clic en una pila para filtrar por abogada.'}</p>
+        </div>
+        <div style={{display:'flex',gap:8}}>
+          <button onClick={()=>{setRegs(INICIAL);setAnim(null)}} style={{padding:'8px 13px',border:`1px solid ${BR}`,borderRadius:8,background:SURF,color:TX2,fontSize:12,fontWeight:700}}>Cargar ejemplo</button>
+          <button disabled={!regs.length} onClick={()=>{setRegs(r=>r.slice(0,-1));setAnim(null)}} style={{padding:'8px 13px',border:`1px solid ${BR}`,borderRadius:8,background:SURF,color:TX2,fontSize:12,fontWeight:700,opacity:regs.length?1:.5}}>Deshacer último</button>
+          <button disabled={!regs.length} onClick={()=>{setRegs([]);setAnim(null);setSel(null)}} style={{padding:'8px 13px',border:0,borderRadius:8,background:'transparent',color:TX2,fontSize:12,fontWeight:700,opacity:regs.length?1:.5}}>Reiniciar</button>
+        </div>
+      </div>
+      <div style={{background:SURF,border:`1px solid ${BR}`,borderRadius:14,overflow:'hidden'}}>
+        <table style={{width:'100%',borderCollapse:'collapse'}}>
+          <thead><tr style={{background:'#F8FAFC',borderBottom:`1px solid ${BR}`,textAlign:'left'}}>
+            {['N.º','Complejidad jurídica','Folios','Volumen','Abogada asignada','Criterio aplicado','Fecha'].map(h=><th key={h} style={{padding:'10px 14px',fontSize:9.5,fontWeight:800,color:TX3,textTransform:'uppercase',letterSpacing:'.05em'}}>{h}</th>)}
+          </tr></thead>
+          <tbody>
+            {hist.length===0&&<tr><td colSpan={7} style={{padding:36,textAlign:'center',fontSize:12,color:TX3}}>Aún no existen registros en la nueva modalidad.</td></tr>}
+            {hist.map(r=>{const c=cxOf(r.c);return(
+              <tr key={r.n} style={{borderBottom:`1px solid ${BR}`,background:r.n===anim?'#F0F6FF':SURF}}>
+                <td style={{padding:'10px 14px'}}><span className="mono" style={{fontSize:11.5,fontWeight:500,color:AZ}}>{r.n}</span></td>
+                <td style={{padding:'10px 14px',fontSize:12,color:TX}}><span style={{display:'inline-flex',alignItems:'center',gap:7}}><span style={{width:9,height:9,borderRadius:2,background:c.c}}/>{c.n}</span></td>
+                <td style={{padding:'10px 14px',fontSize:12,color:TX2}} className="mono">{fmtN(r.f)}</td>
+                <td style={{padding:'10px 14px'}}><span style={{fontSize:10.5,fontWeight:700,padding:'2px 9px',borderRadius:99,background:r.f>500?'#FEF3C7':'#F1F5F9',color:r.f>500?'#92400E':TX2}}>{r.f>500?'Más de 500':'Hasta 500'}</span></td>
+                <td style={{padding:'10px 14px',fontSize:12,fontWeight:700,color:TX}}>{AB.find(a=>a.id===r.ab).nombre}</td>
+                <td style={{padding:'10px 14px',fontSize:11.5,color:TX2}}>{r.crit}</td>
+                <td style={{padding:'10px 14px',fontSize:11.5,color:TX3}}>{r.fecha}</td>
+              </tr>
+            )})}
+          </tbody>
+        </table>
+      </div>
+      <p style={{fontSize:11.5,color:TX2,marginTop:12,lineHeight:1.6}}><b>Regla de inicio:</b> el primer registro de la nueva modalidad se asigna a <b>Karla Garcia</b>. A partir del segundo, el turno solo interviene después de empatar los tres criterios de equilibrio.</p>
+
+      <TweaksPanel>
+        <TweakSection label="Pilas"/>
+        <TweakToggle label="Línea de promedio" value={t.promedio} onChange={v=>setTweak('promedio',v)}/>
+        <TweakToggle label="N.º en cada expediente" value={t.numeros} onChange={v=>setTweak('numeros',v)}/>
+      </TweaksPanel>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

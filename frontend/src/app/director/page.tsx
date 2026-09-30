@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   LayoutDashboard,
   Globe,
@@ -34,8 +35,12 @@ import {
   Activity,
   TimerReset,
   Database,
+  Construction,
+  Wrench,
+  Landmark,
 } from 'lucide-react'
-import type { EstadisticasDashboard, ApelacionConRelaciones, Abogado } from '@/types'
+import type { EstadisticasDashboard, ApelacionConRelaciones, Abogado, TransparenciaRegistro } from '@/types'
+import { clasificarAlerta, diasHabilesRestantes } from '@/lib/calcular-plazo'
 
 // Tipos de sección
 type SeccionId = 'resumen' | 'sustracion' | 'apelaciones' | 'poi' | 'proyectos-ley' | 'transparencia' | 'informes'
@@ -67,6 +72,7 @@ export default function DirectorPage() {
   // Datos crudos en vivo desde el backend
   const [statsApelaciones, setStatsApelaciones] = useState<EstadisticasDashboard | null>(null)
   const [rawApelaciones, setRawApelaciones] = useState<ApelacionConRelaciones[]>([])
+  const [rawTransparencia, setRawTransparencia] = useState<TransparenciaRegistro[]>([])
   const [abogadosList, setAbogadosList] = useState<Abogado[]>([])
   const [cargaRevisores, setCargaRevisores] = useState<CargaRevisorItem[]>([])
   const [loadingStats, setLoadingStats] = useState(true)
@@ -99,22 +105,24 @@ export default function DirectorPage() {
       })
   }, [])
 
-  // Cargar datos en vivo de Apelaciones y Abogados
+  // Cargar datos en vivo de Apelaciones, Abogados y Transparencia
   useEffect(() => {
     Promise.all([
       fetch('/api/dashboard').then(r => (r.ok ? r.json() : null)),
       fetch('/api/revisor/carga').then(r => (r.ok ? r.json() : [])),
       fetch('/api/apelaciones').then(r => (r.ok ? r.json() : [])),
       fetch('/api/abogados').then(r => (r.ok ? r.json() : [])),
+      fetch('/api/transparencia').then(r => (r.ok ? r.json() : [])),
     ])
-      .then(([dashData, revData, apelData, abgsData]) => {
+      .then(([dashData, revData, apelData, abgsData, transpData]) => {
         if (dashData) setStatsApelaciones(dashData)
         if (Array.isArray(revData)) setCargaRevisores(revData)
         if (Array.isArray(apelData)) setRawApelaciones(apelData)
         if (Array.isArray(abgsData)) setAbogadosList(abgsData)
+        if (Array.isArray(transpData)) setRawTransparencia(transpData)
       })
       .catch(err => {
-        console.error('Error cargando datos de apelaciones:', err)
+        console.error('Error cargando datos del centro de mando:', err)
       })
       .finally(() => {
         setLoadingStats(false)
@@ -405,21 +413,155 @@ export default function DirectorPage() {
     router.refresh()
   }
 
-  // Lista de secciones del Sidebar
-  const seccionesMenu: { id: SeccionId; label: string; icon: React.ReactNode; badge?: string; badgeColor?: string }[] = [
-    { id: 'resumen', label: 'Resumen General', icon: <LayoutDashboard className="w-5 h-5" /> },
-    { id: 'sustracion', label: 'Sustracción Internacional', icon: <Globe className="w-5 h-5" />, badge: '2 Alertas', badgeColor: 'bg-red-100 text-red-700 border border-red-200' },
+  // ─────────────────────────────────────────────────────────────────
+  // MOTOR DE TRANSPARENCIA PARA EL CENTRO DE MANDO DIRECTIVO
+  // ─────────────────────────────────────────────────────────────────
+  const statsTransparenciaDirector = useMemo(() => {
+    if (!rawTransparencia || rawTransparencia.length === 0) {
+      return {
+        total: 0,
+        atendidas: 0,
+        enTramite: 0,
+        vencidos: 0,
+        proximos: 0,
+        pctCumplimiento: 0,
+        pedidosPeriodo: [],
+        porDireccion: [],
+        porCategoria: [],
+      }
+    }
+
+    const anioActual = anioReferencia
+    const mesActual = mesReferencia
+
+    let desde: Date
+    let hasta: Date
+
+    if (periodo === 'mes') {
+      desde = new Date(anioActual, mesActual, 1, 0, 0, 0)
+      hasta = new Date(anioActual, mesActual + 1, 0, 23, 59, 59)
+    } else if (periodo === 'trimestre') {
+      const q = Math.floor(mesActual / 3)
+      desde = new Date(anioActual, q * 3, 1, 0, 0, 0)
+      hasta = new Date(anioActual, (q + 1) * 3, 0, 23, 59, 59)
+    } else {
+      desde = new Date(anioActual, 0, 1, 0, 0, 0)
+      hasta = new Date(anioActual, 11, 31, 23, 59, 59)
+    }
+
+    const filtrados = rawTransparencia.filter(r => {
+      const f = r.fechaIngreso ? new Date(r.fechaIngreso) : (r.createdAt ? new Date(r.createdAt) : null)
+      if (!f || isNaN(f.getTime())) return false
+      return f >= desde && f <= hasta
+    })
+
+    const total = filtrados.length
+    const atendidas = filtrados.filter(r => r.estado === 'Atendido').length
+    const enTramite = filtrados.filter(r => r.estado === 'Pendiente' || r.estado === 'En Proceso').length
+
+    let vencidos = 0
+    let proximos = 0
+
+    filtrados.forEach(r => {
+      const alerta = clasificarAlerta(r.plazoVencimiento, r.estado)
+      if (alerta === 'vencido') vencidos++
+      if (alerta === 'proximo' || alerta === 'urgente') proximos++
+    })
+
+    const pctCumplimiento = total > 0 ? Math.round((atendidas / total) * 100) : 0
+
+    // Por Dirección
+    const dirMap: Record<string, number> = {}
+    filtrados.forEach(r => {
+      const rawDir: any = r.direccion
+      const dirs: string[] = Array.isArray(rawDir)
+        ? rawDir
+        : (typeof rawDir === 'string' ? rawDir.split(',').map((s: string) => s.trim()).filter(Boolean) : [])
+      if (dirs.length === 0) {
+        dirMap['Sin dirección'] = (dirMap['Sin dirección'] || 0) + 1
+      } else {
+        dirs.forEach((d: string) => {
+          dirMap[d] = (dirMap[d] || 0) + 1
+        })
+      }
+    })
+    const porDireccion = Object.entries(dirMap).map(([nombre, cantidad]) => ({
+      nombre,
+      cantidad,
+    })).sort((a, b) => b.cantidad - a.cantidad)
+
+    // Por Categoría
+    const catMap: Record<string, number> = {}
+    filtrados.forEach(r => {
+      const rawCat: any = r.categoria
+      const cats: string[] = Array.isArray(rawCat)
+        ? rawCat
+        : (typeof rawCat === 'string' ? rawCat.split(',').map((s: string) => s.trim()).filter(Boolean) : [])
+      if (cats.length === 0) {
+        catMap['Sin categoría'] = (catMap['Sin categoría'] || 0) + 1
+      } else {
+        cats.forEach((c: string) => {
+          catMap[c] = (catMap[c] || 0) + 1
+        })
+      }
+    })
+    const porCategoria = Object.entries(catMap).map(([nombre, cantidad]) => ({
+      nombre,
+      cantidad,
+    })).sort((a, b) => b.cantidad - a.cantidad)
+
+    return {
+      total,
+      atendidas,
+      enTramite,
+      vencidos,
+      proximos,
+      pctCumplimiento,
+      pedidosPeriodo: filtrados,
+      porDireccion,
+      porCategoria,
+    }
+  }, [rawTransparencia, periodo, anioReferencia, mesReferencia])
+
+  // Lista de secciones del Sidebar clasificadas por estado de desarrollo
+  const seccionesMenu: {
+    id: SeccionId
+    label: string
+    icon: React.ReactNode
+    habilitado: boolean
+    badge?: string
+    badgeColor?: string
+  }[] = [
+    // ── Módulos Habilitados en Vivo ──
+    { id: 'resumen', label: 'Resumen General', icon: <LayoutDashboard className="w-5 h-5" />, habilitado: true },
+    { id: 'sustracion', label: 'Sustracción Internacional', icon: <Globe className="w-5 h-5" />, habilitado: true, badge: '2 Alertas', badgeColor: 'bg-red-100 text-red-700 border border-red-200' },
     {
       id: 'apelaciones',
       label: 'Gestión de Apelaciones',
       icon: <Scale className="w-5 h-5" />,
+      habilitado: true,
       badge: (statsFiltradas?.casosConPlazoProximo ?? 0) > 0 ? `${statsFiltradas?.casosConPlazoProximo} Alertas` : undefined,
       badgeColor: 'bg-amber-100 text-amber-800 border border-amber-200',
     },
-    { id: 'poi', label: 'POI y Presupuesto PP117', icon: <BarChart3 className="w-5 h-5" /> },
-    { id: 'proyectos-ley', label: 'Proyectos de Ley', icon: <FileText className="w-5 h-5" />, badge: '1 Urgente', badgeColor: 'bg-amber-100 text-amber-800 border border-amber-200' },
-    { id: 'transparencia', label: 'Transparencia y Plazos', icon: <Eye className="w-5 h-5" /> },
-    { id: 'informes', label: 'Informes para Despacho', icon: <FileSpreadsheet className="w-5 h-5" />, badge: 'PDF', badgeColor: 'bg-blue-100 text-blue-700 border border-blue-200' },
+    {
+      id: 'transparencia',
+      label: 'Transparencia y Plazos',
+      icon: <Eye className="w-5 h-5" />,
+      habilitado: true,
+      badge: statsTransparenciaDirector.vencidos > 0
+        ? `${statsTransparenciaDirector.vencidos} Vencido${statsTransparenciaDirector.vencidos > 1 ? 's' : ''}`
+        : statsTransparenciaDirector.proximos > 0
+          ? `${statsTransparenciaDirector.proximos} Alerta${statsTransparenciaDirector.proximos > 1 ? 's' : ''}`
+          : undefined,
+      badgeColor: statsTransparenciaDirector.vencidos > 0
+        ? 'bg-red-100 text-red-700 border border-red-200'
+        : 'bg-amber-100 text-amber-800 border border-amber-200',
+    },
+
+    // ── Módulos en Proceso de Construcción ──
+    { id: 'poi', label: 'POI y Presupuesto PP117', icon: <BarChart3 className="w-5 h-5" />, habilitado: false, badge: 'En Construcción', badgeColor: 'bg-slate-100 text-slate-600 border border-slate-300 font-medium' },
+    { id: 'proyectos-ley', label: 'Proyectos de Ley', icon: <FileText className="w-5 h-5" />, habilitado: false, badge: 'En Construcción', badgeColor: 'bg-slate-100 text-slate-600 border border-slate-300 font-medium' },
+    { id: 'informes', label: 'Informes para Despacho', icon: <FileSpreadsheet className="w-5 h-5" />, habilitado: false, badge: 'Próximamente', badgeColor: 'bg-slate-100 text-slate-600 border border-slate-300 font-medium' },
   ]
 
   // Texto descriptivo del período activo
@@ -469,34 +611,70 @@ export default function DirectorPage() {
         </div>
 
         {/* Menú de Navegación por Secciones */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            Ejes de Supervisión
-          </p>
-          {seccionesMenu.map(item => {
-            const activo = seccion === item.id
-            return (
-              <button
-                key={item.id}
-                onClick={() => setSeccion(item.id)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                  activo
-                    ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200 shadow-sm'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className={activo ? 'text-blue-600' : 'text-slate-400'}>{item.icon}</span>
-                  <span className="truncate">{item.label}</span>
-                </div>
-                {item.badge && (
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item.badgeColor}`}>
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            )
-          })}
+        <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+          {/* Bloque 1: Módulos Operativos en Vivo */}
+          <div className="space-y-1">
+            <p className="px-3 pb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+              <span>Ejes Operativos en Vivo</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            </p>
+            {seccionesMenu.filter(s => s.habilitado).map(item => {
+              const activo = seccion === item.id
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setSeccion(item.id)}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                    activo
+                      ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200 shadow-sm'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={activo ? 'text-blue-600' : 'text-slate-400'}>{item.icon}</span>
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item.badgeColor}`}>
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Bloque 2: Módulos en Proceso de Construcción */}
+          <div className="space-y-1 pt-2 border-t border-slate-100">
+            <p className="px-3 pb-2 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+              <span>En Proceso de Integración</span>
+              <Wrench className="w-3 h-3 text-slate-400" />
+            </p>
+            {seccionesMenu.filter(s => !s.habilitado).map(item => {
+              const activo = seccion === item.id
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setSeccion(item.id)}
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                    activo
+                      ? 'bg-slate-100 text-slate-800 font-bold border border-slate-300 shadow-sm'
+                      : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={activo ? 'text-slate-700' : 'text-slate-400'}>{item.icon}</span>
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <span className={`text-[9px] font-medium px-2 py-0.5 rounded-md ${item.badgeColor}`}>
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
         </nav>
 
         {/* Footer del Sidebar: Volver al menú o Salir */}
@@ -1429,61 +1607,54 @@ export default function DirectorPage() {
           )}
 
           {/* ══════════════════════════════════════════════════════════
-              VISTA 4: POI Y PRESUPUESTO PP 0117
+              VISTA 4: POI Y PRESUPUESTO PP 0117 (EN CONSTRUCCIÓN)
           ══════════════════════════════════════════════════════════ */}
           {seccion === 'poi' && (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                  <p className="text-xs text-slate-500 font-bold uppercase">Presupuesto PIM Asignado</p>
-                  <p className="text-2xl font-black text-slate-900 mt-1">S/ 18,450,200</p>
-                  <p className="text-xs text-slate-500 mt-1">Programa Presupuestal 0117</p>
+              <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="p-3 bg-amber-100 text-amber-700 rounded-xl">
+                    <Construction className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-200/70 text-amber-900 border border-amber-300">
+                        En Proceso de Construcción
+                      </span>
+                      <span className="text-xs text-slate-500 font-medium">Fase II · Integración SIAF / POI</span>
+                    </div>
+                    <h3 className="text-base font-extrabold text-slate-900 mt-1">
+                      Módulo POI y Presupuesto (PP 0117)
+                    </h3>
+                  </div>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                  <p className="text-xs text-slate-500 font-bold uppercase">Ejecución Financiera (Devengado)</p>
-                  <p className="text-2xl font-black text-emerald-600 mt-1">
-                    {periodo === 'mes'
-                      ? 'S/ 1,549,800 (8.4%)'
-                      : periodo === 'trimestre'
-                      ? 'S/ 4,815,000 (26.1%)'
-                      : 'S/ 14,465,000 (78.4%)'}
-                  </p>
-                  <p className="text-xs text-emerald-600 font-bold mt-1">Avance correspondiente a {labelPeriodo}</p>
-                </div>
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                  <p className="text-xs text-slate-500 font-bold uppercase">Saldo Presupuestal Restante</p>
-                  <p className="text-2xl font-black text-blue-600 mt-1">S/ 3,985,200</p>
-                  <p className="text-xs text-blue-600 font-medium mt-1">Comprometido al IV Trimestre</p>
-                </div>
+                <button
+                  onClick={() => setSeccion('resumen')}
+                  className="px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm"
+                >
+                  Volver al Resumen General
+                </button>
               </div>
 
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 className="font-extrabold text-sm text-slate-900 pb-3 border-b border-slate-100 mb-4">
-                  📊 Metas Físicas: DGNNA Sede Central vs 25 Unidades de Protección Especial (UPE) · {labelPeriodo}
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-                  <div className="p-4 rounded-xl bg-blue-50/60 border border-blue-100">
-                    <h4 className="font-extrabold text-blue-900 mb-2">🏛️ Sede Central DGNNA</h4>
-                    <p className="text-slate-600 mb-3">Atención técnica, supervisión y normas directivas.</p>
-                    <div className="flex justify-between font-bold text-slate-700 mb-1">
-                      <span>Meta: {periodo === 'mes' ? '100' : periodo === 'trimestre' ? '300' : '1,200'} atenciones</span>
-                      <span className="text-blue-700">88.5% alcanzado</span>
-                    </div>
-                    <div className="w-full bg-blue-200 rounded-full h-2">
-                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: '88.5%' }} />
-                    </div>
-                  </div>
+              <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center max-w-2xl mx-auto space-y-4 my-8">
+                <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto border border-amber-100">
+                  <Wrench className="w-8 h-8" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-black text-slate-900">Integración de Datos Presupuestales en Curso</h4>
+                  <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                    Este panel se encuentra en desarrollo técnico para interoperar directamente con el Sistema Integrado de Administración Financiera (SIAF-SP) y los reportes oficiales del Programa Presupuestal 0117 y las 25 Unidades de Protección Especial (UPE).
+                  </p>
+                </div>
 
-                  <div className="p-4 rounded-xl bg-emerald-50/60 border border-emerald-100">
-                    <h4 className="font-extrabold text-emerald-900 mb-2">📍 25 UPE Regionales</h4>
-                    <p className="text-slate-600 mb-3">Intervenciones directas y acogimiento familiar.</p>
-                    <div className="flex justify-between font-bold text-slate-700 mb-1">
-                      <span>Meta: {periodo === 'mes' ? '375' : periodo === 'trimestre' ? '1,125' : '4,500'} NNA</span>
-                      <span className="text-emerald-700">76.2% alcanzado</span>
-                    </div>
-                    <div className="w-full bg-emerald-200 rounded-full h-2">
-                      <div className="bg-emerald-600 h-2 rounded-full" style={{ width: '76.2%' }} />
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left pt-3">
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <p className="text-[11px] font-bold text-slate-700">📌 Alcance Previsto</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Ejecución del PIM, devengados y certificación por metas del PP 0117.</p>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <p className="text-[11px] font-bold text-slate-700">⏳ Estado de Disponibilidad</p>
+                    <p className="text-[11px] text-amber-700 font-semibold mt-0.5">Próximamente disponible en la siguiente entrega directiva.</p>
                   </div>
                 </div>
               </div>
@@ -1491,55 +1662,54 @@ export default function DirectorPage() {
           )}
 
           {/* ══════════════════════════════════════════════════════════
-              VISTA 5: PROYECTOS DE LEY (CONGRESO)
+              VISTA 5: PROYECTOS DE LEY (EN CONSTRUCCIÓN)
           ══════════════════════════════════════════════════════════ */}
           {seccion === 'proyectos-ley' && (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                  <p className="text-xs text-slate-500 font-bold uppercase">Iniciativas Recibidas</p>
-                  <p className="text-3xl font-black text-slate-900 mt-1">28</p>
-                  <p className="text-xs text-slate-500 font-medium mt-1">Congreso de la República</p>
+              <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="p-3 bg-amber-100 text-amber-700 rounded-xl">
+                    <Construction className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-200/70 text-amber-900 border border-amber-300">
+                        En Proceso de Construcción
+                      </span>
+                      <span className="text-xs text-slate-500 font-medium">Fase II · Enlace Parlamentario</span>
+                    </div>
+                    <h3 className="text-base font-extrabold text-slate-900 mt-1">
+                      Módulo de Monitoreo de Proyectos de Ley
+                    </h3>
+                  </div>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                  <p className="text-xs text-slate-500 font-bold uppercase">Opinión Favorable</p>
-                  <p className="text-3xl font-black text-emerald-600 mt-1">16</p>
-                  <p className="text-xs text-emerald-600 font-medium mt-1">Fortalece derechos de NNA</p>
-                </div>
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                  <p className="text-xs text-slate-500 font-bold uppercase">Con Observaciones</p>
-                  <p className="text-3xl font-black text-amber-600 mt-1">9</p>
-                  <p className="text-xs text-amber-600 font-medium mt-1">Ajustes técnicos sugeridos</p>
-                </div>
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                  <p className="text-xs text-slate-500 font-bold uppercase">Pendiente / Urgente</p>
-                  <p className="text-3xl font-black text-red-600 mt-1">3</p>
-                  <p className="text-xs text-red-600 font-bold mt-1">Plazo de envío &lt; 48 horas</p>
-                </div>
+                <button
+                  onClick={() => setSeccion('resumen')}
+                  className="px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm"
+                >
+                  Volver al Resumen General
+                </button>
               </div>
 
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 className="font-extrabold text-sm text-slate-900 pb-3 border-b border-slate-100 mb-4">
-                  📜 Iniciativas Parlamentarias con Plazo Próximo
-                </h3>
-                <div className="space-y-3 text-xs">
-                  <div className="p-3.5 rounded-xl bg-red-50/80 border border-red-200 flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-red-900">PL 7842/2026-CR · Comisión de la Mujer</span>
-                      <p className="text-slate-700 mt-0.5">Modificación de la Ley de Adopciones y Tutela Especial.</p>
-                    </div>
-                    <span className="font-bold text-red-700 bg-white px-2.5 py-1 rounded-md border border-red-200">
-                      ⏰ Vence en 48 horas
-                    </span>
+              <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center max-w-2xl mx-auto space-y-4 my-8">
+                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto border border-blue-100">
+                  <Landmark className="w-8 h-8" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-black text-slate-900">Bandeja Normativa Parlamentaria en Desarrollo</h4>
+                  <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                    La sincronización con los pedidos de opinión técnica solicitados por las Comisiones del Congreso de la República (Mujer y Familia, Justicia y Derechos Humanos) y la OGAJ del MIMP está en etapa de diseño e integración.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left pt-3">
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <p className="text-[11px] font-bold text-slate-700">📌 Alcance Previsto</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Alertas de plazos de opiniones de ley, matrices comparativas e informes técnicos emitidos.</p>
                   </div>
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                    <div>
-                      <span className="font-bold text-slate-800">PL 7610/2026-CR · Comisión de Justicia</span>
-                      <p className="text-slate-600 mt-0.5">Sanciones frente a la sustracción ilícita de menores.</p>
-                    </div>
-                    <span className="font-bold text-slate-700 bg-white px-2.5 py-1 rounded-md border border-slate-200">
-                      🟢 Opinión Favorable lista
-                    </span>
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <p className="text-[11px] font-bold text-slate-700">⏳ Estado de Disponibilidad</p>
+                    <p className="text-[11px] text-amber-700 font-semibold mt-0.5">En proceso de estructuración con el equipo normativo.</p>
                   </div>
                 </div>
               </div>
@@ -1547,105 +1717,320 @@ export default function DirectorPage() {
           )}
 
           {/* ══════════════════════════════════════════════════════════
-              VISTA 6: TRANSPARENCIA
+              VISTA 6: TRANSPARENCIA Y PLAZOS (Datos Consolidados en Tiempo Real)
           ══════════════════════════════════════════════════════════ */}
           {seccion === 'transparencia' && (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                  <p className="text-xs text-slate-500 font-bold uppercase">Solicitudes Ciudadanas</p>
-                  <p className="text-3xl font-black text-slate-900 mt-1">45</p>
-                  <p className="text-xs text-slate-500 mt-1">Ley N.° 27806</p>
-                </div>
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                  <p className="text-xs text-slate-500 font-bold uppercase">Atendidas en Plazo</p>
-                  <p className="text-3xl font-black text-emerald-600 mt-1">43</p>
-                  <p className="text-xs text-emerald-600 font-medium mt-1">95.5% de cumplimiento</p>
-                </div>
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                  <p className="text-xs text-slate-500 font-bold uppercase">En Trámite (Dentro de Plazo)</p>
-                  <p className="text-3xl font-black text-blue-600 mt-1">2</p>
-                  <p className="text-xs text-blue-600 font-medium mt-1">Plazo legal de 7 días hábiles</p>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* ══════════════════════════════════════════════════════════
-              VISTA 7: INFORMES PARA DESPACHO MINISTERIAL (Claro y Oficial)
-          ══════════════════════════════════════════════════════════ */}
-          {seccion === 'informes' && (
-            <div className="space-y-6">
-              <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-slate-50 text-slate-900 p-8 rounded-3xl border border-blue-200/80 shadow-sm">
-                <div className="max-w-2xl">
-                  <span className="px-3 py-1 bg-blue-100 text-blue-800 border border-blue-300 rounded-full text-xs font-bold uppercase tracking-wider">
-                    Rendición de Cuentas Ministerial
-                  </span>
-                  <h3 className="text-2xl font-black mt-3 text-slate-900">
-                    Generador de Informes Ejecutivos Oficiales
+              {/* Banner de Estado Normativo */}
+              <div className="bg-gradient-to-r from-blue-50 via-slate-50 to-indigo-50 p-6 rounded-2xl border border-blue-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 bg-blue-100 text-blue-800 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                      Ley N.° 27806 · Información Pública
+                    </span>
+                    <span className="text-xs text-slate-500 font-medium">
+                      Plazo legal: 10 días hábiles
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-black text-slate-900 mt-1.5">
+                    Supervisión Directiva de Pedidos de Transparencia
                   </h3>
-                  <p className="text-slate-600 text-xs mt-2 leading-relaxed font-medium">
-                    Descarga en formato formal y estructurado el consolidado de gestión de la DGNNA correspondiente a {labelPeriodo} para reuniones con el Despacho Ministerial.
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    Mostrando métricas consolidadas correspondientes a: <strong className="text-slate-800">{labelPeriodo}</strong>.
+                  </p>
+                </div>
+                <button
+                  onClick={() => router.push('/transparencia')}
+                  className="flex items-center gap-2 px-4 py-2 bg-white text-blue-700 border border-blue-200 rounded-xl text-xs font-bold hover:bg-blue-50 transition-colors shadow-sm self-start md:self-auto"
+                >
+                  <Eye className="w-4 h-4 text-blue-600" />
+                  <span>Ir a Bandeja Operativa</span>
+                </button>
+              </div>
+
+              {/* 4 KPIs Clave */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Solicitudes Totales</p>
+                    <span className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                      <Inbox className="w-4 h-4" />
+                    </span>
+                  </div>
+                  <p className="text-3xl font-black text-slate-900 mt-2">{statsTransparenciaDirector.total}</p>
+                  <p className="text-xs text-slate-500 mt-1 font-medium">Registradas en {labelPeriodo}</p>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Atendidas</p>
+                    <span className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </span>
+                  </div>
+                  <p className="text-3xl font-black text-emerald-600 mt-2">{statsTransparenciaDirector.atendidas}</p>
+                  <p className="text-xs text-emerald-700 font-medium mt-1">
+                    {statsTransparenciaDirector.pctCumplimiento}% de efectividad
+                  </p>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">En Trámite</p>
+                    <span className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                      <Clock className="w-4 h-4" />
+                    </span>
+                  </div>
+                  <p className="text-3xl font-black text-blue-600 mt-2">{statsTransparenciaDirector.enTramite}</p>
+                  <p className="text-xs text-slate-500 font-medium mt-1">Pendientes o En Proceso</p>
+                </div>
+
+                <div className={`p-5 rounded-2xl border shadow-sm ${
+                  statsTransparenciaDirector.vencidos > 0
+                    ? 'bg-red-50 border-red-200 text-red-900'
+                    : statsTransparenciaDirector.proximos > 0
+                      ? 'bg-amber-50 border-amber-200 text-amber-900'
+                      : 'bg-white border-slate-200 text-slate-900'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold uppercase tracking-wider">
+                      {statsTransparenciaDirector.vencidos > 0 ? 'Vencidos' : 'Alertas de Plazo'}
+                    </p>
+                    <span className={`p-2 rounded-xl ${
+                      statsTransparenciaDirector.vencidos > 0
+                        ? 'bg-red-100 text-red-600'
+                        : statsTransparenciaDirector.proximos > 0
+                          ? 'bg-amber-100 text-amber-600'
+                          : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      <AlertTriangle className="w-4 h-4" />
+                    </span>
+                  </div>
+                  <p className="text-3xl font-black mt-2">
+                    {statsTransparenciaDirector.vencidos > 0
+                      ? statsTransparenciaDirector.vencidos
+                      : statsTransparenciaDirector.proximos}
+                  </p>
+                  <p className="text-xs font-medium mt-1">
+                    {statsTransparenciaDirector.vencidos > 0
+                      ? 'Requieren atención urgente'
+                      : statsTransparenciaDirector.proximos > 0
+                        ? 'Próximos a vencer (≤3 días)'
+                        : 'Todos los plazos al día'}
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-blue-400 transition-colors">
-                  <div>
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold mb-3 border border-blue-100">
-                      📑
+              {/* Gráficos ejecutivos y listado de pedidos prioritarios */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                {/* Pedidos por Dirección asignada */}
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                  <h4 className="font-extrabold text-sm text-slate-900">Distribución por Dirección</h4>
+                  <p className="text-xs text-slate-500 pb-3 border-b border-slate-100 mb-4">
+                    Órganos de línea y unidades involucradas en las solicitudes del período
+                  </p>
+                  {statsTransparenciaDirector.porDireccion.length ? (
+                    <div className="space-y-3.5">
+                      {statsTransparenciaDirector.porDireccion.map((item, i) => {
+                        const total = statsTransparenciaDirector.total || 1
+                        const pct = Math.round((item.cantidad * 100) / total)
+                        const colores = ['bg-blue-600', 'bg-indigo-600', 'bg-violet-600', 'bg-amber-600', 'bg-emerald-600']
+                        return (
+                          <div key={item.nombre}>
+                            <div className="flex justify-between text-xs font-bold mb-1">
+                              <span className="text-slate-700">{item.nombre}</span>
+                              <span className="text-slate-900">{item.cantidad} ({pct}%)</span>
+                            </div>
+                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${colores[i % colores.length]}`}
+                                style={{ width: `${Math.max(pct, 3)}%` }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
-                    <h4 className="font-extrabold text-sm text-slate-900">Ayuda Memoria para la Ministra</h4>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Resumen ejecutivo de 2 páginas con los hitos del {labelPeriodo}, casos emblemáticos y alertas prioritarias.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => window.print()}
-                    className="mt-5 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-sm"
-                  >
-                    <Printer className="w-4 h-4" />
-                    <span>Imprimir / Exportar PDF</span>
-                  </button>
+                  ) : (
+                    <p className="text-xs text-slate-400 text-center py-10">No hay registros en este período.</p>
+                  )}
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-blue-400 transition-colors">
-                  <div>
-                    <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold mb-3 border border-indigo-100">
-                      📊
+                {/* Pedidos por Categoría */}
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                  <h4 className="font-extrabold text-sm text-slate-900">Distribución por Categoría</h4>
+                  <p className="text-xs text-slate-500 pb-3 border-b border-slate-100 mb-4">
+                    Clasificación temática de la información solicitada
+                  </p>
+                  {statsTransparenciaDirector.porCategoria.length ? (
+                    <div className="space-y-3.5">
+                      {statsTransparenciaDirector.porCategoria.map((item, i) => {
+                        const total = statsTransparenciaDirector.total || 1
+                        const pct = Math.round((item.cantidad * 100) / total)
+                        const colores = ['bg-cyan-600', 'bg-orange-600', 'bg-lime-600', 'bg-purple-600', 'bg-rose-600']
+                        return (
+                          <div key={item.nombre}>
+                            <div className="flex justify-between text-xs font-bold mb-1">
+                              <span className="text-slate-700">{item.nombre}</span>
+                              <span className="text-slate-900">{item.cantidad} ({pct}%)</span>
+                            </div>
+                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${colores[i % colores.length]}`}
+                                style={{ width: `${Math.max(pct, 3)}%` }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
-                    <h4 className="font-extrabold text-sm text-slate-900">Balance Estadístico La Haya</h4>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Reporte de Sustracción Internacional para envío al Ministerio de Relaciones Exteriores (Cancillería).
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => window.print()}
-                    className="mt-5 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-sm"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Descargar Reporte</span>
-                  </button>
+                  ) : (
+                    <p className="text-xs text-slate-400 text-center py-10">No hay categorías registradas en este período.</p>
+                  )}
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-blue-400 transition-colors">
+              </div>
+
+              {/* Panel de Solicitudes en Trámite o con Alerta de Plazo */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                   <div>
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold mb-3 border border-emerald-100">
-                      💰
-                    </div>
-                    <h4 className="font-extrabold text-sm text-slate-900">Estado Presupuestal PP 0117</h4>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Ejecución física y financiera mensual comparativa para la Oficina General de Planeamiento y Presupuesto.
-                    </p>
+                    <h4 className="font-extrabold text-sm text-slate-900">Solicitudes que Requieren Seguimiento</h4>
+                    <p className="text-xs text-slate-500">Expedientes activos del período con indicación de vencimiento</p>
                   </div>
-                  <button
-                    onClick={() => window.print()}
-                    className="mt-5 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors shadow-sm"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Exportar Excel / PDF</span>
-                  </button>
+                  <Link href="/transparencia?estado=Pendiente">
+                    <span className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer">
+                      Ver todos en Bandeja <ChevronRight className="w-3.5 h-3.5" />
+                    </span>
+                  </Link>
+                </div>
+
+                {statsTransparenciaDirector.pedidosPeriodo.filter(p => p.estado !== 'Atendido').length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-100 text-slate-500 font-bold uppercase tracking-wider">
+                          <th className="pb-2.5">N° Expediente</th>
+                          <th className="pb-2.5">Fecha Ingreso</th>
+                          <th className="pb-2.5">Dirección</th>
+                          <th className="pb-2.5">Asunto</th>
+                          <th className="pb-2.5">Estado</th>
+                          <th className="pb-2.5">Alerta Plazo</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {statsTransparenciaDirector.pedidosPeriodo
+                          .filter(p => p.estado !== 'Atendido')
+                          .slice(0, 5)
+                          .map((p) => {
+                            const alerta = clasificarAlerta(p.plazoVencimiento, p.estado)
+                            const dias = p.plazoVencimiento ? diasHabilesRestantes(new Date(p.plazoVencimiento)) : null
+                            return (
+                              <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                                <td className="py-3 font-bold text-slate-900">{p.numeroExpediente}</td>
+                                <td className="py-3 text-slate-600">
+                                  {p.fechaIngreso ? new Date(p.fechaIngreso).toLocaleDateString('es-PE') : '—'}
+                                </td>
+                                <td className="py-3 text-slate-700 font-medium">
+                                  {Array.isArray(p.direccion) ? p.direccion.join(', ') : p.direccion || '—'}
+                                </td>
+                                <td className="py-3 text-slate-600 max-w-xs truncate" title={p.asunto}>
+                                  {p.asunto}
+                                </td>
+                                <td className="py-3">
+                                  <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+                                    p.estado === 'En Proceso'
+                                      ? 'bg-purple-100 text-purple-700'
+                                      : 'bg-amber-100 text-amber-800'
+                                  }`}>
+                                    {p.estado}
+                                  </span>
+                                </td>
+                                <td className="py-3">
+                                  {alerta === 'vencido' ? (
+                                    <span className="flex items-center gap-1 text-red-600 font-bold text-[11px]">
+                                      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                                      Vencido ({dias ? Math.abs(dias) : 0}d háb.)
+                                    </span>
+                                  ) : alerta === 'urgente' || alerta === 'proximo' ? (
+                                    <span className="flex items-center gap-1 text-amber-600 font-bold text-[11px]">
+                                      <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                                      {dias}d háb. restantes
+                                    </span>
+                                  ) : (
+                                    <span className="text-emerald-600 font-medium text-[11px]">
+                                      En plazo ({dias}d háb.)
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-slate-400 text-xs">
+                    No hay solicitudes pendientes ni vencidas en el período seleccionado.
+                  </div>
+                )}
+              </div>
+
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════
+              VISTA 7: INFORMES PARA DESPACHO MINISTERIAL (EN CONSTRUCCIÓN)
+          ══════════════════════════════════════════════════════════ */}
+          {seccion === 'informes' && (
+            <div className="space-y-6">
+              <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="p-3 bg-amber-100 text-amber-700 rounded-xl">
+                    <Construction className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-200/70 text-amber-900 border border-amber-300">
+                        En Proceso de Construcción
+                      </span>
+                      <span className="text-xs text-slate-500 font-medium">Fase II · Automatización SGD</span>
+                    </div>
+                    <h3 className="text-base font-extrabold text-slate-900 mt-1">
+                      Generador de Informes para Despacho Ministerial
+                    </h3>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSeccion('resumen')}
+                  className="px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm"
+                >
+                  Volver al Resumen General
+                </button>
+              </div>
+
+              <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center max-w-2xl mx-auto space-y-4 my-8">
+                <div className="w-16 h-16 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mx-auto border border-purple-100">
+                  <FileText className="w-8 h-8" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-black text-slate-900">Plantillas Oficiales y Generación Automatizada</h4>
+                  <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                    La generación automática de Informes Ejecutivos, Ayudas Memoria para la Titular del Pliego y balances estadísticos para Cancillería se habilitará cuando se complete la consolidación multianual.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left pt-3">
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <p className="text-[11px] font-bold text-slate-700">📌 Alcance Previsto</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">Exportación instantánea a Word/PDF con sellos de gestión y tablas de indicadores.</p>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <p className="text-[11px] font-bold text-slate-700">⏳ Estado de Disponibilidad</p>
+                    <p className="text-[11px] text-amber-700 font-semibold mt-0.5">En proceso de integración con la oficina técnica.</p>
+                  </div>
                 </div>
               </div>
             </div>

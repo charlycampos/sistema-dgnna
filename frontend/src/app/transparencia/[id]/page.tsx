@@ -85,6 +85,15 @@ export default function TransparenciaDetallePage({ params }: { params: Promise<{
     }
   }
 
+  const onError = (errors: any) => {
+    const errorKeys = Object.keys(errors)
+    if (errorKeys.length > 0) {
+      const firstError = errors[errorKeys[0]]
+      const msg = firstError?.message || 'Por favor complete todos los campos obligatorios'
+      toast.error(msg)
+    }
+  }
+
   const onSubmit = async (data: TransparenciaFormValues) => {
     setSaving(true)
     try {
@@ -186,7 +195,7 @@ export default function TransparenciaDetallePage({ params }: { params: Promise<{
           {editMode ? (
             /* ── MODO EDICIÓN ── */
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-6">
                 <Card>
                   <CardHeader>
                     <CardTitle>Editar Pedido</CardTitle>

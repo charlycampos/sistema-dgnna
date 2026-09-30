@@ -57,12 +57,22 @@ export default function NuevaTransparenciaPage() {
   })
 
   const fechaIngresoWatch = form.watch('fechaIngreso')
+  const estadoWatch = form.watch('estado')
 
   useEffect(() => {
     if (fechaIngresoWatch) {
       setPlazoCalculado(calcularPlazoHabiles(new Date(fechaIngresoWatch), 10))
     }
   }, [fechaIngresoWatch])
+
+  const onError = (errors: any) => {
+    const errorKeys = Object.keys(errors)
+    if (errorKeys.length > 0) {
+      const firstError = errors[errorKeys[0]]
+      const msg = firstError?.message || 'Por favor complete todos los campos obligatorios'
+      toast.error(msg)
+    }
+  }
 
   const onSubmit = async (data: TransparenciaFormValues) => {
     setSaving(true)
@@ -121,7 +131,7 @@ export default function NuevaTransparenciaPage() {
 
         <main className="px-6 py-6 max-w-3xl">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-6">
 
               {/* Datos del pedido */}
               <Card>
@@ -270,7 +280,12 @@ export default function NuevaTransparenciaPage() {
                   <FormField control={form.control} name="estado" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Estado</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={(val) => {
+                        field.onChange(val)
+                        if (val === 'Atendido' && !form.getValues('fechaAtencion')) {
+                          form.setValue('fechaAtencion', new Date())
+                        }
+                      }} value={field.value}>
                         <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                         <SelectContent>
                           <SelectItem value="Pendiente">Pendiente</SelectItem>
@@ -290,6 +305,49 @@ export default function NuevaTransparenciaPage() {
                           placeholder="Descripción del pedido de información..."
                           rows={3}
                           {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  {/* Campos de Atención condicionales */}
+                  {estadoWatch === 'Atendido' && (
+                    <>
+                      <FormField control={form.control} name="fechaAtencion" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Fecha de Atención *</FormLabel>
+                          <FormControl>
+                            <DatePickerInput
+                              value={field.value}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+
+                      <FormField control={form.control} name="documentoRespuesta" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Documento de Respuesta</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ej. OFICIO-045-2026-MIMP" {...field} value={field.value ?? ''} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </>
+                  )}
+
+                  <FormField control={form.control} name="observaciones" render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Observaciones</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Notas u observaciones adicionales..."
+                          rows={2}
+                          {...field}
+                          value={field.value ?? ''}
                         />
                       </FormControl>
                       <FormMessage />

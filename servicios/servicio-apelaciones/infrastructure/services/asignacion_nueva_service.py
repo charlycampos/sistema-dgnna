@@ -60,7 +60,7 @@ class AsignacionNuevaService:
         otros_ids = {e.abogadoId for e in eventos} - set(orden)
         nombres_ab = {a.id: a.nombre for a in self.db.query(AbogadoModel).filter(AbogadoModel.id.in_(list(otros_ids) + orden)).all()} if eventos else {i: abogados[i].nombre for i in orden}
         exp = {}
-        ultimos = eventos[-8:]
+        ultimos = eventos
         if ultimos:
             exp = {a.id: a.numeroExpediente for a in self.db.query(ApelacionModel.id, ApelacionModel.numeroExpediente).filter(ApelacionModel.id.in_([e.apelacionId for e in ultimos])).all()}
         filas = []

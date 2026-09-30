@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { PanelAsignacion } from '@/components/panel-asignacion'
 import { AppSidebar } from '@/components/app-sidebar'
 import {
   FileText, Plus, Settings, Scale, Clock,
@@ -512,17 +511,9 @@ export default function ApelacionesDashboardPage() {
             </Card>
           </div>
 
-          {/* Fila Principal: Sistema de Asignación (Puntos) y Estado de Expedientes (Cantidades) a la MISMA ALTURA */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            {/* Columna Izquierda: Asignación Inteligente (Solo Puntos) */}
-            <div>
-              {statsFiltradas?.cargaPorAbogado && (
-                <PanelAsignacion cargaAbogados={statsFiltradas.cargaPorAbogado} />
-              )}
-            </div>
-
-            {/* Columna Derecha: Estado de Expedientes por Abogado (Cantidades Físicas) */}
-            <Card className="bg-white border-gray-200 shadow-sm overflow-hidden h-full flex flex-col">
+          {/* Fila Principal: Estado de Expedientes por Abogado (Cantidades Físicas) */}
+          <div className="w-full">
+            <Card className="bg-white border-gray-200 shadow-sm overflow-hidden flex flex-col">
               <CardHeader className="px-5 py-4 border-b border-gray-100 bg-gray-50/50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -534,9 +525,17 @@ export default function ApelacionesDashboardPage() {
                       <CardDescription className="text-xs text-gray-500">Conteo cuantitativo de casos tramitados (en unidades físicas)</CardDescription>
                     </div>
                   </div>
-                  <span className="text-xs font-semibold text-gray-600 bg-gray-100 px-3 py-1 rounded-full border border-gray-200">
-                    {periodoLabel}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <Link href="/apelaciones/asignacion">
+                      <Button variant="outline" size="sm" className="text-xs font-semibold gap-1.5 border-blue-200 bg-blue-50/60 hover:bg-blue-100 text-blue-700">
+                        <Scale className="h-3.5 w-3.5 text-blue-600" />
+                        <span>Ver Tablero de Asignación ↗</span>
+                      </Button>
+                    </Link>
+                    <span className="text-xs font-semibold text-gray-600 bg-gray-100 px-3 py-1 rounded-full border border-gray-200">
+                      {periodoLabel}
+                    </span>
+                  </div>
                 </div>
               </CardHeader>
 
@@ -553,7 +552,7 @@ export default function ApelacionesDashboardPage() {
 
                   return (
                     <>
-                      <div className="space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         {abogadosActivosExp.map((carga, index) => {
                           const totalCasosAbogado = carga.casosActivos + carga.casosResueltos + carga.casosCerrados
                           const bgColors = ['bg-blue-600', 'bg-purple-600', 'bg-amber-600', 'bg-emerald-600']

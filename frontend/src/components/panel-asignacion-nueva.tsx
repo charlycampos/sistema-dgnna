@@ -18,5 +18,10 @@ export function PanelAsignacionNueva({ preview, complejidades, loading }: { prev
       </div>
       <div className="mt-2 flex justify-between text-[11px] text-muted-foreground"><span>Últimas {Math.min(10, item.total)} de {item.total}</span><span>&gt;500: {item.mayores500}</span></div>
     </div>)}
+    <div className="pt-1 text-center">
+      <a href="/apelaciones/asignacion" target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:text-blue-800 font-semibold underline inline-flex items-center gap-1">
+        Ver tablero de asignación y balance en vivo ↗
+      </a>
+    </div>
   </CardContent></Card>
 }

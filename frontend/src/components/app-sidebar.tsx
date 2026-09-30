@@ -56,6 +56,11 @@ export function AppSidebar() {
       href: '/apelaciones',
       icon: <Inbox className="h-4 w-4 shrink-0" />,
     },
+    {
+      label: 'Asignación',
+      href: '/apelaciones/asignacion',
+      icon: <Scale className="h-4 w-4 shrink-0" />,
+    },
   ]
 
   const transparenciaItems = [
