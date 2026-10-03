@@ -7,6 +7,7 @@ import uuid
 class Abogado:
     nombre:    str
     activo:    bool = True
+    usuarioId: str | None = None
     id:        str = field(default_factory=lambda: str(uuid.uuid4()))
     createdAt: datetime = field(default_factory=datetime.utcnow)
     updatedAt: datetime = field(default_factory=datetime.utcnow)

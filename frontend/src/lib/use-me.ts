@@ -44,5 +44,12 @@ export function useMe() {
     return me.modulos.some(m => m.modulo === modulo && m.rolModulo === 'registrador')
   }
 
-  return { me, loading, canWrite, hasAccess, isRegistrador }
+  /** true si el usuario tiene rol abogado (y no es admin) en el módulo dado */
+  const isAbogado = (modulo: string) => {
+    if (!me) return false
+    if (me.rol === 'admin') return false
+    return me.modulos.some(m => m.modulo === modulo && m.rolModulo === 'abogado')
+  }
+
+  return { me, loading, canWrite, hasAccess, isRegistrador, isAbogado }
 }

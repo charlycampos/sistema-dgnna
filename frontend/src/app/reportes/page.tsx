@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-    AreaChart, Area, RadialBarChart, RadialBar
+    RadialBarChart, RadialBar, LabelList
 } from 'recharts'
 import {
     Download, Calendar as CalendarIcon, Filter, TrendingUp, Users,
@@ -64,14 +64,14 @@ const TooltipProductividad = ({ active, payload, label }: RechartsTooltipProps) 
 }
 
 // ─────────────────────────────────────────────
-// Tooltip para tendencia
+// Tooltip para volumen de ingresos por mes / fecha
 // ─────────────────────────────────────────────
 const TooltipTendencia = ({ active, payload, label }: RechartsTooltipProps) => {
     if (active && payload && payload.length) {
         return (
             <div className="rounded-lg border bg-white shadow-lg p-3 text-sm">
                 <p className="font-semibold text-gray-700 mb-1">📅 {label}</p>
-                <p className="text-blue-600">Ingresos: <span className="font-bold">{payload[0]?.value}</span></p>
+                <p className="text-blue-600">Apelaciones ingresadas: <span className="font-bold">{payload[0]?.value}</span></p>
             </div>
         )
     }
@@ -79,8 +79,8 @@ const TooltipTendencia = ({ active, payload, label }: RechartsTooltipProps) => {
 }
 
 export default function ReportesPage() {
-    const [periodo, setPeriodo] = useState<string>('mes')
-    const [fechaInicio, setFechaInicio] = useState<string>(format(startOfMonth(new Date()), 'yyyy-MM-dd'))
+    const [periodo, setPeriodo] = useState<string>('anio')
+    const [fechaInicio, setFechaInicio] = useState<string>(format(startOfYear(new Date()), 'yyyy-MM-dd'))
     const [fechaFin, setFechaFin] = useState<string>(format(new Date(), 'yyyy-MM-dd'))
     const [data, setData] = useState<DatosReporte | null>(null)
     const [loading, setLoading] = useState(false)
@@ -147,6 +147,49 @@ export default function ReportesPage() {
         XLSX.writeFile(wb, `Reporte_Gestion_${fechaInicio}_al_${fechaFin}.xlsx`)
         toast.success('Reporte exportado correctamente')
     }
+
+    // ─────────────────────────────────────────────
+    // Agrupación mensual inteligente para la gráfica de barras
+    // ─────────────────────────────────────────────
+    const datosGraficoBarras = useMemo(() => {
+        if (!data || !data.evolucionSemanal || data.evolucionSemanal.length === 0) return []
+
+        const nombresMeses: Record<string, string> = {
+            '01': 'Ene', '02': 'Feb', '03': 'Mar', '04': 'Abr',
+            '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Ago',
+            '09': 'Set', '10': 'Oct', '11': 'Nov', '12': 'Dic',
+        }
+
+        // Si el periodo es 'hoy' o 'semana' (pocos días), mostramos directo por día
+        if (periodo === 'hoy' || periodo === 'semana') {
+            return data.evolucionSemanal.map(item => ({
+                periodo: item.fecha,
+                cantidad: item.cantidad,
+            }))
+        }
+
+        // Para 'mes', 'mes_anterior', 'anio' o 'personalizado', agrupamos por Mes
+        // data.evolucionSemanal tiene fecha en formato "DD/MM"
+        const mapaMeses: Record<string, number> = {}
+        const ordenMeses: string[] = []
+
+        data.evolucionSemanal.forEach(item => {
+            const partes = item.fecha.split('/')
+            const mesNum = partes.length > 1 ? partes[1] : item.fecha
+            const mesNombre = nombresMeses[mesNum] || mesNum
+
+            if (!(mesNombre in mapaMeses)) {
+                mapaMeses[mesNombre] = 0
+                ordenMeses.push(mesNombre)
+            }
+            mapaMeses[mesNombre] += item.cantidad
+        })
+
+        return ordenMeses.map(mes => ({
+            periodo: mes,
+            cantidad: mapaMeses[mes],
+        }))
+    }, [data, periodo])
 
     if (!data || loading) {
         return (
@@ -407,58 +450,61 @@ export default function ReportesPage() {
                 {/* ─── Fila 3: Tendencia + Complejidad + Procedencias ─── */}
                 <div className="grid lg:grid-cols-3 gap-6">
 
-                    {/* Tendencia de Ingresos – ocupa 2 cols */}
+                    {/* Volumen de Ingresos – ocupa 2 cols */}
                     <Card className="lg:col-span-2 bg-white shadow-sm">
                         <CardHeader className="pb-2">
                             <CardTitle className="flex items-center gap-2 text-base">
                                 <TrendingUp className="h-5 w-5 text-blue-600" />
-                                Tendencia de Ingresos
+                                {periodo === 'hoy' || periodo === 'semana' ? 'Ingresos Diarios de Apelaciones' : 'Ingreso Mensual de Apelaciones'}
                             </CardTitle>
                             <CardDescription>
-                                Número de casos registrados por día en el período
+                                {periodo === 'hoy' || periodo === 'semana'
+                                    ? 'Cantidad de expedientes ingresados por día'
+                                    : 'Cantidad de apelaciones registradas por mes en el período'}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {data.evolucionSemanal.length === 0 ? (
+                            {datosGraficoBarras.length === 0 ? (
                                 <div className="h-[250px] flex items-center justify-center text-gray-400 text-sm">
                                     No hay datos en este período
                                 </div>
                             ) : (
-                                <ResponsiveContainer width="100%" height={250}>
-                                    <AreaChart
-                                        data={data.evolucionSemanal}
-                                        margin={{ top: 8, right: 16, bottom: 4, left: 0 }}
+                                <ResponsiveContainer width="100%" height={260}>
+                                    <BarChart
+                                        data={datosGraficoBarras}
+                                        margin={{ top: 20, right: 16, bottom: 4, left: 0 }}
                                     >
-                                        <defs>
-                                            <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%"  stopColor={PALETTE.blue} stopOpacity={0.25} />
-                                                <stop offset="95%" stopColor={PALETTE.blue} stopOpacity={0} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                         <XAxis
-                                            dataKey="fecha"
-                                            tick={{ fontSize: 11 }}
+                                            dataKey="periodo"
+                                            tick={{ fontSize: 12, fill: '#475569', fontWeight: 600 }}
                                             tickLine={false}
+                                            axisLine={{ stroke: '#e2e8f0' }}
                                         />
                                         <YAxis
                                             allowDecimals={false}
-                                            tick={{ fontSize: 11 }}
+                                            tick={{ fontSize: 11, fill: '#64748b' }}
                                             tickLine={false}
                                             axisLine={false}
-                                            width={24}
+                                            width={28}
                                         />
-                                        <Tooltip content={<TooltipTendencia />} />
-                                        <Area
-                                            type="monotone"
+                                        <Tooltip content={<TooltipTendencia />} cursor={{ fill: '#f8fafc' }} />
+                                        <Bar
                                             dataKey="cantidad"
-                                            stroke={PALETTE.blue}
-                                            strokeWidth={2.5}
-                                            fill="url(#gradBlue)"
-                                            dot={{ r: 4, fill: PALETTE.blue, strokeWidth: 0 }}
-                                            activeDot={{ r: 6 }}
-                                        />
-                                    </AreaChart>
+                                            fill={PALETTE.blue}
+                                            radius={[6, 6, 0, 0]}
+                                            maxBarSize={48}
+                                        >
+                                            <LabelList
+                                                dataKey="cantidad"
+                                                position="top"
+                                                fill="#1e293b"
+                                                fontSize={11}
+                                                fontWeight={700}
+                                                offset={6}
+                                            />
+                                        </Bar>
+                                    </BarChart>
                                 </ResponsiveContainer>
                             )}
                         </CardContent>

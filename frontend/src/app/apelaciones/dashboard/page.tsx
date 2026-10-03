@@ -26,6 +26,7 @@ interface CargaRevisorData {
 type Periodo = 'mes' | 'trimestre' | 'ano'
 
 export default function ApelacionesDashboardPage() {
+  const router = useRouter()
   const [stats, setStats] = useState<EstadisticasDashboard | null>(null)
   const [rawApelaciones, setRawApelaciones] = useState<any[]>([])
   const [abogadosList, setAbogadosList] = useState<Abogado[]>([])
@@ -33,8 +34,18 @@ export default function ApelacionesDashboardPage() {
   const [cargaRevisoresOriginal, setCargaRevisoresOriginal] = useState<CargaRevisorData[]>([])
   const [periodo, setPeriodo] = useState<Periodo>('ano')
   const [loading, setLoading] = useState(true)
-  const { canWrite } = useMe()
+  const [miAbogado, setMiAbogado] = useState<Abogado | null>(null)
+  const { canWrite, me, loading: meLoading, isAbogado, hasAccess } = useMe()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  // Guard de acceso: verificar acceso al módulo apelaciones
+  useEffect(() => {
+    if (!meLoading && me && !hasAccess('apelaciones')) {
+      router.replace('/menu')
+    }
+  }, [me, meLoading, hasAccess, router])
+
+  const esAbogadoApelaciones = isAbogado('apelaciones')
 
   useEffect(() => {
     const handleCollapseChange = (e: Event) => {
@@ -46,8 +57,10 @@ export default function ApelacionesDashboardPage() {
   }, [])
 
   useEffect(() => {
-    fetchDashboard()
-  }, [])
+    if (!meLoading) {
+      fetchDashboard()
+    }
+  }, [meLoading, esAbogadoApelaciones])
 
   const fetchDashboard = async () => {
     try {
@@ -61,12 +74,13 @@ export default function ApelacionesDashboardPage() {
         }
       }
 
-      const [dashData, revData, apelData, abgsData, compData] = await Promise.all([
-        safeFetchJson('/api/dashboard'),
-        safeFetchJson('/api/revisor/carga'),
+      const [dashData, revData, apelData, abgsData, compData, meAbgData] = await Promise.all([
+        !esAbogadoApelaciones ? safeFetchJson('/api/dashboard') : Promise.resolve(null),
+        !esAbogadoApelaciones ? safeFetchJson('/api/revisor/carga') : Promise.resolve(null),
         safeFetchJson('/api/apelaciones'),
         safeFetchJson('/api/abogados'),
         safeFetchJson('/api/complejidad'),
+        esAbogadoApelaciones ? safeFetchJson('/api/abogados/me') : Promise.resolve(null),
       ])
 
       if (dashData) setStats(dashData)
@@ -74,6 +88,7 @@ export default function ApelacionesDashboardPage() {
       if (Array.isArray(apelData)) setRawApelaciones(apelData)
       if (Array.isArray(abgsData)) setAbogadosList(abgsData)
       if (Array.isArray(compData)) setComplejidadesList(compData)
+      if (meAbgData && !meAbgData.error) setMiAbogado(meAbgData)
     } catch (error) {
       console.error('Error al cargar dashboard:', error)
     } finally {
@@ -83,11 +98,20 @@ export default function ApelacionesDashboardPage() {
 
   // ─────────────────────────────────────────────────────────────────
   // MOTOR DE CÁLCULO Y FILTRADO REACTIVO POR PERÍODO
-  // ─────────────────────────────────────────────────────────────────
-  const { statsFiltradas, revisoresFiltrados, countPeriodo } = useMemo(() => {
+  const { statsFiltradas, statsAbogado, revisoresFiltrados, countPeriodo } = useMemo(() => {
+    const emptyStatsAbogado = {
+      totalMisCasos: 0,
+      misPendientes: 0,
+      misResueltos: 0,
+      misAtendidos: 0,
+      misProximosVencer: 0,
+      misCasosPorComplejidad: [] as { nombre: string; cantidad: number }[],
+    }
+
     if (!rawApelaciones || rawApelaciones.length === 0) {
       return {
         statsFiltradas: stats,
+        statsAbogado: emptyStatsAbogado,
         revisoresFiltrados: cargaRevisoresOriginal,
         countPeriodo: stats?.totalCasos || 0,
       }
@@ -249,12 +273,47 @@ export default function ApelacionesDashboardPage() {
       casosPorProcedencia,
     }
 
+    // Cálculo específico para el Abogado autenticado
+    const misCasosFiltrados = miAbogado
+      ? filtrados.filter(a => a.abogadoId === miAbogado.id)
+      : filtrados // si aún no resuelve miAbogado pero el backend ya filtró rawApelaciones para este usuario
+    const totalMisCasos = misCasosFiltrados.length
+    const misPendientes = misCasosFiltrados.filter(a => a.estado === 'Pendiente').length
+    const misResueltos = misCasosFiltrados.filter(a => a.estado === 'Resuelto').length
+    const misAtendidos = misCasosFiltrados.filter(a => a.estado === 'Atendido').length
+    const misProximosVencer = misCasosFiltrados.filter(a => {
+      if (a.estado !== 'Pendiente' || !a.plazoVencimiento) return false
+      const fv = new Date(a.plazoVencimiento)
+      if (isNaN(fv.getTime())) return false
+      const diffDias = Math.ceil((fv.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
+      return diffDias >= 0 && diffDias <= 5
+    }).length
+
+    const misCompMap: Record<string, number> = {}
+    misCasosFiltrados.forEach(a => {
+      const cNombre = a.complejidad?.nombre || (a.complejidadId && compCatalogMap[a.complejidadId]) || a.complejidadJuridica?.nombre || 'General'
+      misCompMap[cNombre] = (misCompMap[cNombre] || 0) + 1
+    })
+    const misCasosPorComplejidad = Object.entries(misCompMap)
+      .map(([nombre, cantidad]) => ({ nombre, cantidad }))
+      .sort((a, b) => (ordenCanonica[a.nombre] || 99) - (ordenCanonica[b.nombre] || 99))
+
+    const statsAbogado = {
+      totalMisCasos,
+      misPendientes,
+      misResueltos,
+      misAtendidos,
+      misProximosVencer,
+      misCasosPorComplejidad,
+    }
+
     return {
       statsFiltradas,
+      statsAbogado,
       revisoresFiltrados,
-      countPeriodo: totalCasos,
+      countPeriodo: esAbogadoApelaciones ? totalMisCasos : totalCasos,
     }
-  }, [rawApelaciones, stats, cargaRevisoresOriginal, abogadosList, complejidadesList, periodo])
+  }, [rawApelaciones, stats, cargaRevisoresOriginal, abogadosList, complejidadesList, periodo, miAbogado, esAbogadoApelaciones])
 
   if (loading) {
     return (
@@ -384,7 +443,15 @@ export default function ApelacionesDashboardPage() {
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
               <span>
-                Visualizando <strong>{countPeriodo}</strong> expedientes correspondientes al período <strong>{periodoLabel}</strong>.
+                {esAbogadoApelaciones ? (
+                  <>
+                    Dashboard individual: <strong>{countPeriodo}</strong> expedientes a su cargo correspondientes al período <strong>{periodoLabel}</strong>.
+                  </>
+                ) : (
+                  <>
+                    Visualizando <strong>{countPeriodo}</strong> expedientes correspondientes al período <strong>{periodoLabel}</strong>.
+                  </>
+                )}
               </span>
             </div>
             <span className="text-[11px] text-blue-700/80 hidden md:inline">
@@ -392,18 +459,18 @@ export default function ApelacionesDashboardPage() {
             </span>
           </div>
 
-          {/* Barra Horizontal de Acciones Rápidas y Reportes Avanzados */}
+          {/* Barra Horizontal de Acciones Rápidas */}
           <div className="bg-white rounded-2xl border border-gray-200 p-3 shadow-xs">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2 pl-1 sm:pl-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
                   <Sparkles className="h-4 w-4 text-blue-600" />
-                  Acciones del Sistema:
+                  Acciones Rápidas:
                 </span>
               </div>
 
               <div className="flex flex-wrap items-center gap-2.5 flex-1 justify-end">
-                {canWrite('apelaciones') && (
+                {canWrite('apelaciones') && !esAbogadoApelaciones && (
                   <Link href="/apelaciones/nueva">
                     <Button className="bg-blue-600 hover:bg-blue-700 shadow-xs text-xs font-bold gap-1.5" size="sm">
                       <Plus className="h-3.5 w-3.5" />
@@ -415,38 +482,249 @@ export default function ApelacionesDashboardPage() {
                 <Link href="/apelaciones">
                   <Button variant="outline" className="text-xs font-semibold gap-1.5 hover:border-blue-300 hover:bg-blue-50/40 text-gray-700" size="sm">
                     <FileText className="h-3.5 w-3.5 text-blue-600" />
-                    Ver Apelaciones
+                    {esAbogadoApelaciones ? 'Mis Apelaciones' : 'Ver Apelaciones'}
                   </Button>
                 </Link>
 
-                <Link href="/configuracion">
+                <Link href="/apelaciones/asignacion">
                   <Button variant="outline" className="text-xs font-semibold gap-1.5 hover:border-purple-300 hover:bg-purple-50/40 text-gray-700" size="sm">
-                    <Settings className="h-3.5 w-3.5 text-purple-600" />
-                    Configuración
+                    <Scale className="h-3.5 w-3.5 text-purple-600" />
+                    Asignación
                   </Button>
                 </Link>
 
-                <Link href="/reportes">
-                  <Button variant="outline" className="text-xs font-bold gap-1.5 border-indigo-200 bg-indigo-50/60 hover:bg-indigo-100 text-indigo-700 shadow-xs" size="sm">
-                    <TrendingUp className="h-3.5 w-3.5 text-indigo-600" />
-                    Reportes Avanzados
-                    <span className="text-[9px] bg-indigo-200 text-indigo-800 px-1.5 py-0.5 rounded font-black">PRO</span>
-                  </Button>
-                </Link>
+                {!esAbogadoApelaciones && (
+                  <>
+                    <Link href="/configuracion">
+                      <Button variant="outline" className="text-xs font-semibold gap-1.5 hover:border-purple-300 hover:bg-purple-50/40 text-gray-700" size="sm">
+                        <Settings className="h-3.5 w-3.5 text-purple-600" />
+                        Configuración
+                      </Button>
+                    </Link>
+
+                    <Link href="/reportes">
+                      <Button variant="outline" className="text-xs font-bold gap-1.5 border-indigo-200 bg-indigo-50/60 hover:bg-indigo-100 text-indigo-700 shadow-xs" size="sm">
+                        <TrendingUp className="h-3.5 w-3.5 text-indigo-600" />
+                        Reportes Avanzados
+                        <span className="text-[9px] bg-indigo-200 text-indigo-800 px-1.5 py-0.5 rounded font-black">PRO</span>
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Alerta plazos */}
-          {(statsFiltradas?.casosConPlazoProximo ?? 0) > 0 && (
-            <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 shadow-xs">
-              <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-              <p className="text-sm font-medium text-red-800">
-                {statsFiltradas!.casosConPlazoProximo} caso{statsFiltradas!.casosConPlazoProximo > 1 ? 's' : ''} con plazo próximo a vencer (&le; 5 días) —{' '}
-                <Link href="/apelaciones" className="underline underline-offset-2 font-bold hover:text-red-950">revisar ahora en bandeja</Link>
-              </p>
-            </div>
-          )}
+          {/* BIFURCACIÓN CONDICIONAL DE VISTAS */}
+          {esAbogadoApelaciones ? (
+            <>
+              {/* Alerta de Plazos Próximos Individual */}
+              {statsAbogado.misProximosVencer > 0 && (
+                <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 shadow-xs">
+                  <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                  <p className="text-sm font-medium text-red-800">
+                    Tiene <strong>{statsAbogado.misProximosVencer} expediente{statsAbogado.misProximosVencer > 1 ? 's' : ''}</strong> con plazo próximo a vencer (&le; 5 días) —{' '}
+                    <Link href="/apelaciones" className="underline underline-offset-2 font-bold hover:text-red-950">
+                      revisar ahora en Mis apelaciones
+                    </Link>
+                  </p>
+                </div>
+              )}
+
+              {/* 4 Tarjetas KPI Individuales */}
+              <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+                <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Mis Expedientes</p>
+                        <p className="text-3xl font-extrabold text-gray-900 mt-1">{statsAbogado.totalMisCasos}</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">{periodoLabel}</p>
+                      </div>
+                      <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
+                        <FileText className="h-6 w-6 text-blue-600" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Pendientes</p>
+                        <p className="text-3xl font-extrabold text-amber-600 mt-1">{statsAbogado.misPendientes}</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">Por proyectar / tramitar</p>
+                      </div>
+                      <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
+                        <Clock className="h-6 w-6 text-amber-600" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Resueltos</p>
+                        <p className="text-3xl font-extrabold text-blue-600 mt-1">{statsAbogado.misResueltos}</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">Resolución emitida</p>
+                      </div>
+                      <div className="p-3 bg-blue-50 rounded-xl border border-blue-100">
+                        <Scale className="h-6 w-6 text-blue-600" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white border-gray-200 hover:shadow-md transition-shadow">
+                  <CardContent className="p-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Atendidos</p>
+                        <p className="text-3xl font-extrabold text-green-600 mt-1">{statsAbogado.misAtendidos}</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">Notificados y concluidos</p>
+                      </div>
+                      <div className="p-3 bg-green-50 rounded-xl border border-green-100">
+                        <CheckCircle2 className="h-6 w-6 text-green-600" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Fila: Desglose por Complejidad y Acceso directo al despacho */}
+              <div className="grid gap-6 lg:grid-cols-2 items-start">
+                {/* Complejidad de sus expedientes */}
+                <Card className="bg-white border-gray-200">
+                  <CardHeader className="pb-3 border-b bg-gray-50/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-emerald-50 rounded-xl border border-emerald-100">
+                          <Layers className="h-5 w-5 text-emerald-600" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-sm font-bold text-gray-800 uppercase tracking-wider">Mis Casos por Complejidad</CardTitle>
+                          <CardDescription className="text-xs">Distribución de su carga asignada ({periodoLabel})</CardDescription>
+                        </div>
+                      </div>
+                      <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        {statsAbogado.totalMisCasos} casos
+                      </span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <div className="space-y-3.5">
+                      {statsAbogado.misCasosPorComplejidad.length > 0 ? (
+                        statsAbogado.misCasosPorComplejidad.map((item) => {
+                          const total = statsAbogado.totalMisCasos || 1
+                          const rawPct = (item.cantidad / total) * 100
+                          const pct = isFinite(rawPct) ? rawPct.toFixed(0) : '0'
+
+                          const colorMap: Record<string, { bar: string; dot: string }> = {
+                            'Baja': { bar: 'bg-emerald-500', dot: 'bg-emerald-500' },
+                            'Media': { bar: 'bg-blue-600', dot: 'bg-blue-600' },
+                            'Alta': { bar: 'bg-amber-500', dot: 'bg-amber-500' },
+                            'Muy Alta': { bar: 'bg-purple-600', dot: 'bg-purple-600' },
+                          }
+                          const cStyle = colorMap[item.nombre] || { bar: 'bg-indigo-500', dot: 'bg-indigo-500' }
+
+                          return (
+                            <div key={item.nombre} className="space-y-1.5">
+                              <div className="flex justify-between text-xs">
+                                <span className="font-bold text-gray-800 flex items-center gap-1.5">
+                                  <span className={`w-2 h-2 rounded-full ${cStyle.dot}`} />
+                                  {item.nombre}
+                                </span>
+                                <span className="text-gray-600 font-bold">{item.cantidad} casos ({pct}%)</span>
+                              </div>
+                              <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full ${cStyle.bar} rounded-full transition-all duration-500`}
+                                  style={{ width: `${Math.max(Number(pct), 4)}%` }}
+                                />
+                              </div>
+                            </div>
+                          )
+                        })
+                      ) : (
+                        <p className="text-center text-gray-400 py-6 text-sm">Sin datos para el período seleccionado</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Resumen de gestión y acceso rápido */}
+                <Card className="bg-white border-gray-200">
+                  <CardHeader className="pb-3 border-b bg-gray-50/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-blue-50 rounded-xl border border-blue-100">
+                          <FolderOpen className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-sm font-bold text-gray-800 uppercase tracking-wider">Mi Despacho</CardTitle>
+                          <CardDescription className="text-xs">Estado de atención y acceso expedito</CardDescription>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-4 space-y-4">
+                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                      <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+                        <span>Tasa de Avance:</span>
+                        <span className="font-bold text-blue-700">
+                          {statsAbogado.totalMisCasos > 0
+                            ? Math.round(((statsAbogado.misResueltos + statsAbogado.misAtendidos) / statsAbogado.totalMisCasos) * 100)
+                            : 0}%
+                        </span>
+                      </div>
+                      <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-600 rounded-full transition-all duration-500"
+                          style={{
+                            width: `${statsAbogado.totalMisCasos > 0
+                              ? Math.round(((statsAbogado.misResueltos + statsAbogado.misAtendidos) / statsAbogado.totalMisCasos) * 100)
+                              : 0}%`
+                          }}
+                        />
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        {statsAbogado.misResueltos + statsAbogado.misAtendidos} de {statsAbogado.totalMisCasos} expedientes han sido resueltos o atendidos.
+                      </p>
+                    </div>
+
+                    <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
+                      <Link href="/apelaciones" className="flex-1">
+                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-xs font-semibold gap-1.5" size="sm">
+                          <FileText className="h-4 w-4" />
+                          <span>Ir a Mis Apelaciones</span>
+                        </Button>
+                      </Link>
+                      <Link href="/apelaciones/asignacion" className="flex-1">
+                        <Button variant="outline" className="w-full text-xs font-semibold gap-1.5 border-slate-200 hover:bg-slate-100" size="sm">
+                          <Scale className="h-4 w-4 text-purple-600" />
+                          <span>Consultar Asignación</span>
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Alerta plazos */}
+              {(statsFiltradas?.casosConPlazoProximo ?? 0) > 0 && (
+                <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 shadow-xs">
+                  <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                  <p className="text-sm font-medium text-red-800">
+                    {statsFiltradas!.casosConPlazoProximo} caso{statsFiltradas!.casosConPlazoProximo > 1 ? 's' : ''} con plazo próximo a vencer (&le; 5 días) —{' '}
+                    <Link href="/apelaciones" className="underline underline-offset-2 font-bold hover:text-red-950">revisar ahora en bandeja</Link>
+                  </p>
+                </div>
+              )}
 
           {/* 4 Tarjetas estadísticas Reactivas */}
           <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
@@ -726,7 +1004,7 @@ export default function ApelacionesDashboardPage() {
                           <div className="flex justify-between text-xs">
                             <span className="font-bold text-gray-800 flex items-center gap-1.5">
                               <span className={`w-2 h-2 rounded-full ${cStyle.dot}`} />
-                              Complejidad {item.nombre}
+                              {item.nombre}
                             </span>
                             <span className="text-gray-600 font-bold">{item.cantidad} casos ({pct}%)</span>
                           </div>
@@ -748,37 +1026,39 @@ export default function ApelacionesDashboardPage() {
 
           </div>
 
-          {/* Distribución por Procedencia */}
-          <Card className="bg-white border-gray-200">
-            <CardHeader className="border-b bg-gray-50/50">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-blue-600" />
-                    Distribución por Procedencia
-                  </CardTitle>
-                  <CardDescription className="text-xs">Top dependencias con expedientes ingresados ({periodoLabel})</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-4">
-              {statsFiltradas?.casosPorProcedencia && statsFiltradas.casosPorProcedencia.length > 0 ? (
-                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
-                  {statsFiltradas.casosPorProcedencia.slice(0, 10).map((proc) => (
-                    <div key={proc.nombre} className="p-3.5 rounded-xl bg-white border border-gray-200 hover:border-blue-300 hover:shadow-xs transition-all">
-                      <p className="text-2xl font-extrabold text-blue-700">{proc.cantidad}</p>
-                      <p className="text-xs font-semibold text-gray-700 truncate mt-1" title={proc.nombre}>{proc.nombre}</p>
+              {/* Distribución por Procedencia */}
+              <Card className="bg-white border-gray-200">
+                <CardHeader className="border-b bg-gray-50/50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-blue-600" />
+                        Distribución por Procedencia
+                      </CardTitle>
+                      <CardDescription className="text-xs">Top dependencias con expedientes ingresados ({periodoLabel})</CardDescription>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Building2 className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500 text-sm">No hay casos registrados en este período</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  {statsFiltradas?.casosPorProcedencia && statsFiltradas.casosPorProcedencia.length > 0 ? (
+                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+                      {statsFiltradas.casosPorProcedencia.slice(0, 10).map((proc) => (
+                        <div key={proc.nombre} className="p-3.5 rounded-xl bg-white border border-gray-200 hover:border-blue-300 hover:shadow-xs transition-all">
+                          <p className="text-2xl font-extrabold text-blue-700">{proc.cantidad}</p>
+                          <p className="text-xs font-semibold text-gray-700 truncate mt-1" title={proc.nombre}>{proc.nombre}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Building2 className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500 text-sm">No hay casos registrados en este período</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
         </main>
 
         <footer className="border-t bg-white px-6 py-3">

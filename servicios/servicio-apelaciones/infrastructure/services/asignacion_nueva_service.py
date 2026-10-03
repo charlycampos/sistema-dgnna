@@ -15,12 +15,17 @@ class AsignacionNuevaService:
         if not modalidad: raise ValueError("La nueva modalidad de asignación aún no está configurada")
         return modalidad
 
-    def _orden(self, modalidad):
+    def _orden(self, modalidad, solo_activos=False):
         ids = [modalidad.karlaId, modalidad.karolId, modalidad.claraId]
         abogados = self.db.query(AbogadoModel).filter(AbogadoModel.id.in_(ids)).all()
         encontrados = {a.id: a for a in abogados}
         if len(encontrados) != 3:
             raise ValueError("No se encontró la configuración de Karla Garcia, Karol Castro y Clara Michaud")
+        if solo_activos:
+            ids_activos = [i for i in ids if encontrados[i].activo]
+            if not ids_activos:
+                raise ValueError("No hay abogadas activas configuradas para la asignación")
+            return ids_activos, encontrados
         return ids, encontrados
 
     def propuesta(self, complejidad_id, folios):
@@ -28,20 +33,24 @@ class AsignacionNuevaService:
         if not self.db.query(ComplejidadModel).filter(ComplejidadModel.id == complejidad_id, ComplejidadModel.activo == True).first():
             raise ValueError("Complejidad jurídica no encontrada o inactiva")
         modalidad = self._modalidad()
-        orden, abogados = self._orden(modalidad)
+        orden_activos, abogados = self._orden(modalidad, solo_activos=True)
+        orden_todos, _ = self._orden(modalidad, solo_activos=False)
         eventos = self.db.query(AsignacionEventoModel).filter(AsignacionEventoModel.modalidadId == modalidad.id).order_by(AsignacionEventoModel.secuencia).all()
-        elegido, criterio = decidir_asignacion(orden, eventos, complejidad_id, folios, modalidad.ultimoAbogadoId)
-        return self._tablero(modalidad, orden, abogados, eventos, elegido, criterio, folios, complejidad_id)
+        elegido, criterio = decidir_asignacion(orden_activos, eventos, complejidad_id, folios, modalidad.ultimoAbogadoId)
+        return self._tablero(modalidad, orden_todos, orden_activos, abogados, eventos, elegido, criterio, folios, complejidad_id)
 
-    def _tablero(self, modalidad, orden, abogados, eventos, elegido, criterio, folios, complejidad_id):
+    def _tablero(self, modalidad, orden_todos, orden_activos, abogados, eventos, elegido, criterio, folios, complejidad_id):
         salida = []
-        for abogado_id in orden:
+        for abogado_id in orden_todos:
             propios = [e for e in eventos if e.abogadoId == abogado_id]
-            salida.append({"abogado": {"id": abogado_id, "nombre": abogados[abogado_id].nombre, "activo": True},
+            salida.append({"abogado": {"id": abogado_id, "nombre": abogados[abogado_id].nombre, "activo": abogados[abogado_id].activo},
                 "total": len(propios), "mayores500": sum(1 for e in propios if e.esMayor500),
                 "porComplejidad": {cid: sum(1 for e in propios if e.complejidadId == cid) for cid in set([complejidad_id] + [e.complejidadId for e in eventos])},
                 "ultimasAsignaciones": [{"secuencia": e.secuencia, "complejidadId": e.complejidadId, "folios": e.folios, "esMayor500": e.esMayor500, "criterio": e.criterio, "asignadoEn": e.asignadoEn} for e in propios[-10:]]})
-        turno = orden[0] if not eventos else orden[(orden.index(modalidad.ultimoAbogadoId) + 1) % 3]
+        if not eventos or modalidad.ultimoAbogadoId not in orden_activos:
+            turno = orden_activos[0]
+        else:
+            turno = orden_activos[(orden_activos.index(modalidad.ultimoAbogadoId) + 1) % len(orden_activos)]
         return {"modalidadId": modalidad.id, "abogadoId": elegido, "abogadoNombre": abogados[elegido].nombre,
             "criterio": criterio, "turnoReferenciaId": turno, "siguienteSecuencia": modalidad.ultimaSecuencia + 1,
             "esMayor500": folios > 500, "abogados": salida}
@@ -53,7 +62,8 @@ class AsignacionNuevaService:
         modalidad = self.db.query(AsignacionModalidadModel).filter(AsignacionModalidadModel.id == "asignacion-nueva-desde-cero", AsignacionModalidadModel.activo == True).one_or_none()
         if not modalidad:
             return {"configurada": False, "mensaje": "La nueva modalidad de asignación aún no está configurada (revise los nombres de Karla Garcia, Karol Castro y Clara Michaud).", "complejidades": lista_comp, "abogados": [], "recientes": []}
-        orden, abogados = self._orden(modalidad)
+        orden_activos, _ = self._orden(modalidad, solo_activos=True)
+        orden, abogados = self._orden(modalidad, solo_activos=False)
         eventos = self.db.query(AsignacionEventoModel).filter(AsignacionEventoModel.modalidadId == modalidad.id).order_by(AsignacionEventoModel.secuencia).all()
         nombres_comp = {c.id: c.nombre for c in complejidades}
         # Abogados fuera de las tres (p. ej. casos vinculados a expedientes de otro abogado)
@@ -67,14 +77,17 @@ class AsignacionNuevaService:
         for abogado_id in orden:
             propios = [e for e in eventos if e.abogadoId == abogado_id]
             filas.append({
-                "abogado": {"id": abogado_id, "nombre": abogados[abogado_id].nombre},
+                "abogado": {"id": abogado_id, "nombre": abogados[abogado_id].nombre, "activo": abogados[abogado_id].activo},
                 "total": len(propios),
                 "mayores500": sum(1 for e in propios if e.esMayor500),
                 "vinculados": sum(1 for e in propios if (e.criterio or "").startswith("Vinculado")),
                 "porComplejidad": {c["id"]: sum(1 for e in propios if e.complejidadId == c["id"]) for c in lista_comp},
             })
         totales = [f["total"] for f in filas]
-        turno = orden[0] if not modalidad.ultimoAbogadoId else orden[(orden.index(modalidad.ultimoAbogadoId) + 1) % 3]
+        if not modalidad.ultimoAbogadoId or modalidad.ultimoAbogadoId not in orden_activos:
+            turno = orden_activos[0]
+        else:
+            turno = orden_activos[(orden_activos.index(modalidad.ultimoAbogadoId) + 1) % len(orden_activos)]
         return {
             "configurada": True,
             "modalidadId": modalidad.id,
@@ -103,7 +116,7 @@ class AsignacionNuevaService:
 
     def registrar(self, datos):
         modalidad = self._modalidad(bloquear=True)
-        orden, abogados = self._orden(modalidad)
+        orden_activos, abogados = self._orden(modalidad, solo_activos=True)
         complejidad = self.db.query(ComplejidadModel).filter(ComplejidadModel.id == datos["complejidadId"], ComplejidadModel.activo == True).first()
         if not complejidad: raise ValueError("Complejidad jurídica no encontrada o inactiva")
         folios = datos["folios"]
@@ -119,7 +132,7 @@ class AsignacionNuevaService:
             abogado_id = vinculada.abogadoId
             criterio = f"Vinculado al expediente {vinculada.numeroExpediente}"[:200]
         else:
-            abogado_id, criterio = decidir_asignacion(orden, eventos, datos["complejidadId"], folios, modalidad.ultimoAbogadoId)
+            abogado_id, criterio = decidir_asignacion(orden_activos, eventos, datos["complejidadId"], folios, modalidad.ultimoAbogadoId)
         rango = self.db.query(ExtensionRangoModel).filter(ExtensionRangoModel.activo == True, ExtensionRangoModel.minFolios <= folios).filter((ExtensionRangoModel.maxFolios == None) | (ExtensionRangoModel.maxFolios >= folios)).order_by(ExtensionRangoModel.minFolios.desc()).first()
         puntos_extension = rango.puntos if rango else 1
         ahora = datetime.utcnow()

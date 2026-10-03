@@ -1,5 +1,6 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from domain.entities.abogado import Abogado
 from domain.ports.abogado_repository import AbogadoRepository
@@ -18,6 +19,7 @@ class AbogadoRepositoryImpl(AbogadoRepository):
             id=m.id,
             nombre=m.nombre,
             activo=m.activo,
+            usuarioId=m.usuarioId,
             createdAt=m.createdAt,
             updatedAt=m.updatedAt,
         )
@@ -27,6 +29,7 @@ class AbogadoRepositoryImpl(AbogadoRepository):
             id=a.id,
             nombre=a.nombre,
             activo=a.activo,
+            usuarioId=a.usuarioId,
         )
 
     # ── puerto ────────────────────────────────────────────────────────
@@ -41,10 +44,18 @@ class AbogadoRepositoryImpl(AbogadoRepository):
         m = self._db.query(AbogadoModel).filter(AbogadoModel.id == id).first()
         return self._to_entity(m) if m else None
 
+    def obtener_por_usuario_id(self, usuario_id: str) -> Optional[Abogado]:
+        m = self._db.query(AbogadoModel).filter(AbogadoModel.usuarioId == usuario_id).first()
+        return self._to_entity(m) if m else None
+
     def guardar(self, a: Abogado) -> Abogado:
         m = self._to_model(a)
         self._db.add(m)
-        self._db.commit()
+        try:
+            self._db.commit()
+        except IntegrityError as exc:
+            self._db.rollback()
+            raise ValueError("El usuario ya está vinculado a otro abogado") from exc
         self._db.refresh(m)
         return self._to_entity(m)
 
@@ -54,7 +65,12 @@ class AbogadoRepositoryImpl(AbogadoRepository):
             raise ValueError(f"Abogado {a.id} no encontrado")
         m.nombre = a.nombre
         m.activo = a.activo
-        self._db.commit()
+        m.usuarioId = a.usuarioId
+        try:
+            self._db.commit()
+        except IntegrityError as exc:
+            self._db.rollback()
+            raise ValueError("El usuario ya está vinculado a otro abogado") from exc
         self._db.refresh(m)
         return self._to_entity(m)
 

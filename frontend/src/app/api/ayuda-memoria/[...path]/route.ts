@@ -23,6 +23,17 @@ export async function POST(
   const { path } = await params
   const subpath = path.join('/')
   const body = await request.text()
+
+  if (subpath.includes('docx') || subpath.includes('pdf')) {
+    return proxyBinaryToBackend(`/api/ayuda-memoria/${subpath}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body,
+    })
+  }
+
   return proxyToBackend(`/api/ayuda-memoria/${subpath}`, {
     method: 'POST',
     body,

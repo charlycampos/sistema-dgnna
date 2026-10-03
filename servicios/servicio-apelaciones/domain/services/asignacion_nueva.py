@@ -7,15 +7,19 @@ ORDEN_NOMBRES = ("Karla Garcia", "Karol Castro", "Clara Michaud")
 
 def decidir_asignacion(abogado_ids, eventos, complejidad_id, folios, ultimo_abogado_id=None):
     """Devuelve (abogado_id, criterio). `eventos` solo contiene la modalidad nueva."""
-    if len(abogado_ids) != 3:
-        raise ValueError("La modalidad requiere Karla Garcia, Karol Castro y Clara Michaud activas")
+    if not abogado_ids:
+        raise ValueError("No hay abogados activos disponibles para la asignación")
     if not eventos:
         return abogado_ids[0], "Primer registro de la nueva modalidad"
 
     total = Counter(e.abogadoId for e in eventos)
     por_complejidad = Counter(e.abogadoId for e in eventos if e.complejidadId == complejidad_id)
     grandes = Counter(e.abogadoId for e in eventos if e.esMayor500)
-    turno = (abogado_ids.index(ultimo_abogado_id) + 1) % len(abogado_ids)
+    
+    if ultimo_abogado_id in abogado_ids:
+        turno = (abogado_ids.index(ultimo_abogado_id) + 1) % len(abogado_ids)
+    else:
+        turno = 0
 
     def brecha(valores):
         return max(valores) - min(valores)

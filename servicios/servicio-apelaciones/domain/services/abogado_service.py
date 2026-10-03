@@ -18,6 +18,25 @@ class AbogadoService:
             raise ValueError(f"Abogado {id} no encontrado")
         return abogado
 
+    def obtener_por_usuario(self, usuario_id: str) -> Abogado:
+        abogado = self._repo.obtener_por_usuario_id(usuario_id)
+        if not abogado:
+            raise ValueError("El usuario autenticado no está vinculado a un abogado")
+        return abogado
+
+    def vincular_usuario(self, id: str, usuario_id: str) -> Abogado:
+        abogado = self.obtener(id)
+        existente = self._repo.obtener_por_usuario_id(usuario_id)
+        if existente and existente.id != abogado.id:
+            raise ValueError("El usuario ya está vinculado a otro abogado")
+        abogado.usuarioId = usuario_id
+        return self._repo.actualizar(abogado)
+
+    def desvincular_usuario(self, id: str) -> Abogado:
+        abogado = self.obtener(id)
+        abogado.usuarioId = None
+        return self._repo.actualizar(abogado)
+
     def crear(self, datos: dict) -> Abogado:
         abogado = Abogado(
             nombre=datos["nombre"],

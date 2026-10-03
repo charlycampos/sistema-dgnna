@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { apelacionSchema, RESULTADOS_RESOLUCION } from '@/lib/validations'
-import { calcularPuntosExtension } from '@/lib/calcular-puntos'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -191,6 +190,8 @@ export default function NuevaApelacionPage() {
     const [cargaAbogados, setCargaAbogados] = useState<CargaAbogado[]>([])
     const [asignacionPreview, setAsignacionPreview] = useState<AsignacionAutomaticaPreview | null>(null)
     const [asignacionLoading, setAsignacionLoading] = useState(false)
+    const [asignacionError, setAsignacionError] = useState<string | null>(null)
+    const [asignacionRefresh, setAsignacionRefresh] = useState(0)
     const [expedienteDuplicado, setExpedienteDuplicado] = useState(false)
     const [expedientesExistentes, setExpedientesExistentes] = useState<string[]>([])
     const [listaApelacionesCompleta, setListaApelacionesCompleta] = useState<any[]>([])
@@ -711,29 +712,30 @@ export default function NuevaApelacionPage() {
     const folios = form.watch('folios')
     const complejidadId = form.watch('complejidadId')
     const estado = form.watch('estado')
-    const puntosExtension = calcularPuntosExtension(folios || 0)
-    const complejidadSeleccionada = complejidades.find((c) => c.id === complejidadId)
-    const puntosComplejidad = complejidadSeleccionada?.puntos || 0
-    const puntosTotal = puntosExtension + puntosComplejidad
-
     useEffect(() => {
-        if (!complejidadId || !Number.isInteger(folios) || folios < 1) { setAsignacionPreview(null); form.setValue('abogadoId', ''); return }
+        setAsignacionError(null)
+        if (!complejidadId || !Number.isInteger(folios) || folios < 1) {
+            setAsignacionLoading(false)
+            setAsignacionPreview(null)
+            form.setValue('abogadoId', '')
+            return
+        }
         const controller = new AbortController()
+        setAsignacionLoading(true)
         setAsignacionPreview(null)
         form.setValue('abogadoId', '')
         const timer = setTimeout(async () => {
-            setAsignacionLoading(true)
             try {
                 const response = await fetch(`/api/asignacion?complejidadId=${encodeURIComponent(complejidadId)}&folios=${folios}`, { signal: controller.signal })
                 if (!response.ok) throw new Error('No se pudo calcular la asignación')
                 const preview: AsignacionAutomaticaPreview = await response.json()
                 setAsignacionPreview(preview)
                 form.setValue('abogadoId', preview.abogadoId, { shouldValidate: true })
-            } catch (error) { if (!controller.signal.aborted) { setAsignacionPreview(null); form.setValue('abogadoId', ''); } }
+            } catch (error) { if (!controller.signal.aborted) { setAsignacionError(error instanceof Error ? error.message : 'No se pudo calcular la asignación'); setAsignacionPreview(null); form.setValue('abogadoId', ''); } }
             finally { if (!controller.signal.aborted) setAsignacionLoading(false) }
         }, 250)
         return () => { controller.abort(); clearTimeout(timer) }
-    }, [complejidadId, folios, form])
+    }, [complejidadId, folios, form, asignacionRefresh])
 
     return (
         <div className="min-h-screen bg-background">
@@ -1497,42 +1499,15 @@ export default function NuevaApelacionPage() {
 
                     {/* Panel Lateral */}
                     <div className="lg:col-span-1 space-y-6">
-                        <PanelAsignacionNueva preview={asignacionPreview} complejidades={complejidades} loading={asignacionLoading} />
-
-                        {/* Datos de la asignación */}
-                        <Card className="sticky top-4">
-                                <CardHeader>
-                                    <CardTitle>Datos para la asignación</CardTitle>
-                                    <CardDescription>La asignación no usa puntos.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-muted-foreground">Folios:</span>
-                                            <span className="font-medium">{folios || 0}</span>
-                                        </div>
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-muted-foreground">Volumen:</span>
-                                            <span className="font-semibold">{(folios || 0) > 500 ? 'Más de 500 folios' : 'Hasta 500 folios'}</span>
-                                        </div>
-                                    </div>
-                                    <div className="h-px bg-border" />
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-muted-foreground">Complejidad:</span>
-                                            <span className="font-medium">{complejidadSeleccionada?.nombre || '-'}</span>
-                                        </div>
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-muted-foreground">Criterio actual:</span>
-                                            <span className="font-semibold text-right">{asignacionPreview?.criterio || 'Complete los datos'}</span>
-                                        </div>
-                                    </div>
-                                    <div className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">
-                                        <p className="font-medium mb-1">Orden de decisión:</p>
-                                        <p>Total → misma complejidad → más de 500 folios → turno.</p>
-                                    </div>
-                                </CardContent>
-                        </Card>
+                        <PanelAsignacionNueva
+                            preview={asignacionPreview}
+                            complejidades={complejidades}
+                            complejidadId={complejidadId}
+                            folios={folios}
+                            loading={asignacionLoading}
+                            error={asignacionError}
+                            onRetry={() => setAsignacionRefresh((value) => value + 1)}
+                        />
                     </div>
                 </div>
             </main>

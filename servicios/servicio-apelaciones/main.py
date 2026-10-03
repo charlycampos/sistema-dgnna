@@ -42,6 +42,8 @@ def run_migrations():
         "ALTER TABLE apelaciones ADD (fechacambioresuelto TIMESTAMP)",
         "ALTER TABLE apelaciones MODIFY (apelante NULL)",
         "ALTER TABLE apelaciones MODIFY (nnacar NULL)",
+        "ALTER TABLE abogados ADD (usuarioid VARCHAR2(36))",
+        "ALTER TABLE abogados ADD CONSTRAINT uq_abogados_usuarioid UNIQUE (usuarioid)",
     ]
     with engine.connect() as conn:
         for sql in migraciones:
@@ -51,10 +53,12 @@ def run_migrations():
                 print(f"[migration] OK: {sql}")
             except Exception as e:
                 err = str(e)
-                if "01430" in err or "already exists" in err.lower() or "00955" in err:
+                if "01430" in err or "already exists" in err.lower() or "00955" in err or "02261" in err:
                     print(f"[migration] ya existe, omitido.")
                 else:
                     print(f"[migration] ERROR: {e}")
+                    if "abogados" in sql.lower() and "usuarioid" in sql.lower():
+                        raise RuntimeError("No se pudo aplicar la migración crítica usuario-abogado") from e
 
 run_migrations()
 

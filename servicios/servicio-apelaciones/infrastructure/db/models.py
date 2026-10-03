@@ -17,10 +17,12 @@ def _new_id() -> str:
 
 class AbogadoModel(Base):
     __tablename__ = "abogados"
+    __table_args__ = (UniqueConstraint("usuarioid", name="uq_abogados_usuarioid"),)
 
     id        = Column("id",        String(36), primary_key=True, default=_new_id)
     nombre    = Column("nombre",    String(200), nullable=False)
     activo    = Column("activo",    Boolean, default=True)
+    usuarioId = Column("usuarioid", String(36), nullable=True)
     createdAt = Column("createdat", DateTime, default=datetime.utcnow)
     updatedAt = Column("updatedat", DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

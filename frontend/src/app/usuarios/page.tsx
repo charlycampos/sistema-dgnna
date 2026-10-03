@@ -84,19 +84,22 @@ function RolBadge({ rol, modulos }: { rol: string; modulos: ModuloPermiso[] }) {
         const modDef = MODULOS_DISPONIBLES.find(d => d.id === modIdNorm)
         const label = modDef ? modDef.label : m.modulo
         const esRegistrador = m.rolModulo === 'registrador'
+        const esAbogado = m.modulo === 'apelaciones' && m.rolModulo === 'abogado'
         return (
           <span
             key={m.modulo}
             className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md border ${
-              esRegistrador
+              esAbogado
+                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                : esRegistrador
                 ? 'bg-blue-50 text-blue-700 border-blue-200'
                 : 'bg-emerald-50 text-emerald-700 border-emerald-200'
             }`}
-            title={`Módulo: ${label} | Rol: ${esRegistrador ? 'Registrador' : 'Directora / Consulta'}`}
+            title={`Módulo: ${label} | Rol: ${esAbogado ? 'Abogado' : esRegistrador ? 'Registrador' : 'Directora / Consulta'}`}
           >
-            {esRegistrador ? <UserCheck className="w-3 h-3" /> : <BookOpen className="w-3 h-3" />}
+            {esAbogado ? <Scale className="w-3 h-3" /> : esRegistrador ? <UserCheck className="w-3 h-3" /> : <BookOpen className="w-3 h-3" />}
             <span>{label}</span>
-            <span className="text-[9px] opacity-75 font-normal">({esRegistrador ? 'Reg' : 'Cons'})</span>
+            <span className="text-[9px] opacity-75 font-normal">({esAbogado ? 'Abog' : esRegistrador ? 'Reg' : 'Cons'})</span>
           </span>
         )
       })}
@@ -780,6 +783,19 @@ export default function UsuariosPage() {
                                   >
                                     <BookOpen className="w-3 h-3" /> Solo Consulta
                                   </button>
+                                  {mod.id === 'apelaciones' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleRolModuloCrear(mod.id, 'abogado')}
+                                      className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition cursor-pointer flex items-center gap-1 ${
+                                        rolActual === 'abogado'
+                                          ? 'bg-amber-600 text-white shadow-xs'
+                                          : 'text-slate-600 hover:text-amber-700'
+                                      }`}
+                                    >
+                                      <Scale className="w-3 h-3" /> Abogado
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             )
@@ -1062,6 +1078,19 @@ export default function UsuariosPage() {
                                   >
                                     <BookOpen className="w-3 h-3" /> Solo Consulta
                                   </button>
+                                  {mod.id === 'apelaciones' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleRolModuloEditar(mod.id, 'abogado')}
+                                      className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition cursor-pointer flex items-center gap-1 ${
+                                        rolActual === 'abogado'
+                                          ? 'bg-amber-600 text-white shadow-xs'
+                                          : 'text-slate-600 hover:text-amber-700'
+                                      }`}
+                                    >
+                                      <Scale className="w-3 h-3" /> Abogado
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             )
@@ -1202,4 +1231,3 @@ export default function UsuariosPage() {
     </div>
   )
 }
-

@@ -58,7 +58,7 @@ const COLOR_POOL = ['#2F5BD3', '#0F8B8D', '#7A5AE0', '#8A6A4F', '#D97706', '#E11
 
 export default function AsignacionApelacionesPage() {
     const router = useRouter()
-    const { me, loading: meLoading, hasAccess, canWrite } = useMe()
+    const { me, loading: meLoading, hasAccess, canWrite, isAbogado } = useMe()
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
     const [loadingData, setLoadingData] = useState(true)
     const [tablero, setTablero] = useState<TableroData | null>(null)
@@ -68,12 +68,14 @@ export default function AsignacionApelacionesPage() {
     const [verPromedio, setVerPromedio] = useState(true)
     const [verNumeros, setVerNumeros] = useState(true)
 
-    // Guard de acceso
+    // Guard de acceso: verificar acceso al módulo apelaciones
     useEffect(() => {
         if (!meLoading && me && !hasAccess('apelaciones')) {
             router.replace('/menu')
         }
     }, [me, meLoading, hasAccess, router])
+
+    const esAbogadoApelaciones = isAbogado('apelaciones')
 
     useEffect(() => {
         const handleCollapseChange = (e: Event) => {
@@ -523,118 +525,120 @@ export default function AsignacionApelacionesPage() {
                                 </div>
                             </div>
 
-                            {/* HISTORIAL OFICIAL DE ASIGNACIONES */}
-                            <div className="pt-2">
-                                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-3">
-                                    <div>
-                                        <h2 className="text-base font-extrabold tracking-tight text-slate-900">
-                                            Historial Oficial de Asignaciones (Nueva Modalidad)
-                                        </h2>
-                                        <p className="text-xs text-slate-500">
-                                            {abogadoSeleccionado ? (
-                                                <>
-                                                    Filtrado por: <strong className="text-slate-800">{tablero.abogados.find(a => a.abogado.id === abogadoSeleccionado)?.abogado.nombre}</strong> ·{' '}
-                                                    <button onClick={() => setAbogadoSeleccionado(null)} className="text-blue-600 hover:underline font-semibold">
-                                                        Quitar filtro
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                'Haz clic en la tarjeta de cualquier abogada para filtrar sus expedientes asignados.'
-                                            )}
-                                        </p>
-                                    </div>
-
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={fetchTablero}
-                                        className="text-xs gap-1.5 bg-white text-slate-700 self-start sm:self-auto"
-                                        title="Recarga los datos oficiales de la base de datos"
-                                    >
-                                        <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
-                                        <span>Refrescar datos</span>
-                                    </Button>
-                                </div>
-
-                                <Card className="border-slate-200 overflow-hidden shadow-xs">
-                                    <div className="overflow-x-auto max-h-[380px] overflow-y-auto">
-                                        <table className="w-full text-left text-xs border-collapse">
-                                            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-extrabold uppercase tracking-wider sticky top-0 z-10">
-                                                <tr>
-                                                    <th className="py-2.5 px-3 w-16">Secuencia</th>
-                                                    <th className="py-2.5 px-3">Expediente</th>
-                                                    <th className="py-2.5 px-3">Complejidad jurídica</th>
-                                                    <th className="py-2.5 px-3">Folios</th>
-                                                    <th className="py-2.5 px-3">Volumen</th>
-                                                    <th className="py-2.5 px-3">Abogada asignada</th>
-                                                    <th className="py-2.5 px-3">Criterio aplicado</th>
-                                                    <th className="py-2.5 px-3">Fecha de asignación</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {historialFiltrado.length === 0 ? (
-                                                    <tr>
-                                                        <td colSpan={8} className="py-8 text-center text-slate-400">
-                                                            Aún no existen registros en la nueva modalidad.
-                                                        </td>
-                                                    </tr>
+                            {/* HISTORIAL OFICIAL DE ASIGNACIONES (Solo visible para Registrador y Administrador) */}
+                            {!esAbogadoApelaciones && (
+                                <div className="pt-2">
+                                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-3">
+                                        <div>
+                                            <h2 className="text-base font-extrabold tracking-tight text-slate-900">
+                                                Historial Oficial de Asignaciones (Nueva Modalidad)
+                                            </h2>
+                                            <p className="text-xs text-slate-500">
+                                                {abogadoSeleccionado ? (
+                                                    <>
+                                                        Filtrado por: <strong className="text-slate-800">{tablero.abogados.find(a => a.abogado.id === abogadoSeleccionado)?.abogado.nombre}</strong> ·{' '}
+                                                        <button onClick={() => setAbogadoSeleccionado(null)} className="text-blue-600 hover:underline font-semibold">
+                                                            Quitar filtro
+                                                        </button>
+                                                    </>
                                                 ) : (
-                                                    historialFiltrado.map((r) => {
-                                                        const color = colorDe(r.complejidadId)
-                                                        let fechaFmt = r.asignadoEn
-                                                        if (r.asignadoEn) {
-                                                            try {
-                                                                const d = new Date(r.asignadoEn)
-                                                                fechaFmt = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`
-                                                            } catch { }
-                                                        }
-
-                                                        return (
-                                                            <tr
-                                                                key={r.secuencia}
-                                                                className="hover:bg-slate-50/80 transition-colors"
-                                                            >
-                                                                <td className="py-2.5 px-3 font-mono text-blue-700 font-bold">
-                                                                    #{r.secuencia}
-                                                                </td>
-                                                                <td className="py-2.5 px-3 font-medium text-slate-900">
-                                                                    {r.numeroExpediente || `EXP-${r.secuencia}`}
-                                                                </td>
-                                                                <td className="py-2.5 px-3">
-                                                                    <div className="flex items-center gap-1.5">
-                                                                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                                                                        <span className="font-semibold text-slate-800">{r.complejidadNombre}</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="py-2.5 px-3 font-mono text-slate-700">
-                                                                    {r.folios?.toLocaleString('es-PE')}
-                                                                </td>
-                                                                <td className="py-2.5 px-3">
-                                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${r.esMayor500
-                                                                        ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                                                                        : 'bg-slate-100 text-slate-600'
-                                                                        }`}>
-                                                                        {r.esMayor500 ? 'Más de 500' : 'Hasta 500'}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="py-2.5 px-3 font-bold text-slate-800">
-                                                                    {r.abogadoNombre}
-                                                                </td>
-                                                                <td className="py-2.5 px-3 text-slate-600">
-                                                                    {r.criterio}
-                                                                </td>
-                                                                <td className="py-2.5 px-3 text-slate-400">
-                                                                    {fechaFmt}
-                                                                </td>
-                                                            </tr>
-                                                        )
-                                                    })
+                                                    'Haz clic en la tarjeta de cualquier abogada para filtrar sus expedientes asignados.'
                                                 )}
-                                            </tbody>
-                                        </table>
+                                            </p>
+                                        </div>
+
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={fetchTablero}
+                                            className="text-xs gap-1.5 bg-white text-slate-700 self-start sm:self-auto"
+                                            title="Recarga los datos oficiales de la base de datos"
+                                        >
+                                            <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
+                                            <span>Refrescar datos</span>
+                                        </Button>
                                     </div>
-                                </Card>
-                            </div>
+
+                                    <Card className="border-slate-200 overflow-hidden shadow-xs">
+                                        <div className="overflow-x-auto max-h-[380px] overflow-y-auto">
+                                            <table className="w-full text-left text-xs border-collapse">
+                                                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-extrabold uppercase tracking-wider sticky top-0 z-10">
+                                                    <tr>
+                                                        <th className="py-2.5 px-3 w-16">Secuencia</th>
+                                                        <th className="py-2.5 px-3">Expediente</th>
+                                                        <th className="py-2.5 px-3">Complejidad jurídica</th>
+                                                        <th className="py-2.5 px-3">Folios</th>
+                                                        <th className="py-2.5 px-3">Volumen</th>
+                                                        <th className="py-2.5 px-3">Abogada asignada</th>
+                                                        <th className="py-2.5 px-3">Criterio aplicado</th>
+                                                        <th className="py-2.5 px-3">Fecha de asignación</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {historialFiltrado.length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan={8} className="py-8 text-center text-slate-400">
+                                                                Aún no existen registros en la nueva modalidad.
+                                                            </td>
+                                                        </tr>
+                                                    ) : (
+                                                        historialFiltrado.map((r) => {
+                                                            const color = colorDe(r.complejidadId)
+                                                            let fechaFmt = r.asignadoEn
+                                                            if (r.asignadoEn) {
+                                                                try {
+                                                                    const d = new Date(r.asignadoEn)
+                                                                    fechaFmt = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`
+                                                                } catch { }
+                                                            }
+
+                                                            return (
+                                                                <tr
+                                                                    key={r.secuencia}
+                                                                    className="hover:bg-slate-50/80 transition-colors"
+                                                                >
+                                                                    <td className="py-2.5 px-3 font-mono text-blue-700 font-bold">
+                                                                        #{r.secuencia}
+                                                                    </td>
+                                                                    <td className="py-2.5 px-3 font-medium text-slate-900">
+                                                                        {r.numeroExpediente || `EXP-${r.secuencia}`}
+                                                                    </td>
+                                                                    <td className="py-2.5 px-3">
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                                                                            <span className="font-semibold text-slate-800">{r.complejidadNombre}</span>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="py-2.5 px-3 font-mono text-slate-700">
+                                                                        {r.folios?.toLocaleString('es-PE')}
+                                                                    </td>
+                                                                    <td className="py-2.5 px-3">
+                                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${r.esMayor500
+                                                                            ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                                                            : 'bg-slate-100 text-slate-600'
+                                                                            }`}>
+                                                                            {r.esMayor500 ? 'Más de 500' : 'Hasta 500'}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="py-2.5 px-3 font-bold text-slate-800">
+                                                                        {r.abogadoNombre}
+                                                                    </td>
+                                                                    <td className="py-2.5 px-3 text-slate-600">
+                                                                        {r.criterio}
+                                                                    </td>
+                                                                    <td className="py-2.5 px-3 text-slate-400">
+                                                                        {fechaFmt}
+                                                                    </td>
+                                                                </tr>
+                                                            )
+                                                        })
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </Card>
+                                </div>
+                            )}
                         </>
                     )}
                 </main>

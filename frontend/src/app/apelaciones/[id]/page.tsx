@@ -58,8 +58,10 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
     const searchParams = useSearchParams()
     const [loading, setLoading] = useState(true)
     const [modalAccion, setModalAccion] = useState<TipoModalAccion>(null)
-    const { me } = useMe()
+    const { me, isAbogado, canWrite } = useMe()
     const isAdmin = me?.rol === 'admin'
+    const esAbogadoApelaciones = isAbogado('apelaciones')
+    const puedeEditar = canWrite('apelaciones')
     const [saving, setSaving] = useState(false)
     const [apelacion, setApelacion] = useState<ApelacionConRelaciones | null>(null)
     const [abogados, setAbogados] = useState<Abogado[]>([])
@@ -67,10 +69,16 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
     const [procedencias, setProcedencias] = useState<Procedencia[]>([])
     const [revisores, setRevisores] = useState<Revisor[]>([])
     const [cargaRevisores, setCargaRevisores] = useState<CargaRevisorData[]>([])
-    const [isEditing, setIsEditing] = useState(searchParams.get('edit') === 'true')
+    const [isEditing, setIsEditing] = useState(false)
     const [showConfirmGuardar, setShowConfirmGuardar] = useState(false)
     const [showExitoModal, setShowExitoModal] = useState(false)
     const [pendingData, setPendingData] = useState<ApelacionFormValues | null>(null)
+
+    useEffect(() => {
+        if (searchParams.get('edit') === 'true' && puedeEditar && !esAbogadoApelaciones) {
+            setIsEditing(true)
+        }
+    }, [searchParams, puedeEditar, esAbogadoApelaciones])
 
     const form = useForm<ApelacionFormValues>({
         resolver: zodResolver(apelacionSchema) as any,
@@ -443,16 +451,18 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                     {/* Botones de Acción Rápida */}
                                     {apelacion.estado === 'Pendiente' && !apelacion.revisorId && (
                                         <>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="text-xs text-blue-700 bg-blue-50/50 hover:bg-blue-100 hover:text-blue-800 border-blue-200"
-                                                onClick={() => setModalAccion('abogado')}
-                                                title="Cambiar Abogado Responsable"
-                                            >
-                                                <UserCheck className="h-4 w-4 mr-1.5" />
-                                                Cambiar Abogado
-                                            </Button>
+                                            {!esAbogadoApelaciones && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="text-xs text-blue-700 bg-blue-50/50 hover:bg-blue-100 hover:text-blue-800 border-blue-200"
+                                                    onClick={() => setModalAccion('abogado')}
+                                                    title="Cambiar Abogado Responsable"
+                                                >
+                                                    <UserCheck className="h-4 w-4 mr-1.5" />
+                                                    Cambiar Abogado
+                                                </Button>
+                                            )}
                                             <Button
                                                 variant="outline"
                                                 size="sm"
@@ -504,11 +514,15 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                         </Button>
                                     )}
 
-                                    <Button onClick={() => setIsEditing(true)}>Editar</Button>
-                                    <Button variant="destructive" onClick={handleDelete}>
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Eliminar
-                                    </Button>
+                                    {puedeEditar && !esAbogadoApelaciones && (
+                                        <>
+                                            <Button onClick={() => setIsEditing(true)}>Editar</Button>
+                                            <Button variant="destructive" onClick={handleDelete}>
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Eliminar
+                                            </Button>
+                                        </>
+                                    )}
                                 </>
                             ) : (
                                 <Button variant="outline" onClick={() => {

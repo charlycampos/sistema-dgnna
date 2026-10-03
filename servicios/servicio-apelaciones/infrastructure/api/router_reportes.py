@@ -12,6 +12,7 @@ from infrastructure.api.schemas import (
     ReporteOut, ResumenReporte, EvolucionItem,
     ProductividadAbogado, DistribucionComplejidad, TopProcedencia,
 )
+from infrastructure.api.auth_context import forbid_abogado
 
 router = APIRouter(prefix="/api/reportes", tags=["reportes"])
 
@@ -23,6 +24,7 @@ def reporte(
     fechaInicio: Optional[str] = Query(None),
     fechaFin:    Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    _=Depends(forbid_abogado),
 ):
     q = db.query(ApelacionModel)
 

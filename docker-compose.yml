@@ -140,6 +140,7 @@ services:
     environment:
       - PORT=8002
       - "SESSION_SECRET=${SESSION_SECRET:?Debes definir SESSION_SECRET en tu archivo .env (ver .env.example)}"
+      - AUTH_SERVICE_URL=http://auth-service:8001
       - DATABASE_URL=${DATABASE_URL_APELACIONES:-oracle+oracledb://apelaciones_db:Apelaciones2026@host.docker.internal:1521/?service_name=XEPDB1}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -401,5 +402,4 @@ services:
       - "host.docker.internal:host-gateway"
     networks:
       - dgnna-net
-
 

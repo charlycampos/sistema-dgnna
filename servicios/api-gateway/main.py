@@ -179,10 +179,13 @@ async def _forward(request: Request, base_url: str, path: str) -> Response:
                 headers = headers,
                 content = body,
             )
+            resp_headers = dict(resp.headers)
+            resp_headers.pop("transfer-encoding", None)
+            resp_headers.pop("content-length", None)
             return Response(
                 content     = resp.content,
                 status_code = resp.status_code,
-                headers     = dict(resp.headers),
+                headers     = resp_headers,
                 media_type  = resp.headers.get("content-type"),
             )
         except httpx.ConnectError:

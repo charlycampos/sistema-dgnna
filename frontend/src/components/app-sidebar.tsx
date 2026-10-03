@@ -9,7 +9,8 @@ import { useMe } from '@/lib/use-me'
 export function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { me } = useMe()
+  const { me, isAbogado } = useMe()
+  const esAbogadoApelaciones = isAbogado('apelaciones')
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')
@@ -45,23 +46,41 @@ export function AppSidebar() {
     setIsOpen(false)
   }, [pathname])
 
-  const apelacionesItems = [
-    {
-      label: 'Dashboard',
-      href: '/apelaciones/dashboard',
-      icon: <LayoutDashboard className="h-4 w-4 shrink-0" />,
-    },
-    {
-      label: 'Bandeja de Apelaciones',
-      href: '/apelaciones',
-      icon: <Inbox className="h-4 w-4 shrink-0" />,
-    },
-    {
-      label: 'Asignación',
-      href: '/apelaciones/asignacion',
-      icon: <Scale className="h-4 w-4 shrink-0" />,
-    },
-  ]
+  const apelacionesItems = esAbogadoApelaciones
+    ? [
+        {
+          label: 'Mi Dashboard',
+          href: '/apelaciones/dashboard',
+          icon: <LayoutDashboard className="h-4 w-4 shrink-0" />,
+        },
+        {
+          label: 'Mis apelaciones',
+          href: '/apelaciones',
+          icon: <Inbox className="h-4 w-4 shrink-0" />,
+        },
+        {
+          label: 'Asignación',
+          href: '/apelaciones/asignacion',
+          icon: <Scale className="h-4 w-4 shrink-0" />,
+        },
+      ]
+    : [
+        {
+          label: 'Dashboard',
+          href: '/apelaciones/dashboard',
+          icon: <LayoutDashboard className="h-4 w-4 shrink-0" />,
+        },
+        {
+          label: 'Bandeja de Apelaciones',
+          href: '/apelaciones',
+          icon: <Inbox className="h-4 w-4 shrink-0" />,
+        },
+        {
+          label: 'Asignación',
+          href: '/apelaciones/asignacion',
+          icon: <Scale className="h-4 w-4 shrink-0" />,
+        },
+      ]
 
   const transparenciaItems = [
     {
@@ -133,29 +152,31 @@ export function AppSidebar() {
               {apelacionesItems.map((item) => (
                 <NavLink key={item.href} {...item} />
               ))}
-              <div className="pt-4">
-                <p className={`px-2 pb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider transition-all duration-300 ${
-                  isCollapsed ? 'hidden opacity-0 w-0 h-0 overflow-hidden' : 'opacity-100'
-                }`}>
-                  Sistema
-                </p>
-                <Link
-                  href="/configuracion"
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    pathname === '/configuracion'
-                      ? 'bg-blue-50 text-blue-700 font-semibold shadow-sm'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  } ${isCollapsed ? 'justify-center px-0' : ''}`}
-                  title={isCollapsed ? 'Configuración' : undefined}
-                >
-                  <span className={pathname === '/configuracion' ? 'text-blue-600 shrink-0' : 'text-gray-400 shrink-0'}>
-                    <Settings className="h-4 w-4" />
-                  </span>
-                  <span className={`transition-all duration-300 ${isCollapsed ? 'hidden opacity-0 w-0 h-0 overflow-hidden' : 'opacity-100'}`}>
-                    Configuración
-                  </span>
-                </Link>
-              </div>
+              {!esAbogadoApelaciones && (
+                <div className="pt-4">
+                  <p className={`px-2 pb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider transition-all duration-300 ${
+                    isCollapsed ? 'hidden opacity-0 w-0 h-0 overflow-hidden' : 'opacity-100'
+                  }`}>
+                    Sistema
+                  </p>
+                  <Link
+                    href="/configuracion"
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      pathname === '/configuracion'
+                        ? 'bg-blue-50 text-blue-700 font-semibold shadow-sm'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    } ${isCollapsed ? 'justify-center px-0' : ''}`}
+                    title={isCollapsed ? 'Configuración' : undefined}
+                  >
+                    <span className={pathname === '/configuracion' ? 'text-blue-600 shrink-0' : 'text-gray-400 shrink-0'}>
+                      <Settings className="h-4 w-4" />
+                    </span>
+                    <span className={`transition-all duration-300 ${isCollapsed ? 'hidden opacity-0 w-0 h-0 overflow-hidden' : 'opacity-100'}`}>
+                      Configuración
+                    </span>
+                  </Link>
+                </div>
+              )}
             </>
           )}
 

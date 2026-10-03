@@ -4,6 +4,8 @@ export interface Abogado {
   id: string
   nombre: string
   activo: boolean
+  usuarioId?: string | null
+  estadoVinculacion?: 'vinculado' | 'sin_usuario'
   createdAt: Date
   updatedAt: Date
 }

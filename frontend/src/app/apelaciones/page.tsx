@@ -41,6 +41,7 @@ export default function ApelacionesPage() {
     const [modalAccion, setModalAccion] = useState<TipoModalAccion>(null)
     const [selectedApelacion, setSelectedApelacion] = useState<ApelacionConRelaciones | null>(null)
     const { canWrite, loading: meLoading, me, hasAccess } = useMe()
+    const esAbogado = Boolean(me?.modulos.some((permiso) => permiso.modulo === 'apelaciones' && permiso.rolModulo === 'abogado'))
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
     const [expandedRowId, setExpandedRowId] = useState<string | null>(null)
 
@@ -254,8 +255,8 @@ export default function ApelacionesPage() {
                                 <Menu className="h-5 w-5 text-muted-foreground" />
                             </Button>
                             <div className="flex-1 min-w-0">
-                                <h1 className="text-xl md:text-2xl font-bold truncate">Apelaciones</h1>
-                                <p className="text-muted-foreground text-sm">Gestión de todos los expedientes</p>
+                                <h1 className="text-xl md:text-2xl font-bold truncate">{esAbogado ? 'Mis apelaciones' : 'Apelaciones'}</h1>
+                                <p className="text-muted-foreground text-sm">{esAbogado ? 'Expedientes asignados a su cuenta' : 'Gestión de todos los expedientes'}</p>
                             </div>
                             <div className="flex gap-2">
                                 <DropdownMenu>
@@ -339,7 +340,7 @@ export default function ApelacionesPage() {
                                     </SelectContent>
                                 </Select>
 
-                                <Select value={abogadoFilter} onValueChange={setAbogadoFilter}>
+                                {!esAbogado && <Select value={abogadoFilter} onValueChange={setAbogadoFilter}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Filtrar por abogado" />
                                     </SelectTrigger>
@@ -351,7 +352,7 @@ export default function ApelacionesPage() {
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
-                                </Select>
+                                </Select>}
                             </div>
 
                             {/* Fila 2: rango de fechas */}

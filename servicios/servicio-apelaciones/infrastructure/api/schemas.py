@@ -173,11 +173,17 @@ class AbogadoOut(BaseModel):
     id:        str
     nombre:    str
     activo:    bool
+    usuarioId: Optional[str] = None
+    estadoVinculacion: str
     createdAt: datetime
     updatedAt: datetime
 
     class Config:
         from_attributes = True
+
+
+class AbogadoUsuarioLink(BaseModel):
+    usuarioId: str
 
 
 # ── Complejidades ─────────────────────────────────────────────────────────────

@@ -13,6 +13,9 @@ class AbogadoRepository(ABC):
     def obtener_por_id(self, id: str) -> Optional[Abogado]: ...
 
     @abstractmethod
+    def obtener_por_usuario_id(self, usuario_id: str) -> Optional[Abogado]: ...
+
+    @abstractmethod
     def guardar(self, abogado: Abogado) -> Abogado: ...
 
     @abstractmethod

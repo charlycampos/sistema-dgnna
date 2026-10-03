@@ -38,6 +38,7 @@ import {
   Construction,
   Wrench,
   Landmark,
+  Loader2,
 } from 'lucide-react'
 import type { EstadisticasDashboard, ApelacionConRelaciones, Abogado, TransparenciaRegistro } from '@/types'
 import { clasificarAlerta, diasHabilesRestantes } from '@/lib/calcular-plazo'
@@ -78,6 +79,78 @@ export default function DirectorPage() {
   const [loadingStats, setLoadingStats] = useState(true)
   const [complejidadResoluciones, setComplejidadResoluciones] = useState('todas')
   const [vistaApelaciones, setVistaApelaciones] = useState<'gestion' | 'resoluciones'>('gestion')
+  const [descargandoAyudaMemoria, setDescargandoAyudaMemoria] = useState(false)
+
+  // Descarga de Ayuda Memoria Oficial de Gestión de Apelaciones en Word (.docx)
+  const handleDescargarAyudaMemoria = async () => {
+    try {
+      setDescargandoAyudaMemoria(true)
+      const payload = {
+        periodoLabel: labelPeriodo,
+        periodoSlug: periodo,
+        kpi: {
+          totalCasos: statsFiltradas?.totalCasos ?? 0,
+          casosPendientes: statsFiltradas?.casosPendientes ?? 0,
+          casosObservados: (statsFiltradas as any)?.casosObservados ?? 0,
+          casosResueltos: statsFiltradas?.casosResueltos ?? 0,
+          casosAtendidos: statsFiltradas?.casosAtendidos ?? 0,
+        },
+        cargaAbogados: (statsFiltradas?.cargaPorAbogado || []).map(item => ({
+          nombre: item.abogado?.nombre || 'Abogado',
+          activo: item.abogado?.activo !== false,
+          casosActivos: item.casosActivos,
+          casosObservados: (item as any).casosObservados || 0,
+          casosResueltos: item.casosResueltos,
+          casosCerrados: item.casosCerrados,
+          capacidadOperativa: item.abogado?.activo === false
+            ? 'No Disponible (Inactivo)'
+            : (item.puntosActivos || 0) < 50
+              ? 'Disponible'
+              : (item.puntosActivos || 0) >= 160
+                ? 'Carga Completa'
+                : 'En Capacidad',
+        })),
+        tiemposProyeccion: analiticaResoluciones.profesionalesProyeccion.map(p => ({
+          nombre: p.nombre,
+          total: p.total,
+          mediana: p.mediana,
+          promedio: Number(p.promedio.toFixed(1)),
+          hasta15: p.hasta15,
+          de16a30: p.de16a30,
+          de31a60: p.de31a60,
+          mas60: p.mas60,
+        })),
+        medianaRevision: analiticaResoluciones.medianaRevision,
+        medianaTotal: analiticaResoluciones.medianaGlobal,
+        casosPorComplejidad: statsFiltradas?.casosPorComplejidad || [],
+      }
+
+      const res = await fetch('/api/ayuda-memoria/generar-apelaciones-docx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        throw new Error(`Error en servidor: ${res.statusText}`)
+      }
+
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Ayuda_Memoria_Apelaciones_${periodo}_${new Date().toISOString().slice(0, 10)}.docx`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (err) {
+      console.error('Error generando Ayuda Memoria:', err)
+      alert('No se pudo generar la Ayuda Memoria en este momento. Verifique la conexión con el servicio.')
+    } finally {
+      setDescargandoAyudaMemoria(false)
+    }
+  }
 
   // Cargar sesión del usuario
   useEffect(() => {
@@ -166,31 +239,48 @@ export default function DirectorPage() {
 
     const totalCasos = filtrados.length
     const casosPendientes = filtrados.filter(a => a.estado === 'Pendiente').length
+    const casosObservados = filtrados.filter(a => a.estado === 'Observado').length
     const casosResueltos = filtrados.filter(a => a.estado === 'Resuelto').length
     const casosAtendidos = filtrados.filter(a => a.estado === 'Atendido').length
 
     // Recalcular balance de abogados para el período seleccionado
     const abMap: Record<
       string,
-      { model: Abogado; casosActivos: number; casosResueltos: number; casosCerrados: number; puntosActivos: number }
+      { model: Abogado; casosActivos: number; casosObservados: number; casosResueltos: number; casosCerrados: number; puntosActivos: number }
     > = {}
 
-    // Inicializar con los abogados activos
-    abogadosList
-      .filter(ab => ab.activo)
-      .forEach(ab => {
-        abMap[ab.id] = {
-          model: ab,
-          casosActivos: 0,
-          casosResueltos: 0,
-          casosCerrados: 0,
-          puntosActivos: 0,
-        }
-      })
+    // Inicializar con todos los abogados registrados (activos e inactivos)
+    abogadosList.forEach(ab => {
+      abMap[ab.id] = {
+        model: ab,
+        casosActivos: 0,
+        casosObservados: 0,
+        casosResueltos: 0,
+        casosCerrados: 0,
+        puntosActivos: 0,
+      }
+    })
 
     filtrados.forEach(a => {
-      if (a.abogadoId && abMap[a.abogadoId]) {
+      if (a.abogadoId) {
+        if (!abMap[a.abogadoId]) {
+          abMap[a.abogadoId] = {
+            model: a.abogado || {
+              id: a.abogadoId,
+              nombre: 'Abogado No Registrado',
+              activo: false,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+            casosActivos: 0,
+            casosObservados: 0,
+            casosResueltos: 0,
+            casosCerrados: 0,
+            puntosActivos: 0,
+          }
+        }
         if (a.estado === 'Pendiente') abMap[a.abogadoId].casosActivos++
+        else if (a.estado === 'Observado') abMap[a.abogadoId].casosObservados++
         else if (a.estado === 'Resuelto') abMap[a.abogadoId].casosResueltos++
         else if (a.estado === 'Atendido') abMap[a.abogadoId].casosCerrados++
 
@@ -198,15 +288,18 @@ export default function DirectorPage() {
       }
     })
 
+    // Mostrar abogados activos O aquellos inactivos que tengan expedientes en este período
     const cargaPorAbogado = Object.values(abMap)
+      .filter(v => v.model.activo || (v.casosActivos + v.casosObservados + v.casosResueltos + v.casosCerrados) > 0)
       .map(v => ({
         abogado: v.model,
         casosActivos: v.casosActivos,
+        casosObservados: v.casosObservados,
         casosResueltos: v.casosResueltos,
         casosCerrados: v.casosCerrados,
         puntosActivos: v.puntosActivos,
       }))
-      .sort((a, b) => b.puntosActivos - a.puntosActivos)
+      .sort((a, b) => (b.casosActivos + b.casosObservados + b.casosResueltos + b.casosCerrados) - (a.casosActivos + a.casosObservados + a.casosResueltos + a.casosCerrados))
 
     // Recalcular por complejidad en este período
     const compMap: Record<string, number> = {}
@@ -230,6 +323,7 @@ export default function DirectorPage() {
     return {
       totalCasos,
       casosPendientes,
+      casosObservados,
       casosResueltos,
       casosAtendidos,
       casosConPlazoProximo: statsApelaciones?.casosConPlazoProximo ?? 0,
@@ -333,26 +427,88 @@ export default function DirectorPage() {
       return ordenados.length % 2 ? ordenados[centro] : (ordenados[centro - 1] + ordenados[centro]) / 2
     }
 
-    // Tiempos medidos: fechaResolucionEfectiva - fechaAsignacion
-    const tiempos = resueltosPeriodo.flatMap(a => {
-      const fRes = getFechaResolucionEfectiva(a)
-      if (!fRes || !a.fechaAsignacion) return []
-      const asignacion = new Date(a.fechaAsignacion)
-      if (isNaN(asignacion.getTime())) return []
-      const inicioAsignacion = Date.UTC(asignacion.getFullYear(), asignacion.getMonth(), asignacion.getDate())
-      const inicioResuelto = Date.UTC(fRes.getFullYear(), fRes.getMonth(), fRes.getDate())
-      const dias = Math.round((inicioResuelto - inicioAsignacion) / 86400000)
+    // 1. Tiempo de Proyección por Abogado: fechaCambioResuelto - fechaAsignacion
+    const tiemposProyeccion = resueltosPeriodo.flatMap(a => {
+      if (!a.fechaCambioResuelto || !a.fechaAsignacion) return []
+      const dInicio = new Date(a.fechaAsignacion)
+      const dFin = new Date(a.fechaCambioResuelto)
+      if (isNaN(dInicio.getTime()) || isNaN(dFin.getTime())) return []
+      const t0 = Date.UTC(dInicio.getFullYear(), dInicio.getMonth(), dInicio.getDate())
+      const t1 = Date.UTC(dFin.getFullYear(), dFin.getMonth(), dFin.getDate())
+      const dias = Math.round((t1 - t0) / 86400000)
       return isNaN(dias) || dias < 0 ? [] : [{ ...a, dias }]
     })
 
-    const porAbogado = new Map<string, { nombre: string; dias: number[] }>()
-    tiempos.forEach(a => {
+    const mapProyeccion = new Map<string, { nombre: string; dias: number[] }>()
+    tiemposProyeccion.forEach(a => {
       const key = a.abogadoId || 'sin-asignar'
-      const actual = porAbogado.get(key) || { nombre: a.abogado?.nombre || 'Sin profesional', dias: [] }
+      const actual = mapProyeccion.get(key) || { nombre: a.abogado?.nombre || 'Sin profesional', dias: [] }
       actual.dias.push(a.dias)
-      porAbogado.set(key, actual)
+      mapProyeccion.set(key, actual)
     })
-    const profesionales = Array.from(porAbogado.values()).map(item => ({
+    const profesionalesProyeccion = Array.from(mapProyeccion.values()).map(item => {
+      const hasta15 = item.dias.filter(d => d <= 15).length
+      const de16a30 = item.dias.filter(d => d >= 16 && d <= 30).length
+      const de31a60 = item.dias.filter(d => d >= 31 && d <= 60).length
+      const mas60   = item.dias.filter(d => d > 60).length
+      return {
+        nombre: item.nombre,
+        mediana: mediana(item.dias),
+        promedio: item.dias.reduce((s, d) => s + d, 0) / item.dias.length,
+        total: item.dias.length,
+        hasta15,
+        de16a30,
+        de31a60,
+        mas60,
+      }
+    }).sort((a, b) => a.mediana - b.mediana)
+
+    // 2. Tiempo de Revisión y Firma (por Abogado): fechaResolucion - fechaRevisor
+    const tiemposRevision = resueltosPeriodo.flatMap(a => {
+      if (!a.fechaResolucion || !a.fechaRevisor) return []
+      const dInicio = new Date(a.fechaRevisor)
+      const dFin = new Date(a.fechaResolucion)
+      if (isNaN(dInicio.getTime()) || isNaN(dFin.getTime())) return []
+      const t0 = Date.UTC(dInicio.getFullYear(), dInicio.getMonth(), dInicio.getDate())
+      const t1 = Date.UTC(dFin.getFullYear(), dFin.getMonth(), dFin.getDate())
+      const dias = Math.round((t1 - t0) / 86400000)
+      return isNaN(dias) || dias < 0 ? [] : [{ ...a, dias }]
+    })
+
+    const mapRevision = new Map<string, { nombre: string; dias: number[] }>()
+    tiemposRevision.forEach(a => {
+      const key = a.abogadoId || 'sin-asignar'
+      const actual = mapRevision.get(key) || { nombre: a.abogado?.nombre || 'Sin profesional', dias: [] }
+      actual.dias.push(a.dias)
+      mapRevision.set(key, actual)
+    })
+    const profesionalesRevision = Array.from(mapRevision.values()).map(item => ({
+      nombre: item.nombre,
+      mediana: mediana(item.dias),
+      promedio: item.dias.reduce((s, d) => s + d, 0) / item.dias.length,
+      total: item.dias.length,
+    })).sort((a, b) => a.mediana - b.mediana)
+
+    // 3. Tiempo Total del Trámite Institucional: fechaResolucion - fechaAsignacion
+    const tiemposTramiteTotal = resueltosPeriodo.flatMap(a => {
+      if (!a.fechaResolucion || !a.fechaAsignacion) return []
+      const dInicio = new Date(a.fechaAsignacion)
+      const dFin = new Date(a.fechaResolucion)
+      if (isNaN(dInicio.getTime()) || isNaN(dFin.getTime())) return []
+      const t0 = Date.UTC(dInicio.getFullYear(), dInicio.getMonth(), dInicio.getDate())
+      const t1 = Date.UTC(dFin.getFullYear(), dFin.getMonth(), dFin.getDate())
+      const dias = Math.round((t1 - t0) / 86400000)
+      return isNaN(dias) || dias < 0 ? [] : [{ ...a, dias }]
+    })
+
+    const mapTramiteTotal = new Map<string, { nombre: string; dias: number[] }>()
+    tiemposTramiteTotal.forEach(a => {
+      const key = a.abogadoId || 'sin-asignar'
+      const actual = mapTramiteTotal.get(key) || { nombre: a.abogado?.nombre || 'Sin profesional', dias: [] }
+      actual.dias.push(a.dias)
+      mapTramiteTotal.set(key, actual)
+    })
+    const profesionalesTramiteTotal = Array.from(mapTramiteTotal.values()).map(item => ({
       nombre: item.nombre,
       mediana: mediana(item.dias),
       promedio: item.dias.reduce((s, d) => s + d, 0) / item.dias.length,
@@ -389,13 +545,18 @@ export default function DirectorPage() {
     const porcentaje = (n: number) => baseCobertura ? Math.round(n * 100 / baseCobertura) : 0
     return {
       total: resueltosPeriodo.length,
-      totalMedidos: tiempos.length,
-      medianaGlobal: mediana(tiempos.map(t => t.dias)),
+      totalMedidos: tiemposTramiteTotal.length,
+      medianaGlobal: mediana(tiemposTramiteTotal.map(t => t.dias)),
+      medianaProyeccion: mediana(tiemposProyeccion.map(t => t.dias)),
+      medianaRevision: mediana(tiemposRevision.map(t => t.dias)),
       coberturaResultado: porcentaje(resultadosPeriodo.length),
       coberturaFechaResolucion: porcentaje(resueltosPeriodo.filter(a => a.fechaResolucion).length),
       coberturaCambio: porcentaje(resueltosPeriodo.filter(a => a.fechaCambioResuelto).length),
       baseCobertura,
-      profesionales,
+      profesionales: profesionalesTramiteTotal,
+      profesionalesProyeccion,
+      profesionalesRevision,
+      profesionalesTramiteTotal,
       meses,
       distribucion,
       totalResultados: resultadosPeriodo.length,
@@ -1115,11 +1276,27 @@ export default function DirectorPage() {
                     )}
                   </button>
                 </div>
-                <span className="text-xs text-slate-500 font-medium hidden sm:inline">
-                  {vistaApelaciones === 'gestion'
-                    ? 'Supervisión de expedientes activos, plazos de ley y capacidad operativa'
-                    : 'Tiempos desde la asignación legal hasta la emisión de la resolución directoral'}
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-slate-500 font-medium hidden md:inline">
+                    {vistaApelaciones === 'gestion'
+                      ? 'Supervisión de expedientes activos, plazos de ley y capacidad operativa'
+                      : 'Tiempos desde la asignación legal hasta la emisión de la resolución directoral'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleDescargarAyudaMemoria}
+                    disabled={descargandoAyudaMemoria}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Descargar Ayuda Memoria Oficial de Gestión de Apelaciones en formato Word (.docx)"
+                  >
+                    {descargandoAyudaMemoria ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                    ) : (
+                      <FileText className="w-4 h-4 text-blue-600" />
+                    )}
+                    <span>{descargandoAyudaMemoria ? 'Generando Word...' : 'Ayuda Memoria'}</span>
+                  </button>
+                </div>
               </div>
 
               {vistaApelaciones === 'gestion' && (
@@ -1144,8 +1321,8 @@ export default function DirectorPage() {
                 </div>
               )}
 
-              {/* 4 Tarjetas de Estado (Recalculadas en Vivo según el Filtro Activo) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {/* 5 Tarjetas de Estado (Recalculadas en Vivo según el Filtro Activo) */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-blue-300 transition-colors">
                   <div className="flex items-center justify-between text-slate-500 mb-2">
                     <span className="text-xs font-bold uppercase tracking-wider">Total Expedientes</span>
@@ -1156,7 +1333,7 @@ export default function DirectorPage() {
                   <p className="text-3xl font-black text-slate-900 mt-1">
                     {statsFiltradas?.totalCasos ?? 0}
                   </p>
-                  <p className="text-xs text-slate-500 font-medium mt-1.5">
+                  <p className="text-xs text-slate-500 font-medium mt-1.5 truncate">
                     Ingresados en {labelPeriodo}
                   </p>
                 </div>
@@ -1171,8 +1348,23 @@ export default function DirectorPage() {
                   <p className="text-3xl font-black text-amber-600 mt-1">
                     {statsFiltradas?.casosPendientes ?? 0}
                   </p>
-                  <p className="text-xs text-amber-700 font-medium mt-1.5">
-                    En calificación y atención legal
+                  <p className="text-xs text-amber-700 font-medium mt-1.5 truncate">
+                    En calificación y atención
+                  </p>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-rose-300 transition-colors">
+                  <div className="flex items-center justify-between text-slate-500 mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider">Observados</span>
+                    <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
+                      <AlertTriangle className="w-5 h-5" />
+                    </div>
+                  </div>
+                  <p className="text-3xl font-black text-rose-600 mt-1">
+                    {(statsFiltradas as any)?.casosObservados ?? 0}
+                  </p>
+                  <p className="text-xs text-rose-700 font-medium mt-1.5 truncate">
+                    Requieren subsanación
                   </p>
                 </div>
 
@@ -1186,14 +1378,14 @@ export default function DirectorPage() {
                   <p className="text-3xl font-black text-blue-600 mt-1">
                     {statsFiltradas?.casosResueltos ?? 0}
                   </p>
-                  <p className="text-xs text-blue-700 font-medium mt-1.5">
-                    Con proyecto emitido / en revisión
+                  <p className="text-xs text-blue-700 font-medium mt-1.5 truncate">
+                    Proyecto emitido / revisión
                   </p>
                 </div>
 
                 <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-emerald-300 transition-colors">
                   <div className="flex items-center justify-between text-slate-500 mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider">Atendidos (Concluidos)</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">Atendidos</span>
                     <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
                       <CheckCircle2 className="w-5 h-5" />
                     </div>
@@ -1201,8 +1393,8 @@ export default function DirectorPage() {
                   <p className="text-3xl font-black text-emerald-600 mt-1">
                     {statsFiltradas?.casosAtendidos ?? 0}
                   </p>
-                  <p className="text-xs text-emerald-700 font-medium mt-1.5">
-                    Con resolución y cargo notificado
+                  <p className="text-xs text-emerald-700 font-medium mt-1.5 truncate">
+                    Resolución y cargo notificado
                   </p>
                 </div>
               </div>
@@ -1224,7 +1416,7 @@ export default function DirectorPage() {
                     </div>
                   </div>
                   <span className="text-xs font-bold text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1 rounded-xl">
-                    {statsFiltradas?.cargaPorAbogado?.length ?? 4} Abogados Activos
+                    {statsFiltradas?.cargaPorAbogado?.length ?? 0} Especialistas con Registro
                   </span>
                 </div>
 
@@ -1235,9 +1427,9 @@ export default function DirectorPage() {
                       <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
                         <th className="pb-3 px-2">Abogado Responsable</th>
                         <th className="pb-3 px-3 text-center">Pendientes</th>
+                        <th className="pb-3 px-3 text-center">Observados</th>
                         <th className="pb-3 px-3 text-center">Resueltos</th>
                         <th className="pb-3 px-3 text-center">Atendidos</th>
-                        <th className="pb-3 px-3 text-center">Puntos Complejidad</th>
                         <th className="pb-3 px-3 text-right">Capacidad Operativa</th>
                       </tr>
                     </thead>
@@ -1247,16 +1439,26 @@ export default function DirectorPage() {
                           const puntos = item.puntosActivos || 0
                           const esDisponible = puntos < 50
                           const esAlta = puntos >= 160
+                          const estaActivo = item.abogado?.activo !== false
 
                           return (
                             <tr key={item.abogado?.id || idx} className="hover:bg-slate-50/80 transition-colors">
                               <td className="py-3.5 px-2">
                                 <div className="flex items-center gap-2.5">
-                                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-black flex items-center justify-center text-xs">
+                                  <div className={`w-8 h-8 rounded-full font-black flex items-center justify-center text-xs ${
+                                    estaActivo ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
+                                  }`}>
                                     {item.abogado?.nombre?.charAt(0) || 'A'}
                                   </div>
                                   <div>
-                                    <p className="font-bold text-slate-900">{item.abogado?.nombre}</p>
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-bold text-slate-900">{item.abogado?.nombre}</p>
+                                      {!estaActivo && (
+                                        <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
+                                          Inactivo
+                                        </span>
+                                      )}
+                                    </div>
                                     <p className="text-[10px] text-slate-400">Especialista Legal DGNNA</p>
                                   </div>
                                 </div>
@@ -1266,19 +1468,28 @@ export default function DirectorPage() {
                                   {item.casosActivos}
                                 </span>
                               </td>
+                              <td className="py-3.5 px-3 text-center">
+                                {((item as any).casosObservados || 0) > 0 ? (
+                                  <span className="font-black text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                                    {(item as any).casosObservados}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-300 font-bold">0</span>
+                                )}
+                              </td>
                               <td className="py-3.5 px-3 text-center font-bold text-blue-600">
                                 {item.casosResueltos}
                               </td>
                               <td className="py-3.5 px-3 text-center font-bold text-emerald-600">
                                 {item.casosCerrados}
                               </td>
-                              <td className="py-3.5 px-3 text-center">
-                                <span className="font-black text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
-                                  {puntos} pts
-                                </span>
-                              </td>
                               <td className="py-3.5 px-3 text-right">
-                                {esDisponible ? (
+                                {!estaActivo ? (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-full">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                    No Disponible (Inactivo)
+                                  </span>
+                                ) : esDisponible ? (
                                   <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                     🟢 Disponible
@@ -1494,39 +1705,230 @@ export default function DirectorPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-100 mb-4">
-                      <div>
-                        <h3 className="font-extrabold text-sm text-slate-900">Tiempo de resolución por profesional</h3>
-                        <p className="text-xs text-slate-500">Mediana principal, promedio y expedientes evaluados</p>
+                {/* ── 1. TIEMPO DE PROYECCIÓN POR ABOGADA: HISTOGRAMA POR RANGOS DE DÍAS (Opción 2) ── */}
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-blue-600 inline-block" />
+                        <h3 className="font-extrabold text-base text-slate-900">
+                          1. Tiempo de Proyección por Abogada (Distribución por Rangos de Días)
+                        </h3>
                       </div>
-                      <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full">
-                        Días calendario
+                      <p className="text-xs text-slate-500 mt-1">
+                        Días calendario desde la Asignación Legal hasta el Pase a estado Resuelto (Elaboración del proyecto)
+                      </p>
+                    </div>
+
+                    {/* Leyenda Semafórica Directiva */}
+                    <div className="flex items-center flex-wrap gap-2 text-[11px] font-bold">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        ≤ 15 días (Rápido)
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200">
+                        <span className="w-2 h-2 rounded-full bg-amber-500" />
+                        16 a 30 días (Mes 1)
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-50 text-orange-800 border border-orange-200">
+                        <span className="w-2 h-2 rounded-full bg-orange-500" />
+                        31 a 60 días (Mes 2)
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 text-rose-800 border border-rose-200">
+                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                        &gt; 60 días (Crítico)
                       </span>
                     </div>
-                    {analiticaResoluciones.profesionales.length ? (
-                      <div className="space-y-4">
-                        {analiticaResoluciones.profesionales.map(item => {
-                          const maximo = Math.max(...analiticaResoluciones.profesionales.map(p => p.mediana), 1)
-                          return (
-                            <div key={item.nombre}>
-                              <div className="flex items-center justify-between gap-3 text-xs mb-1.5">
-                                <span className="font-bold text-slate-700 truncate">{item.nombre}</span>
-                                <span className="font-black text-slate-900 whitespace-nowrap">{item.mediana} días</span>
-                              </div>
-                              <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-indigo-600 rounded-full" style={{ width: `${Math.max(item.mediana * 100 / maximo, 3)}%` }} />
-                              </div>
-                              <p className="text-[10px] text-slate-500 mt-1">Promedio {item.promedio.toFixed(1)} días · {item.total} expediente{item.total === 1 ? '' : 's'}</p>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-slate-400 text-center py-10">Aún no existen resoluciones registradas en este período.</p>
-                    )}
                   </div>
+
+                  {/* Cuadrícula de Tarjetas por cada Abogada con Mini-Histograma */}
+                  {analiticaResoluciones.profesionalesProyeccion.length ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5 gap-4">
+                      {analiticaResoluciones.profesionalesProyeccion.map(item => {
+                        const maxVal = Math.max(item.hasta15, item.de16a30, item.de31a60, item.mas60, 1)
+                        const pctOportuno = item.total ? Math.round(((item.hasta15 + item.de16a30) / item.total) * 100) : 0
+
+                        const barras = [
+                          { label: '≤ 15 d', count: item.hasta15, color: 'bg-emerald-500', textColor: 'text-emerald-700', bgBox: 'bg-emerald-50' },
+                          { label: '16-30 d', count: item.de16a30, color: 'bg-amber-500', textColor: 'text-amber-700', bgBox: 'bg-amber-50' },
+                          { label: '31-60 d', count: item.de31a60, color: 'bg-orange-500', textColor: 'text-orange-700', bgBox: 'bg-orange-50' },
+                          { label: '> 60 d', count: item.mas60, color: 'bg-rose-500', textColor: 'text-rose-700', bgBox: 'bg-rose-50' },
+                        ]
+
+                        return (
+                          <div
+                            key={item.nombre}
+                            className="bg-slate-50/70 p-4 rounded-xl border border-slate-200 hover:border-blue-300 transition-all flex flex-col justify-between space-y-3"
+                          >
+                            {/* Cabecera de la Abogada */}
+                            <div>
+                              <div className="flex items-center justify-between gap-1">
+                                <h4 className="font-extrabold text-xs text-slate-900 truncate" title={item.nombre}>
+                                  {item.nombre}
+                                </h4>
+                                <span className="font-black text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200 whitespace-nowrap">
+                                  {item.mediana} d med.
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-500 mt-0.5">
+                                {item.total} exp. · Promedio: {item.promedio.toFixed(1)} d
+                              </p>
+                            </div>
+
+                            {/* Mini-Histograma Vertical de 4 Columnas */}
+                            <div className="bg-white p-3 rounded-lg border border-slate-200/80 shadow-inner">
+                              <div className="h-28 flex items-end justify-between gap-2 pt-2 px-1 border-b border-slate-100">
+                                {barras.map(b => {
+                                  const alturaPct = Math.max((b.count / maxVal) * 100, 8)
+                                  return (
+                                    <div key={b.label} className="flex-1 flex flex-col items-center justify-end h-full group">
+                                      <span className={`text-[10px] font-black ${b.count > 0 ? b.textColor : 'text-slate-300'} mb-1`}>
+                                        {b.count}
+                                      </span>
+                                      <div className="w-full bg-slate-100 rounded-t-md h-full flex items-end overflow-hidden">
+                                        <div
+                                          className={`w-full ${b.color} rounded-t-md transition-all duration-500`}
+                                          style={{ height: `${b.count > 0 ? alturaPct : 0}%` }}
+                                        />
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+
+                              {/* Etiquetas de Rangos bajo cada barra */}
+                              <div className="flex justify-between gap-2 pt-2 px-1 text-center">
+                                {barras.map(b => (
+                                  <div key={b.label} className="flex-1">
+                                    <span className="block text-[9px] font-bold text-slate-500 whitespace-nowrap">
+                                      {b.label}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Resumen al pie de la tarjeta */}
+                            <div className="pt-1 flex items-center justify-between text-[10px] font-bold">
+                              <span className="text-slate-500">En ≤ 30 días:</span>
+                              <span className={pctOportuno >= 50 ? 'text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded' : 'text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded'}>
+                                {pctOportuno}% ({item.hasta15 + item.de16a30}/{item.total})
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400 text-center py-8">Sin expedientes resueltos en este período.</p>
+                  )}
+                </div>
+
+                {/* ── Fila Inferior de Gráficos 2 y 3: Revisión y Tiempo Total ── */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                  {/* 2. Tiempo con el Revisor Legal */}
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100 mb-4">
+                        <div>
+                          <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-purple-600 inline-block" />
+                            2. Tiempo de Revisión y Firma
+                          </h3>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            Por abogada · Pase a Revisor ➔ Resolución Directoral firmada
+                          </p>
+                        </div>
+                        <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full whitespace-nowrap">
+                          Mediana Global: {analiticaResoluciones.medianaRevision} d
+                        </span>
+                      </div>
+
+                      {analiticaResoluciones.profesionalesRevision.length ? (
+                        <div className="space-y-4">
+                          {analiticaResoluciones.profesionalesRevision.map(item => {
+                            const maximo = Math.max(...analiticaResoluciones.profesionalesRevision.map(p => p.mediana), 1)
+                            return (
+                              <div key={item.nombre} className="space-y-1">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="font-bold text-slate-700 truncate" title={item.nombre}>{item.nombre}</span>
+                                  <span className="font-black text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 text-[11px]">
+                                    {item.mediana} días
+                                  </span>
+                                </div>
+                                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-purple-600 rounded-full transition-all duration-500"
+                                    style={{ width: `${Math.max(item.mediana * 100 / maximo, 6)}%` }}
+                                  />
+                                </div>
+                                <p className="text-[10px] text-slate-400">
+                                  Promedio {item.promedio.toFixed(1)} d · {item.total} exp.
+                                </p>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-400 text-center py-8">Sin expedientes con fecha de revisor y resolución registrada.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 3. Tiempo Total del Trámite Institucional */}
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-start justify-between gap-2 pb-3 border-b border-slate-100 mb-4">
+                        <div>
+                          <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block" />
+                            3. Tiempo Total (Ciclo Integral)
+                          </h3>
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            Por abogada · Asignación legal ➔ Resolución Directoral firmada
+                          </p>
+                        </div>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full whitespace-nowrap">
+                          Mediana Global: {analiticaResoluciones.medianaGlobal} d
+                        </span>
+                      </div>
+
+                      {analiticaResoluciones.profesionalesTramiteTotal.length ? (
+                        <div className="space-y-4">
+                          {analiticaResoluciones.profesionalesTramiteTotal.map(item => {
+                            const maximo = Math.max(...analiticaResoluciones.profesionalesTramiteTotal.map(p => p.mediana), 1)
+                            return (
+                              <div key={item.nombre} className="space-y-1">
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="font-bold text-slate-700 truncate" title={item.nombre}>{item.nombre}</span>
+                                  <span className="font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[11px]">
+                                    {item.mediana} días
+                                  </span>
+                                </div>
+                                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-emerald-600 rounded-full transition-all duration-500"
+                                    style={{ width: `${Math.max(item.mediana * 100 / maximo, 6)}%` }}
+                                  />
+                                </div>
+                                <p className="text-[10px] text-slate-400">
+                                  Promedio {item.promedio.toFixed(1)} d · {item.total} exp.
+                                </p>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-400 text-center py-8">Sin expedientes resueltos con fecha de resolución en este período.</p>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* ── Fila de Volumen y Resultados ── */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
                   <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                     <h3 className="font-extrabold text-sm text-slate-900">Expedientes resueltos por mes</h3>

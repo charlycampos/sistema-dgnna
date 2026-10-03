@@ -746,3 +746,21 @@ def crear_nueva_version_documento(doc_id: str, data: DocumentoVersionarRequest, 
 def seed(db: Session = Depends(get_db), u: dict = Depends(requiere_admin)):
     return {"status": "ok", "plantillas_creadas": sembrar(db)}
 
+@router.post("/generar-apelaciones-docx")
+def generar_apelaciones_docx(payload: dict, u: dict = Depends(usuario_actual)):
+    """
+    Genera en tiempo real la Ayuda Memoria Oficial de Gestión de Apelaciones en formato Word (.docx).
+    Inyecta métricas, tablas de abogados, histogramas y gráficos directivos de alta resolución.
+    """
+    from domain.services.docx_apelaciones import generar_ayuda_memoria_apelaciones_docx
+    payload["solicitante"] = nombre(u)
+    contenido = generar_ayuda_memoria_apelaciones_docx(payload)
+    periodo_slug = payload.get("periodoSlug", "periodo").lower().replace(" ", "_")
+    fecha_archivo = datetime.now().strftime("%Y%m%d_%H%M")
+    filename = f"Ayuda_Memoria_Apelaciones_{periodo_slug}_{fecha_archivo}.docx"
+    return StreamingResponse(
+        contenido,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+

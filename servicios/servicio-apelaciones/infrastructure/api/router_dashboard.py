@@ -8,12 +8,13 @@ from sqlalchemy.orm import Session, selectinload
 from infrastructure.db.database import get_db
 from infrastructure.db.models import ApelacionModel, AbogadoModel
 from infrastructure.api.schemas import DashboardOut, CargaAbogado, AbogadoNested
+from infrastructure.api.auth_context import forbid_abogado
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 
 @router.get("", response_model=DashboardOut)
-def dashboard(db: Session = Depends(get_db)):
+def dashboard(db: Session = Depends(get_db), _=Depends(forbid_abogado)):
     apelaciones = (
         db.query(ApelacionModel)
         .options(

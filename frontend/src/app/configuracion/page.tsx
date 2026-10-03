@@ -7,14 +7,29 @@ import { ArrowLeft, Users, Scale, FileText, MapPin, ClipboardCheck } from 'lucid
 import Link from 'next/link'
 import { GestionAbogados } from '@/components/configuracion/gestion-abogados'
 import { GestionComplejidad } from '@/components/configuracion/gestion-complejidad'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { GestionExtension } from '@/components/configuracion/gestion-extension'
 import { GestionProcedencias } from '@/components/configuracion/gestion-procedencias'
 import { GestionRevisores } from '@/components/configuracion/gestion-revisores'
 import { useMe } from '@/lib/use-me'
 
 export default function ConfiguracionPage() {
-    const { isRegistrador } = useMe()
+    const router = useRouter()
+    const { me, loading: meLoading, isRegistrador, isAbogado, hasAccess } = useMe()
     const esRegistrador = isRegistrador('apelaciones')
+
+    // Guard de acceso: si es rol abogado en apelaciones, no debe acceder a configuración
+    useEffect(() => {
+        if (meLoading || !me) return
+        if (isAbogado('apelaciones')) {
+            router.replace('/apelaciones')
+            return
+        }
+        if (!hasAccess('apelaciones')) {
+            router.replace('/menu')
+        }
+    }, [me, meLoading, isAbogado, hasAccess, router])
 
     return (
         <div className="min-h-screen bg-background">
