@@ -1,0 +1,452 @@
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { AppSidebar } from '@/components/app-sidebar'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
+import { useMe } from '@/lib/use-me'
+import { Upload, Trash2, FileSpreadsheet, CheckCircle2, AlertTriangle, Info, RefreshCw } from 'lucide-react'
+
+const MESES = [
+  'Enero','Febrero','Marzo','Abril','Mayo','Junio',
+  'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre',
+]
+
+interface Indicador {
+  codigo: string
+  nombre: string
+  nombreCorto?: string
+  hoja: string
+  metaMefSetiembre?: number
+  metaAnual?: number
+  habilitado?: boolean
+}
+
+interface CargaSeguimiento {
+  id: string
+  indicador: string
+  mes: number
+  anio: number
+  mesNombre: string
+  nombreArchivo: string
+  totalFilas: number
+  totalSesiones: number
+  numerador: number
+  denominador: number
+  porcentaje: number | null
+  cargadoPor: string
+  createdAt: string
+}
+
+interface AvisoResultado {
+  tipo: string
+  cantidad: number
+  filasEjemplo: number[]
+}
+
+interface ResultadoCarga {
+  mensaje: string
+  filasGuardadas: number
+  sesionesGuardadas: number
+  numerador: number
+  denominador: number
+  porcentaje: number
+  avisos: AvisoResultado[]
+}
+
+export default function SeguimientoCargaPage() {
+  const router = useRouter()
+  const { me, loading, hasAccess, canWrite } = useMe()
+
+  const [indicadores, setIndicadores] = useState<Indicador[]>([])
+  const [cargas, setCargas] = useState<CargaSeguimiento[]>([])
+  const [cargando, setCargando] = useState(true)
+
+  const [indicadorSeleccionado, setIndicadorSeleccionado] = useState('4390')
+  const [mesSubida, setMesSubida] = useState('9')
+  const [anioSubida, setAnioSubida] = useState(new Date().getFullYear().toString())
+  const [archivo, setArchivo] = useState<File | null>(null)
+  const [subiendo, setSubiendo] = useState(false)
+  const [ultimoResultado, setUltimoResultado] = useState<ResultadoCarga | null>(null)
+
+  useEffect(() => {
+    if (!loading && me && !hasAccess('poi-pp117')) router.replace('/menu')
+  }, [me, loading, hasAccess, router])
+
+  const cargarDatos = useCallback(async () => {
+    setCargando(true)
+    try {
+      const [resInd, resCargas] = await Promise.all([
+        fetch('/api/poi-pp117/seguimiento/indicadores'),
+        fetch('/api/poi-pp117/seguimiento/cargas'),
+      ])
+      if (resInd.ok) {
+        const inds = await resInd.json()
+        setIndicadores(inds)
+        if (inds.length > 0 && !indicadorSeleccionado) {
+          setIndicadorSeleccionado(inds[0].codigo)
+        }
+      }
+      if (resCargas.ok) {
+        setCargas(await resCargas.json())
+      }
+    } catch {
+      toast.error('Error al consultar datos de seguimiento')
+    } finally {
+      setCargando(false)
+    }
+  }, [indicadorSeleccionado])
+
+  useEffect(() => {
+    cargarDatos()
+  }, [cargarDatos])
+
+  const handleSubir = async () => {
+    if (!archivo || !indicadorSeleccionado || !mesSubida || !anioSubida) {
+      toast.error('Selecciona el indicador, mes, año y archivo')
+      return
+    }
+
+    const mesNum = parseInt(mesSubida)
+    const anioNum = parseInt(anioSubida)
+    const yaExiste = cargas.some(
+      c => c.indicador === indicadorSeleccionado && c.mes === mesNum && c.anio === anioNum
+    )
+
+    if (yaExiste) {
+      const ok = confirm(
+        `Ya existe una carga registrada para el Indicador ${indicadorSeleccionado} en ${MESES[mesNum - 1]} ${anioNum}.\n¿Deseas reemplazarla? Se actualizarán todos los NNA y sesiones asociadas.`
+      )
+      if (!ok) return
+    }
+
+    setSubiendo(true)
+    setUltimoResultado(null)
+    const form = new FormData()
+    form.append('archivo', archivo)
+
+    try {
+      const url = `/api/poi-pp117/seguimiento/cargar?indicador=${encodeURIComponent(indicadorSeleccionado)}&mes=${mesNum}&anio=${anioNum}&reemplazar=${yaExiste}`
+      const res = await fetch(url, { method: 'POST', body: form })
+      const data = await res.json()
+
+      if (!res.ok) {
+        toast.error(data?.detail ?? 'Error al procesar el archivo')
+        return
+      }
+
+      setUltimoResultado(data)
+      toast.success(`${data.mensaje} (${data.filasGuardadas?.toLocaleString()} registros)`)
+      setArchivo(null)
+      const input = document.getElementById('input-archivo-seg') as HTMLInputElement | null
+      if (input) input.value = ''
+      await cargarDatos()
+    } catch {
+      toast.error('Error de comunicación al subir el archivo')
+    } finally {
+      setSubiendo(false)
+    }
+  }
+
+  const handleEliminar = async (carga: CargaSeguimiento) => {
+    if (!confirm(`¿Eliminar la carga del Indicador ${carga.indicador} (${carga.mesNombre} ${carga.anio})? Se borrarán todos los datos vinculados.`)) {
+      return
+    }
+    try {
+      const res = await fetch(`/api/poi-pp117/seguimiento/carga/${carga.id}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.success('Carga eliminada correctamente')
+        if (ultimoResultado) setUltimoResultado(null)
+        cargarDatos()
+      } else {
+        const err = await res.json().catch(() => null)
+        toast.error(err?.detail ?? 'Error al eliminar la carga')
+      }
+    } catch {
+      toast.error('Error al intentar eliminar la carga')
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      <AppSidebar />
+      <div className="flex-1 ml-0 md:ml-64 flex flex-col min-h-screen">
+        <header className="border-b bg-card sticky top-0 z-30">
+          <div className="px-6 py-4 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Seguimiento · Carga mensual</h1>
+              <p className="text-muted-foreground text-sm">
+                Carga y cálculo de indicadores del Programa Presupuestal 0117
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => cargarDatos()} className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Actualizar
+            </Button>
+          </div>
+        </header>
+
+        <main className="px-6 py-6 space-y-6">
+
+          {/* Formulario de carga */}
+          {canWrite('poi-pp117') && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Cargar archivo de seguimiento</CardTitle>
+                <CardDescription>
+                  Para el <strong>Indicador 4390 (PIAS)</strong>, sube el archivo mensual acumulado. Se procesa la hoja{' '}
+                  <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-semibold">Nominal</code> y se calculan NNA con $\ge$ 3 sesiones.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-4">
+                  {/* Selector Indicador */}
+                  <div className="space-y-1.5">
+                    <Label>Indicador</Label>
+                    <Select value={indicadorSeleccionado} onValueChange={setIndicadorSeleccionado}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona indicador" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {indicadores.map(ind => (
+                          <SelectItem key={ind.codigo} value={ind.codigo}>
+                            {ind.codigo} — {ind.nombreCorto || ind.nombre} {!ind.habilitado ? '(En desarrollo)' : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Selector Mes */}
+                  <div className="space-y-1.5">
+                    <Label>Mes de corte</Label>
+                    <Select value={mesSubida} onValueChange={setMesSubida}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Mes" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MESES.map((m, i) => (
+                          <SelectItem key={i + 1} value={String(i + 1)}>
+                            {m}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Selector Año */}
+                  <div className="space-y-1.5">
+                    <Label>Año</Label>
+                    <Select value={anioSubida} onValueChange={setAnioSubida}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[2024, 2025, 2026, 2027].map(a => (
+                          <SelectItem key={a} value={String(a)}>
+                            {a}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Selector Archivo */}
+                  <div className="space-y-1.5">
+                    <Label>Archivo Excel (.xlsx)</Label>
+                    <input
+                      id="input-archivo-seg"
+                      type="file"
+                      accept=".xlsx,.xls"
+                      onChange={e => setArchivo(e.target.files?.[0] ?? null)}
+                      className="block w-full text-sm text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded file:border file:text-xs file:bg-muted file:cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {archivo && (
+                  <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 px-3 py-2 rounded border border-green-200">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                    Archivo listo para procesar: <strong>{archivo.name}</strong> ({(archivo.size / (1024 * 1024)).toFixed(2)} MB)
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-2">
+                  <Button onClick={handleSubir} disabled={subiendo || !archivo || !mesSubida} className="gap-2">
+                    <Upload className="h-4 w-4" />
+                    {subiendo ? 'Procesando en base de datos...' : 'Procesar y Guardar'}
+                  </Button>
+
+                  <p className="text-xs text-muted-foreground">
+                    Los archivos son fotos acumuladas; cargar el mismo corte reemplaza los datos previos de manera segura.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Resultado de la última carga procesada */}
+          {ultimoResultado && (
+            <Card className="border-blue-200 bg-blue-50/30">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  <CardTitle className="text-lg">Resultado de la Carga</CardTitle>
+                </div>
+                <CardDescription>{ultimoResultado.mensaje}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-white p-3 rounded-lg border shadow-sm">
+                    <p className="text-xs text-muted-foreground">Total NNA (Denominador)</p>
+                    <p className="text-xl font-bold text-gray-800">{ultimoResultado.denominador?.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white p-3 rounded-lg border shadow-sm">
+                    <p className="text-xs text-muted-foreground">Cumplen $\ge$ 3 Sesiones (Numerador)</p>
+                    <p className="text-xl font-bold text-emerald-600">{ultimoResultado.numerador?.toLocaleString()}</p>
+                  </div>
+                  <div className="bg-white p-3 rounded-lg border shadow-sm">
+                    <p className="text-xs text-muted-foreground">% Cumplimiento</p>
+                    <p className="text-xl font-bold text-blue-600">{ultimoResultado.porcentaje}%</p>
+                  </div>
+                  <div className="bg-white p-3 rounded-lg border shadow-sm">
+                    <p className="text-xs text-muted-foreground">Sesiones Registradas</p>
+                    <p className="text-xl font-bold text-purple-600">{ultimoResultado.sesionesGuardadas?.toLocaleString()}</p>
+                  </div>
+                </div>
+
+                {ultimoResultado.avisos && ultimoResultado.avisos.length > 0 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
+                    <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm">
+                      <AlertTriangle className="h-4 w-4" />
+                      Observaciones y Avisos del archivo ({ultimoResultado.avisos.length} tipos de advertencias)
+                    </div>
+                    <ul className="text-xs text-amber-700 space-y-1 list-disc pl-5">
+                      {ultimoResultado.avisos.map((aviso, idx) => (
+                        <li key={idx}>
+                          <strong>{aviso.tipo}:</strong> {aviso.cantidad} casos encontrados
+                          {aviso.filasEjemplo?.length > 0 && (
+                            <span className="text-muted-foreground ml-1">
+                              (ej. filas: {aviso.filasEjemplo.join(', ')})
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Historial de Cargas de Seguimiento */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Historial de cargas de seguimiento</CardTitle>
+              <CardDescription>
+                Archivos cargados para los indicadores del PP 0117
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {cargando ? (
+                <div className="py-8 flex justify-center">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                </div>
+              ) : cargas.length === 0 ? (
+                <div className="py-10 text-center text-muted-foreground">
+                  <FileSpreadsheet className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p className="font-medium">No hay archivos de seguimiento cargados</p>
+                  <p className="text-sm mt-1">Sube el primer archivo Excel usando el formulario superior</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/40 text-muted-foreground">
+                        <th className="px-4 py-2.5 text-left font-semibold">Indicador</th>
+                        <th className="px-4 py-2.5 text-left font-semibold">Período</th>
+                        <th className="px-4 py-2.5 text-left font-semibold">Archivo</th>
+                        <th className="px-4 py-2.5 text-right font-semibold">NNA Atendidos</th>
+                        <th className="px-4 py-2.5 text-right font-semibold">Cumplen $\ge$3</th>
+                        <th className="px-4 py-2.5 text-right font-semibold">% Logro</th>
+                        <th className="px-4 py-2.5 text-right font-semibold">Sesiones</th>
+                        <th className="px-4 py-2.5 text-left font-semibold">Cargado por</th>
+                        <th className="px-4 py-2.5 text-left font-semibold">Fecha carga</th>
+                        <th className="px-4 py-2.5 text-center">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {cargas.map(c => (
+                        <tr key={c.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3">
+                            <Badge variant="outline" className="font-mono bg-blue-50 text-blue-700 border-blue-200">
+                              Ind. {c.indicador}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="font-semibold">{c.mesNombre} {c.anio}</span>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground max-w-xs truncate" title={c.nombreArchivo}>
+                            {c.nombreArchivo}
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono font-medium">
+                            {c.denominador?.toLocaleString() ?? '—'}
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono text-emerald-600 font-medium">
+                            {c.numerador?.toLocaleString() ?? '—'}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            {c.porcentaje !== null ? (
+                              <Badge
+                                className={
+                                  c.porcentaje >= 46.1
+                                    ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100'
+                                    : c.porcentaje >= 41.1
+                                    ? 'bg-amber-100 text-amber-800 hover:bg-amber-100'
+                                    : 'bg-rose-100 text-rose-800 hover:bg-rose-100'
+                                }
+                              >
+                                {c.porcentaje}%
+                              </Badge>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-right text-xs text-muted-foreground font-mono">
+                            {c.totalSesiones?.toLocaleString() ?? '—'}
+                          </td>
+                          <td className="px-4 py-3 text-xs">{c.cargadoPor ?? '—'}</td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">
+                            {c.createdAt ? new Date(c.createdAt).toLocaleDateString('es-PE') : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {canWrite('poi-pp117') && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEliminar(c)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                                title="Eliminar carga"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    </div>
+  )
+}

@@ -28,6 +28,7 @@ def dashboard(db: Session = Depends(get_db), _=Depends(forbid_abogado)):
     casos_pendientes = sum(1 for a in apelaciones if a.estado == "Pendiente")
     casos_resueltos  = sum(1 for a in apelaciones if a.estado == "Resuelto")
     casos_atendidos  = sum(1 for a in apelaciones if a.estado == "Atendido")
+    casos_no_corresponde = sum(1 for a in apelaciones if a.estado == "No Corresponde")
 
     # Plazos próximos a vencer (≤ 5 días, activos: Pendiente o Resuelto)
     hoy  = datetime.utcnow()
@@ -54,6 +55,8 @@ def dashboard(db: Session = Depends(get_db), _=Depends(forbid_abogado)):
     for a in apelaciones:
         if a.abogadoId not in ab_stats:
             continue
+        if a.estado == "No Corresponde":
+            continue  # No se contabiliza para el abogado (ni casos ni puntos)
         stats = ab_stats[a.abogadoId]
         if a.estado == "Pendiente":
             stats["casosActivos"]  += 1
@@ -106,6 +109,7 @@ def dashboard(db: Session = Depends(get_db), _=Depends(forbid_abogado)):
         casosPendientes=casos_pendientes,
         casosResueltos=casos_resueltos,
         casosAtendidos=casos_atendidos,
+        casosNoCorresponde=casos_no_corresponde,
         casosConPlazoProximo=casos_con_plazo_proximo,
         cargaPorAbogado=carga_por_abogado,
         casosPorComplejidad=casos_por_complejidad,

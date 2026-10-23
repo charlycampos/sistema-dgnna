@@ -5,8 +5,23 @@ from infrastructure.db.models import (AbogadoModel, ComplejidadModel, ExtensionR
     ApelacionModel, ApelanteDetalleModel, NnaDetalleModel, AsignacionModalidadModel, AsignacionEventoModel)
 
 
+ESTADO_NO_CORRESPONDE = "No Corresponde"
+
+
 class AsignacionNuevaService:
     def __init__(self, db: Session): self.db = db
+
+    def _ids_no_corresponde(self, eventos):
+        """Apelaciones en estado "No Corresponde": siguen en el historial pero no cuentan para la abogada."""
+        ids = [e.apelacionId for e in eventos]
+        if not ids:
+            return set()
+        filas = self.db.query(ApelacionModel.id).filter(ApelacionModel.id.in_(ids), ApelacionModel.estado == ESTADO_NO_CORRESPONDE).all()
+        return {f.id for f in filas}
+
+    def _eventos_que_cuentan(self, eventos):
+        excluidos = self._ids_no_corresponde(eventos)
+        return [e for e in eventos if e.apelacionId not in excluidos]
 
     def _modalidad(self, bloquear=False):
         q = self.db.query(AsignacionModalidadModel).filter(AsignacionModalidadModel.id == "asignacion-nueva-desde-cero", AsignacionModalidadModel.activo == True)
@@ -36,6 +51,7 @@ class AsignacionNuevaService:
         orden_activos, abogados = self._orden(modalidad, solo_activos=True)
         orden_todos, _ = self._orden(modalidad, solo_activos=False)
         eventos = self.db.query(AsignacionEventoModel).filter(AsignacionEventoModel.modalidadId == modalidad.id).order_by(AsignacionEventoModel.secuencia).all()
+        eventos = self._eventos_que_cuentan(eventos)
         elegido, criterio = decidir_asignacion(orden_activos, eventos, complejidad_id, folios, modalidad.ultimoAbogadoId)
         return self._tablero(modalidad, orden_todos, orden_activos, abogados, eventos, elegido, criterio, folios, complejidad_id)
 
@@ -73,9 +89,11 @@ class AsignacionNuevaService:
         ultimos = eventos
         if ultimos:
             exp = {a.id: a.numeroExpediente for a in self.db.query(ApelacionModel.id, ApelacionModel.numeroExpediente).filter(ApelacionModel.id.in_([e.apelacionId for e in ultimos])).all()}
+        excluidos = self._ids_no_corresponde(eventos)
+        cuentan = [e for e in eventos if e.apelacionId not in excluidos]
         filas = []
         for abogado_id in orden:
-            propios = [e for e in eventos if e.abogadoId == abogado_id]
+            propios = [e for e in cuentan if e.abogadoId == abogado_id]
             filas.append({
                 "abogado": {"id": abogado_id, "nombre": abogados[abogado_id].nombre, "activo": abogados[abogado_id].activo},
                 "total": len(propios),
@@ -92,12 +110,13 @@ class AsignacionNuevaService:
             "configurada": True,
             "modalidadId": modalidad.id,
             "iniciadoEn": modalidad.iniciadoEn,
-            "totalAsignados": len(eventos),
+            "totalAsignados": len(cuentan),
+            "totalNoCorresponde": len(excluidos),
             "siguienteSecuencia": modalidad.ultimaSecuencia + 1,
             "turnoReferenciaId": turno,
             "turnoReferenciaNombre": abogados[turno].nombre,
             "brechaTotal": (max(totales) - min(totales)) if totales else 0,
-            "casosOtrosAbogados": sum(1 for e in eventos if e.abogadoId in otros_ids),
+            "casosOtrosAbogados": sum(1 for e in cuentan if e.abogadoId in otros_ids),
             "complejidades": lista_comp,
             "abogados": filas,
             "recientes": [{
@@ -111,6 +130,7 @@ class AsignacionNuevaService:
                 "esMayor500": e.esMayor500,
                 "criterio": e.criterio,
                 "asignadoEn": e.asignadoEn,
+                "noCorresponde": e.apelacionId in excluidos,
             } for e in reversed(ultimos)],
         }
 
@@ -122,6 +142,7 @@ class AsignacionNuevaService:
         folios = datos["folios"]
         if not isinstance(folios, int) or folios < 1 or folios > 1000000: raise ValueError("Folios debe ser un entero entre 1 y 1 000 000")
         eventos = self.db.query(AsignacionEventoModel).filter(AsignacionEventoModel.modalidadId == modalidad.id).order_by(AsignacionEventoModel.secuencia).all()
+        eventos = self._eventos_que_cuentan(eventos)
         vinculada_id = datos.get("apelacionVinculadaId")
         if vinculada_id:
             # Caso vinculado: va al mismo abogado del expediente existente (se lee de BD,

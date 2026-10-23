@@ -1,0 +1,975 @@
+'use client'
+
+import React, { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
+import {
+  ArrowLeft,
+  Target,
+  Upload,
+  Calendar,
+  Eye,
+  CheckCircle2,
+  AlertTriangle,
+  AlertCircle,
+  HelpCircle,
+  Sliders,
+  Sparkles,
+  Layers,
+  ChevronRight,
+  TrendingUp,
+  FileSpreadsheet,
+  X,
+  RefreshCw
+} from 'lucide-react'
+import { AppSidebar } from '@/components/app-sidebar'
+
+// --- Tipos y Modelos ---
+interface CargaItem {
+  num: number
+  den: number
+  porcentaje?: number
+}
+
+interface IndicadorConfig {
+  codigo: string
+  nombre: string
+  sub: string
+  metaAnual: number | null
+  habilitado: boolean
+  cargas: Record<number, CargaItem>
+}
+
+type NivelClave = 'fav' | 'seg' | 'rie' | 'pen' | 'sm'
+
+interface NivelEstilo {
+  label: string
+  bg: string
+  fg: string
+  dot: string
+  bd: string
+  cell: string
+  cellFg: string
+}
+
+const NIVELES: Record<NivelClave, NivelEstilo> = {
+  fav: {
+    label: 'Avance favorable',
+    bg: '#ECFDF5',
+    fg: '#047857',
+    dot: '#10B981',
+    bd: '#A7F3D0',
+    cell: '#D1FAE5',
+    cellFg: '#065F46'
+  },
+  seg: {
+    label: 'Requiere seguimiento',
+    bg: '#FFFBEB',
+    fg: '#92400E',
+    dot: '#F59E0B',
+    bd: '#FDE68A',
+    cell: '#FEF3C7',
+    cellFg: '#92400E'
+  },
+  rie: {
+    label: 'Riesgo de incumplimiento',
+    bg: '#FFF1F2',
+    fg: '#BE123C',
+    dot: '#E11D48',
+    bd: '#FECDD3',
+    cell: '#FFE4E6',
+    cellFg: '#9F1239'
+  },
+  pen: {
+    label: 'Pendiente de carga',
+    bg: '#F1F5F9',
+    fg: '#475569',
+    dot: '#94A3B8',
+    bd: '#E2E8F0',
+    cell: '#F8FAFC',
+    cellFg: '#64748B'
+  },
+  sm: {
+    label: 'Sin meta registrada',
+    bg: '#F1F5F9',
+    fg: '#475569',
+    dot: '#CBD5E1',
+    bd: '#E2E8F0',
+    cell: '#F8FAFC',
+    cellFg: '#64748B'
+  }
+}
+
+const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic']
+const MESES_L = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Setiembre', 'Octubre', 'Noviembre', 'Diciembre'
+]
+const MES_ACTUAL = 10 // Octubre 2026
+
+// Catálogo base de los 10 indicadores priorizados del PP 0117
+const CATALOGO_INICIAL: IndicadorConfig[] = [
+  {
+    codigo: '4390',
+    nombre: 'NNA con al menos 3 sesiones de autoprotección',
+    sub: 'PIAS · NNA de 3 a 14 años',
+    metaAnual: 40.0,
+    habilitado: true,
+    cargas: {
+      9: { num: 6208, den: 11089, porcentaje: 55.98 }
+    }
+  },
+  {
+    codigo: '4391',
+    nombre: 'Acceso a servicios de protección',
+    sub: 'Riesgo / desprotección familiar · UPE / DEMUNA',
+    metaAnual: 1.46,
+    habilitado: false,
+    cargas: {}
+  },
+  {
+    codigo: '4392',
+    nombre: 'NNA con plan de trabajo individual aprobado',
+    sub: 'Riesgo / desprotección familiar · UPE',
+    metaAnual: 49.08,
+    habilitado: false,
+    cargas: {}
+  },
+  {
+    codigo: '4393',
+    nombre: 'Familias con competencias parentales',
+    sub: 'Pautas de crianza · Servicios de protección',
+    metaAnual: 64.00,
+    habilitado: false,
+    cargas: {}
+  },
+  {
+    codigo: '4395',
+    nombre: 'Acogimiento en familia acogedora',
+    sub: 'Familias acogedoras · Medida de protección',
+    metaAnual: 77.64,
+    habilitado: false,
+    cargas: {}
+  },
+  {
+    codigo: '4397',
+    nombre: 'NNA en CAR que fortalecen capacidades',
+    sub: 'Acogimiento residencial · CAR Básico y Especializado',
+    metaAnual: 80.13,
+    habilitado: false,
+    cargas: {}
+  },
+  {
+    codigo: '4398',
+    nombre: 'Adolescentes en CAR preparados para vida independiente',
+    sub: 'Acogimiento residencial · Plan de vida independiente',
+    metaAnual: 62.30,
+    habilitado: false,
+    cargas: {}
+  },
+  {
+    codigo: '4399',
+    nombre: 'NNA integrados en familia adoptiva',
+    sub: 'Adopciones · Ubicación y designación familiar',
+    metaAnual: 12.50,
+    habilitado: false,
+    cargas: {}
+  },
+  {
+    codigo: '5138',
+    nombre: 'Seguimiento post adoptivo oportuno',
+    sub: 'Adopciones · Acompañamiento integral',
+    metaAnual: 89.30,
+    habilitado: false,
+    cargas: {}
+  },
+  {
+    codigo: '5139',
+    nombre: 'Restitución oportuna de derechos',
+    sub: 'Resultado específico · PP 0117',
+    metaAnual: 4.50,
+    habilitado: false,
+    cargas: {}
+  }
+]
+
+// Funciones de formato
+function f1(x: number) {
+  return (Math.round(x * 10) / 10).toFixed(1)
+}
+function f2(x: number) {
+  return (Math.round(x * 100) / 100).toFixed(2)
+}
+function miles(n: number) {
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
+// Algoritmo institucional oficial de evaluación
+function evaluar(logro: number, meta: number, mes: number) {
+  const esperado = (mes / 12) * 100
+  const avance = (logro / meta) * 100
+  const ratio = (avance / esperado) * 100
+  let nivel: NivelClave = 'rie'
+  if (ratio >= 100) {
+    nivel = 'fav'
+  } else if (ratio >= 90) {
+    nivel = 'seg'
+  } else {
+    nivel = 'rie'
+  }
+  return { esperado, avance, ratio, nivel }
+}
+
+function evaluarIndicador(ind: IndicadorConfig, mes: number) {
+  if (ind.metaAnual == null) return { nivel: 'sm' as NivelClave, logro: 0, num: 0, den: 0, esperado: 0, avance: 0, ratio: 0 }
+  const c = ind.cargas[mes]
+  if (!c || c.den === 0) return { nivel: 'pen' as NivelClave, logro: 0, num: 0, den: 0, esperado: 0, avance: 0, ratio: 0 }
+  const logro = c.porcentaje != null ? c.porcentaje : (c.num / c.den) * 100
+  const e = evaluar(logro, ind.metaAnual, mes)
+  return { ...e, logro, num: c.num, den: c.den }
+}
+
+export default function BandejaMetasPage() {
+  const [mesSeleccionado, setMesSeleccionado] = useState<number>(9) // Por defecto Setiembre (mes con carga 4390)
+  const [vista, setVista] = useState<'bandeja' | 'matriz'>('bandeja')
+  const [filtro, setFiltro] = useState<'todos' | 'fav' | 'seg' | 'rie' | 'sin'>('todos')
+  const [indicadores, setIndicadores] = useState<IndicadorConfig[]>(CATALOGO_INICIAL)
+  const [cargandoDb, setCargandoDb] = useState(false)
+  const [modalMetasAbierto, setModalMetasAbierto] = useState(false)
+
+  // Estados del Simulador de la regla
+  const [simLogro, setSimLogro] = useState<string>('55.98')
+  const [simMeta, setSimMeta] = useState<string>('40')
+  const [simMes, setSimMes] = useState<string>('9')
+
+  // Carga de datos reales desde Oracle vía backend
+  useEffect(() => {
+    let cancel = false
+    async function cargarHistorial() {
+      try {
+        setCargandoDb(true)
+        const res = await fetch('/api/poi-pp117/seguimiento/cargas')
+        if (res.ok) {
+          const cargasDb: any[] = await res.json()
+          if (!cancel && Array.isArray(cargasDb) && cargasDb.length > 0) {
+            setIndicadores(prev =>
+              prev.map(ind => {
+                const cargasInd = cargasDb.filter(c => String(c.indicador) === ind.codigo)
+                if (cargasInd.length === 0) return ind
+                const nuevasCargas = { ...ind.cargas }
+                cargasInd.forEach(c => {
+                  nuevasCargas[c.mes] = {
+                    num: c.numerador,
+                    den: c.denominador,
+                    porcentaje: c.porcentaje
+                  }
+                })
+                return { ...ind, cargas: nuevasCargas }
+              })
+            )
+          }
+        }
+      } catch (err) {
+        console.warn('Uso de catálogo institucional local:', err)
+      } finally {
+        if (!cancel) setCargandoDb(false)
+      }
+    }
+    cargarHistorial()
+    return () => {
+      cancel = true
+    }
+  }, [])
+
+  // Umbrales dinámicos del mes seleccionado
+  const esperadoMes = (mesSeleccionado / 12) * 100
+  const umbral = {
+    n: mesSeleccionado,
+    esperado: f1(esperadoMes),
+    minimo: f1(esperadoMes * 0.9)
+  }
+
+  // Evaluaciones del mes actual para los 10 indicadores
+  const evals = useMemo(() => {
+    return indicadores.map(ind => ({
+      ind,
+      e: evaluarIndicador(ind, mesSeleccionado)
+    }))
+  }, [indicadores, mesSeleccionado])
+
+  // Conteos para KPIs y Filtros
+  const cuenta = useMemo(() => {
+    const c = { fav: 0, seg: 0, rie: 0, sin: 0 }
+    evals.forEach(x => {
+      const n = x.e.nivel
+      if (n === 'pen' || n === 'sm') c.sin++
+      else c[n]++
+    })
+    return c
+  }, [evals])
+
+  // Filtrado de filas
+  const filasFiltradas = useMemo(() => {
+    return evals.filter(x => {
+      const n = x.e.nivel
+      if (filtro === 'todos') return true
+      if (filtro === 'sin') return n === 'pen' || n === 'sm'
+      return n === filtro
+    })
+  }, [evals, filtro])
+
+  // Evaluación en vivo del simulador
+  const simResultado = useMemo(() => {
+    const l = parseFloat(simLogro)
+    const m = parseFloat(simMeta)
+    const mes = parseInt(simMes, 10)
+    if (!(l >= 0) || !(m > 0)) {
+      return {
+        valido: false,
+        nivel: 'sm' as NivelClave,
+        detalle: 'Ingresa un logro y una meta anual válidos mayor que cero.'
+      }
+    }
+    const r = evaluar(l, m, mes)
+    return {
+      valido: true,
+      nivel: r.nivel,
+      avance: f1(r.avance),
+      esperado: f1(r.esperado),
+      ratio: f1(r.ratio),
+      detalle: `Avance real ${f1(r.avance)}% vs esperado ${f1(r.esperado)}% a ${MESES_L[mes - 1]} → ${f1(r.ratio)}% del esperado`
+    }
+  }, [simLogro, simMeta, simMes])
+
+  return (
+    <div className="flex min-h-screen bg-slate-50 font-sans antialiased text-slate-900">
+      <AppSidebar />
+
+      <main className="flex-1 ml-0 md:ml-64 flex flex-col min-h-screen">
+        {/* Header Superior Institucional */}
+        <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/poi-pp117/seguimiento/dashboard"
+              className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"
+              title="Volver al Dashboard"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+            <div className="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-sm">
+              <Target className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-[10px] font-bold tracking-wider text-blue-700 uppercase">
+                POI-PP117 · SEGUIMIENTO DE INDICADORES
+              </div>
+              <h1 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
+                Bandeja de metas · PP 0117 · Año 2026
+              </h1>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link
+              href="/poi-pp117/seguimiento/carga"
+              className="inline-flex items-center gap-1.5 px-3.5 h-9 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition-colors"
+            >
+              <Upload className="w-3.5 h-3.5 text-slate-500" />
+              Cargar archivo
+            </Link>
+            <button
+              onClick={() => setModalMetasAbierto(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 h-9 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-colors"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              Registrar metas
+            </button>
+          </div>
+        </header>
+
+        {/* Contenido Principal */}
+        <div className="max-w-[1340px] w-full mx-auto p-4 sm:p-6 flex flex-col gap-4">
+          {/* Bloque Selector de Mes de Corte y Umbrales */}
+          <section className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-3 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2.5">
+              <div className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-blue-600" />
+                Mes de corte de evaluación:
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {MESES.map((m, i) => {
+                  const n = i + 1
+                  const activo = n === mesSeleccionado
+                  const futuro = n > MES_ACTUAL
+                  return (
+                    <button
+                      key={m}
+                      disabled={futuro}
+                      onClick={() => setMesSeleccionado(n)}
+                      className={`min-w-[48px] h-8 px-2.5 rounded-lg text-xs font-bold transition-all ${
+                        activo
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : futuro
+                          ? 'bg-slate-50 text-slate-400 border border-dashed border-slate-300 cursor-not-allowed opacity-60'
+                          : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 hover:text-slate-900'
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* 4 Cajas de Umbrales Oficiales del Mes */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+              <div className="bg-slate-100/80 rounded-lg p-2.5 border border-slate-200/60">
+                <div className="text-[11px] text-slate-600 font-semibold">
+                  Avance esperado a {MESES_L[mesSeleccionado - 1]}
+                </div>
+                <div className="text-xl font-extrabold font-mono text-slate-900 mt-0.5">
+                  {umbral.esperado}%
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  {umbral.n} de 12 meses de la meta anual
+                </div>
+              </div>
+
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5">
+                <div className="text-[11px] text-emerald-800 font-bold flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  Avance favorable
+                </div>
+                <div className="text-xl font-extrabold font-mono text-emerald-900 mt-0.5">
+                  ≥ {umbral.esperado}%
+                </div>
+                <div className="text-[11px] text-emerald-700">100% o más del esperado</div>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5">
+                <div className="text-[11px] text-amber-800 font-bold flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                  Requiere seguimiento
+                </div>
+                <div className="text-xl font-extrabold font-mono text-amber-900 mt-0.5">
+                  {umbral.minimo} – {umbral.esperado}%
+                </div>
+                <div className="text-[11px] text-amber-700">Entre 90% y 100% del esperado</div>
+              </div>
+
+              <div className="bg-rose-50 border border-rose-200 rounded-lg p-2.5">
+                <div className="text-[11px] text-rose-800 font-bold flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                  Riesgo de incumplimiento
+                </div>
+                <div className="text-xl font-extrabold font-mono text-rose-900 mt-0.5">
+                  &lt; {umbral.minimo}%
+                </div>
+                <div className="text-[11px] text-rose-700">Menos del 90% del esperado</div>
+              </div>
+            </div>
+          </section>
+
+          {/* 4 Tarjetas de Resumen Ejecutivo (KPIs) */}
+          <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex items-center gap-3 shadow-xs">
+              <span className="w-3 h-3 rounded-full bg-emerald-500 shrink-0"></span>
+              <div>
+                <div className="text-xs text-slate-500 font-semibold">Avance favorable</div>
+                <div className="text-2xl font-extrabold text-slate-900 leading-tight">
+                  {cuenta.fav} <span className="text-xs text-slate-400 font-normal">/ 10</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex items-center gap-3 shadow-xs">
+              <span className="w-3 h-3 rounded-full bg-amber-500 shrink-0"></span>
+              <div>
+                <div className="text-xs text-slate-500 font-semibold">Requiere seguimiento</div>
+                <div className="text-2xl font-extrabold text-slate-900 leading-tight">
+                  {cuenta.seg} <span className="text-xs text-slate-400 font-normal">/ 10</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex items-center gap-3 shadow-xs">
+              <span className="w-3 h-3 rounded-full bg-rose-500 shrink-0"></span>
+              <div>
+                <div className="text-xs text-slate-500 font-semibold">Riesgo de incumplimiento</div>
+                <div className="text-2xl font-extrabold text-slate-900 leading-tight">
+                  {cuenta.rie} <span className="text-xs text-slate-400 font-normal">/ 10</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex items-center gap-3 shadow-xs">
+              <span className="w-3 h-3 rounded-full bg-slate-400 shrink-0"></span>
+              <div>
+                <div className="text-xs text-slate-500 font-semibold">Sin evaluar (sin carga/meta)</div>
+                <div className="text-2xl font-extrabold text-slate-900 leading-tight">
+                  {cuenta.sin} <span className="text-xs text-slate-400 font-normal">/ 10</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Contenedor Principal: Tabs de Navegación y Tablas */}
+          <section className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+            {/* Barra de Sub-Navegación */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5 p-3 border-b border-slate-200 bg-slate-50/80">
+              <div className="flex gap-1 bg-slate-200/80 p-1 rounded-lg">
+                <button
+                  onClick={() => setVista('bandeja')}
+                  className={`h-8 px-3.5 rounded-md text-xs font-bold transition-all ${
+                    vista === 'bandeja'
+                      ? 'bg-white text-blue-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Bandeja del mes
+                </button>
+                <button
+                  onClick={() => setVista('matriz')}
+                  className={`h-8 px-3.5 rounded-md text-xs font-bold transition-all ${
+                    vista === 'matriz'
+                      ? 'bg-white text-blue-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Matriz anual
+                </button>
+              </div>
+
+              {/* Filtros rápidos solo para Bandeja */}
+              {vista === 'bandeja' && (
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { id: 'todos', label: 'Todos', n: 10 },
+                    { id: 'fav', label: 'Favorable', n: cuenta.fav },
+                    { id: 'seg', label: 'Seguimiento', n: cuenta.seg },
+                    { id: 'rie', label: 'Riesgo', n: cuenta.rie },
+                    { id: 'sin', label: 'Sin evaluar', n: cuenta.sin }
+                  ].map(f => {
+                    const activo = filtro === f.id
+                    return (
+                      <button
+                        key={f.id}
+                        onClick={() => setFiltro(f.id as any)}
+                        className={`h-7 px-3 rounded-full text-xs font-semibold transition-all ${
+                          activo
+                            ? 'bg-blue-100 text-blue-900 border border-blue-300 font-bold'
+                            : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-100'
+                        }`}
+                      >
+                        {f.label} · {f.n}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* VISTA 1: BANDEJA DEL MES */}
+            {vista === 'bandeja' && (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-xs sm:text-sm min-w-[1050px]">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-600 text-[11px] uppercase tracking-wider border-b border-slate-200">
+                      <th className="text-left py-2.5 px-3 font-bold w-14">Cód.</th>
+                      <th className="text-left py-2.5 px-3 font-bold">Indicador Priorizado</th>
+                      <th className="text-right py-2.5 px-3 font-bold w-32">Logro</th>
+                      <th className="text-right py-2.5 px-3 font-bold w-28">Meta anual</th>
+                      <th className="text-left py-2.5 px-3 font-bold w-64">Avance real vs. esperado</th>
+                      <th className="text-left py-2.5 px-3 font-bold w-48">Nivel</th>
+                      <th className="text-right py-2.5 px-3 font-bold w-28">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filasFiltradas.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-8 text-center text-slate-500 text-xs">
+                          Ningún indicador en este estado para {MESES_L[mesSeleccionado - 1]}.
+                        </td>
+                      </tr>
+                    ) : (
+                      filasFiltradas.map(({ ind, e }) => {
+                        const tiene = e.nivel === 'fav' || e.nivel === 'seg' || e.nivel === 'rie'
+                        const s = NIVELES[e.nivel]
+                        const metaTxt = ind.metaAnual == null ? '—' : `${f2(ind.metaAnual)}%`
+                        const logroTxt = tiene ? `${f2(e.logro)}%` : '—'
+                        const numDenTxt = tiene ? `${miles(e.num)} / ${miles(e.den)}` : ''
+                        const motivo =
+                          e.nivel === 'sm'
+                            ? 'Registra la meta anual para evaluar'
+                            : `Sin carga para ${MESES_L[mesSeleccionado - 1]}`
+
+                        return (
+                          <tr key={ind.codigo} className="hover:bg-slate-50/80 transition-colors">
+                            {/* Cód */}
+                            <td className="py-3 px-3 font-mono font-bold text-blue-900">
+                              {ind.codigo}
+                            </td>
+
+                            {/* Nombre y Subtítulo */}
+                            <td className="py-3 px-3">
+                              <div className="font-semibold text-slate-900">{ind.nombre}</div>
+                              <div className="text-xs text-slate-500 mt-0.5">{ind.sub}</div>
+                            </td>
+
+                            {/* Logro */}
+                            <td className="py-3 px-3 text-right">
+                              <div className="font-mono font-bold text-sm text-slate-900">
+                                {logroTxt}
+                              </div>
+                              {numDenTxt && (
+                                <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                                  {numDenTxt}
+                                </div>
+                              )}
+                            </td>
+
+                            {/* Meta Anual */}
+                            <td className="py-3 px-3 text-right font-mono text-slate-700">
+                              {metaTxt}
+                            </td>
+
+                            {/* Barra Avance Real vs Esperado */}
+                            <td className="py-3 px-3">
+                              {tiene ? (
+                                <div className="flex flex-col gap-1">
+                                  <div className="flex justify-between text-[11px] text-slate-600">
+                                    <span>
+                                      Real{' '}
+                                      <strong className="text-slate-900 font-mono">
+                                        {f1(e.avance)}%
+                                      </strong>
+                                    </span>
+                                    <span>
+                                      Esperado{' '}
+                                      <strong className="text-slate-900 font-mono">
+                                        {f1(e.esperado)}%
+                                      </strong>
+                                    </span>
+                                  </div>
+                                  <div className="relative h-2.5 bg-slate-200 rounded-full overflow-visible">
+                                    <div
+                                      className="absolute left-0 top-0 bottom-0 rounded-full transition-all duration-500"
+                                      style={{
+                                        width: `${Math.min(100, e.avance)}%`,
+                                        backgroundColor: s.dot
+                                      }}
+                                    ></div>
+                                    <div
+                                      className="absolute -top-1 -bottom-1 w-0.5 bg-slate-900"
+                                      style={{ left: `calc(${e.esperado}% - 1px)` }}
+                                      title={`Avance esperado: ${f1(e.esperado)}%`}
+                                    ></div>
+                                  </div>
+                                  <div className="text-[11px] text-slate-500">
+                                    {f1(e.ratio)}% del avance esperado
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-slate-400 italic">{motivo}</span>
+                              )}
+                            </td>
+
+                            {/* Nivel Badge */}
+                            <td className="py-3 px-3">
+                              <span
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap border"
+                                style={{
+                                  backgroundColor: s.bg,
+                                  color: s.fg,
+                                  borderColor: s.bd
+                                }}
+                              >
+                                <span
+                                  className="w-2 h-2 rounded-full shrink-0"
+                                  style={{ backgroundColor: s.dot }}
+                                ></span>
+                                {s.label}
+                              </span>
+                            </td>
+
+                            {/* Acción */}
+                            <td className="py-3 px-3 text-right">
+                              {tiene ? (
+                                <Link
+                                  href={`/poi-pp117/seguimiento/dashboard?indicador=${ind.codigo}`}
+                                  className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline"
+                                >
+                                  Ver analítica
+                                  <ChevronRight className="w-3.5 h-3.5" />
+                                </Link>
+                              ) : e.nivel === 'sm' ? (
+                                <button
+                                  onClick={() => setModalMetasAbierto(true)}
+                                  className="text-xs font-semibold text-slate-600 hover:text-blue-700"
+                                >
+                                  Registrar meta
+                                </button>
+                              ) : ind.habilitado ? (
+                                <Link
+                                  href={`/poi-pp117/seguimiento/carga?indicador=${ind.codigo}`}
+                                  className="text-xs font-semibold text-blue-600 hover:underline"
+                                >
+                                  Cargar
+                                </Link>
+                              ) : (
+                                <span className="text-xs text-slate-400">Próximamente</span>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* VISTA 2: MATRIZ ANUAL (HEATMAP) */}
+            {vista === 'matriz' && (
+              <div className="overflow-x-auto p-4">
+                <table className="w-full border-separate border-spacing-1 text-xs min-w-[950px]">
+                  <thead>
+                    <tr className="text-slate-600 text-[11px]">
+                      <th className="text-left py-1.5 px-2 font-bold w-14">Cód.</th>
+                      <th className="text-left py-1.5 px-2 font-bold">Indicador</th>
+                      {MESES.map((m, i) => {
+                        const activo = i + 1 === mesSeleccionado
+                        return (
+                          <th
+                            key={m}
+                            className={`text-center py-1.5 px-1 w-14 rounded-md font-bold ${
+                              activo ? 'bg-blue-100 text-blue-900 font-extrabold' : 'text-slate-600'
+                            }`}
+                          >
+                            {m}
+                          </th>
+                        )
+                      })}
+                      <th className="text-right py-1.5 px-2 font-bold w-20">Meta anual</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {indicadores.map(ind => {
+                      return (
+                        <tr key={ind.codigo}>
+                          <td className="py-2 px-2 font-mono font-bold text-blue-900">
+                            {ind.codigo}
+                          </td>
+                          <td className="py-2 px-2 font-semibold text-slate-900 max-w-xs truncate">
+                            {ind.nombre}
+                          </td>
+                          {MESES.map((m, i) => {
+                            const mesNum = i + 1
+                            const e = evaluarIndicador(ind, mesNum)
+                            const tiene = e.nivel === 'fav' || e.nivel === 'seg' || e.nivel === 'rie'
+                            const s = NIVELES[e.nivel]
+                            const futuro = mesNum > MES_ACTUAL
+                            const txt = tiene ? `${f1(e.avance)}%` : futuro ? '' : '—'
+                            const tooltip = tiene
+                              ? `${MESES_L[i]}: logro ${f2(e.logro)}%, avance ${f1(e.avance)}% vs esperado ${f1(e.esperado)}% (${s.label})`
+                              : `${MESES_L[i]}: ${futuro ? 'Mes futuro' : s.label}`
+
+                            return (
+                              <td
+                                key={m}
+                                title={tooltip}
+                                className="text-center py-2 px-1 rounded font-mono font-bold text-[11px] transition-all cursor-default"
+                                style={{
+                                  backgroundColor: tiene ? s.cell : futuro ? '#FFFFFF' : '#F8FAFC',
+                                  color: tiene ? s.cellFg : '#64748B',
+                                  border: tiene
+                                    ? `1px solid ${s.bd}`
+                                    : futuro
+                                    ? '1px dashed #CBD5E1'
+                                    : '1px solid #F1F5F9'
+                                }}
+                              >
+                                {txt}
+                              </td>
+                            )
+                          })}
+                          <td className="py-2 px-2 text-right font-mono font-bold text-slate-700">
+                            {ind.metaAnual == null ? '—' : `${f2(ind.metaAnual)}%`}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+
+                {/* Leyenda de la Matriz */}
+                <div className="flex flex-wrap items-center gap-3 pt-3 px-2 text-xs text-slate-500 border-t border-slate-100 mt-2">
+                  <span className="font-medium text-slate-700">
+                    Celdas coloreadas según el logro acumulado vs. esperado del mes:
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-xs bg-emerald-200 border border-emerald-300"></span>
+                    Favorable (≥ 100%)
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-xs bg-amber-200 border border-amber-300"></span>
+                    Seguimiento (90–99%)
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-xs bg-rose-200 border border-rose-300"></span>
+                    Riesgo (&lt; 90%)
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-xs bg-slate-100 border border-slate-300"></span>
+                    Sin carga
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Pie de Página Explicativo de Fórmulas */}
+            <div className="border-t border-slate-200 bg-slate-50 px-4 py-2.5 text-[11px] text-slate-500 flex flex-wrap gap-x-6 gap-y-1">
+              <span>
+                <strong className="text-slate-700">Avance real:</strong> logro del indicador ÷ meta
+                anual × 100
+              </span>
+              <span>
+                <strong className="text-slate-700">Avance esperado:</strong> mes de corte ÷ 12 × 100
+              </span>
+              <span>
+                <strong className="text-slate-700">Nivel de cumplimiento:</strong> avance real ÷
+                avance esperado (≥ 100% favorable · 90–99% seguimiento · &lt; 90% riesgo)
+              </span>
+            </div>
+          </section>
+
+          {/* SIMULADOR DE LA REGLA INSTITUCIONAL */}
+          <section className="bg-white border border-slate-200 rounded-xl p-4 flex flex-wrap gap-4 items-end shadow-xs">
+            <div className="flex-1 min-w-[220px]">
+              <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                Simulador interactivo de la regla
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">
+                Ingresa un logro y una meta anual para verificar cómo clasifica el semáforo en
+                cualquier mes del año.
+              </div>
+            </div>
+
+            <label className="flex flex-col gap-1 text-[11px] font-bold text-slate-600">
+              Logro alcanzado (%)
+              <input
+                type="number"
+                step="0.01"
+                value={simLogro}
+                onChange={e => setSimLogro(e.target.value)}
+                className="w-28 h-9 border border-slate-300 rounded-lg px-2.5 text-xs font-mono font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1 text-[11px] font-bold text-slate-600">
+              Meta anual (%)
+              <input
+                type="number"
+                step="0.01"
+                value={simMeta}
+                onChange={e => setSimMeta(e.target.value)}
+                className="w-28 h-9 border border-slate-300 rounded-lg px-2.5 text-xs font-mono font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1 text-[11px] font-bold text-slate-600">
+              Mes de corte
+              <select
+                value={simMes}
+                onChange={e => setSimMes(e.target.value)}
+                className="w-32 h-9 border border-slate-300 rounded-lg px-2 text-xs font-semibold text-slate-900 bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+              >
+                {MESES_L.map((m, i) => (
+                  <option key={m} value={String(i + 1)}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="flex-1 min-w-[300px] flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 min-h-[36px]">
+              <span
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border shrink-0"
+                style={{
+                  backgroundColor: NIVELES[simResultado.nivel].bg,
+                  color: NIVELES[simResultado.nivel].fg,
+                  borderColor: NIVELES[simResultado.nivel].bd
+                }}
+              >
+                <span
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: NIVELES[simResultado.nivel].dot }}
+                ></span>
+                {NIVELES[simResultado.nivel].label}
+              </span>
+              <span className="text-xs text-slate-700 font-medium">
+                {simResultado.detalle}
+              </span>
+            </div>
+          </section>
+        </div>
+
+        {/* MODAL INSTITUCIONAL: REGISTRAR / CONFIGURAR METAS ANUALES */}
+        {modalMetasAbierto && (
+          <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-2xl w-full border border-slate-200 shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+              <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-5 h-5 text-blue-600" />
+                  <h3 className="font-bold text-slate-900 text-sm sm:text-base">
+                    Configuración de Metas Anuales MEF 2026
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setModalMetasAbierto(false)}
+                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-5 overflow-y-auto flex flex-col gap-4">
+                <p className="text-xs text-slate-600">
+                  Las metas anuales oficiales están alineadas al Programa Presupuestal 0117 y las directivas del MEF. Puedes revisar las metas configuradas para cada indicador:
+                </p>
+
+                <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden text-xs">
+                  {indicadores.map(ind => (
+                    <div key={ind.codigo} className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50">
+                      <div>
+                        <div className="font-bold text-blue-900 font-mono inline-block mr-2">
+                          {ind.codigo}
+                        </div>
+                        <span className="font-semibold text-slate-900">{ind.nombre}</span>
+                        <div className="text-[11px] text-slate-500">{ind.sub}</div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-900 rounded-lg font-mono font-bold text-xs">
+                          {ind.metaAnual != null ? `${f2(ind.metaAnual)}%` : 'Sin meta'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="px-5 py-3 border-t border-slate-200 bg-slate-50 flex justify-end">
+                <button
+                  onClick={() => setModalMetasAbierto(false)}
+                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs"
+                >
+                  Entendido / Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  )
+}

@@ -80,7 +80,7 @@ export function clasificarAlerta(
   plazo: Date | string | null | undefined,
   estado: string
 ): AlertaPlazo {
-  if (estado === 'Atendido' || !plazo) return null
+  if (estado === 'Atendido' || estado === 'No Corresponde' || !plazo) return null
   const restantes = diasHabilesRestantes(new Date(plazo))
   if (restantes < 0)  return 'vencido'
   if (restantes === 0) return 'urgente'

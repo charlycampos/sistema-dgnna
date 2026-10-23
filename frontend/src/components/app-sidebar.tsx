@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Scale, LayoutDashboard, Inbox, Settings, LayoutGrid, LogOut, FileSearch, BarChart3, Upload, TrendingUp, PieChart, MapPin, ShieldCheck, Building2, Database, Landmark, Home, Heart, ShieldAlert } from 'lucide-react'
+import { Scale, LayoutDashboard, Inbox, Settings, LayoutGrid, LogOut, FileSearch, BarChart3, Upload, TrendingUp, PieChart, MapPin, ShieldCheck, Building2, Database, Landmark, Home, Heart, ShieldAlert, ClipboardList, Target } from 'lucide-react'
 import { useMe } from '@/lib/use-me'
 
 export function AppSidebar() {
@@ -186,12 +186,23 @@ export function AppSidebar() {
               <p className={`px-2 pb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1 transition-all duration-300 ${
                 isCollapsed ? 'hidden opacity-0 w-0 h-0 overflow-hidden' : 'opacity-100'
               }`}>
-                <BarChart3 className="h-3 w-3" /> POI - PP117
+                <ClipboardList className="h-3 w-3" /> Seguimiento
               </p>
-              <NavLink href="/poi-pp117/carga"     icon={<Upload className="h-4 w-4 shrink-0" />}      label="Carga mensual" />
-              <NavLink href="/poi-pp117/dashboard" icon={<PieChart className="h-4 w-4 shrink-0" />}    label="Dashboard" />
-              <NavLink href="/poi-pp117/dgnna"     icon={<BarChart3 className="h-4 w-4 shrink-0" />}   label="Ejecución POI DGNNA" />
-              <NavLink href="/poi-pp117/pp117"     icon={<TrendingUp className="h-4 w-4 shrink-0" />}  label="Ejecución PP 0117" />
+              <NavLink href="/poi-pp117/seguimiento/metas"     icon={<Target className="h-4 w-4 shrink-0" />}       label="Bandeja de metas" />
+              <NavLink href="/poi-pp117/seguimiento/carga"     icon={<Upload className="h-4 w-4 shrink-0" />}      label="Carga mensual" />
+              <NavLink href="/poi-pp117/seguimiento/dashboard" icon={<PieChart className="h-4 w-4 shrink-0" />}    label="Dashboard" />
+
+              <div className="pt-4">
+                <p className={`px-2 pb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1 transition-all duration-300 ${
+                  isCollapsed ? 'hidden opacity-0 w-0 h-0 overflow-hidden' : 'opacity-100'
+                }`}>
+                  <BarChart3 className="h-3 w-3" /> POI - PP117
+                </p>
+                <NavLink href="/poi-pp117/carga"     icon={<Upload className="h-4 w-4 shrink-0" />}      label="Carga mensual" />
+                <NavLink href="/poi-pp117/dashboard" icon={<PieChart className="h-4 w-4 shrink-0" />}    label="Dashboard" />
+                <NavLink href="/poi-pp117/dgnna"     icon={<BarChart3 className="h-4 w-4 shrink-0" />}   label="Ejecución POI DGNNA" />
+                <NavLink href="/poi-pp117/pp117"     icon={<TrendingUp className="h-4 w-4 shrink-0" />}  label="Ejecución PP 0117" />
+              </div>
             </>
           )}
 

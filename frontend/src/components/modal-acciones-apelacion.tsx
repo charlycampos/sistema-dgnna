@@ -145,6 +145,7 @@ export function ModalAccionesApelacion({
             case 'Resuelto': return <Badge variant="default">Resuelto</Badge>
             case 'Atendido': return <Badge variant="atendido">Atendido</Badge>
             case 'Observado': return <Badge variant="outline">Observado</Badge>
+            case 'No Corresponde': return <Badge variant="nocorresponde">No Corresponde</Badge>
             default: return <Badge variant="default">{estado}</Badge>
         }
     }

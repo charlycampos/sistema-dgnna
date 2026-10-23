@@ -178,7 +178,7 @@ export default function ApelacionesDashboardPage() {
     })
 
     filtrados.forEach(a => {
-      if (a.abogadoId) {
+      if (a.abogadoId && a.estado !== 'No Corresponde') {
         if (!abMap[a.abogadoId]) {
           const abObj: Abogado = a.abogado || { id: a.abogadoId, nombre: 'Abogado ' + a.abogadoId.slice(0, 6), activo: false }
           abMap[a.abogadoId] = {

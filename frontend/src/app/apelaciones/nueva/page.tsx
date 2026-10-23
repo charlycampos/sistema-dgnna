@@ -1392,6 +1392,7 @@ export default function NuevaApelacionPage() {
                                                                     <SelectItem value="Resuelto">Resuelto</SelectItem>
                                                                     <SelectItem value="Atendido">Atendido</SelectItem>
                                                                     <SelectItem value="Observado">Observado</SelectItem>
+                                                                    <SelectItem value="No Corresponde">No Corresponde</SelectItem>
                                                                 </SelectContent>
                                                             </Select>
                                                             <FormMessage />

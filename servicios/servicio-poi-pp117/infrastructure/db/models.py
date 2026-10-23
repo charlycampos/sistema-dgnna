@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, UniqueConstraint, Text
+from sqlalchemy import Column, String, Integer, DateTime, Date, ForeignKey, UniqueConstraint, Text, Index, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.elements import quoted_name
 from infrastructure.db.database import Base
@@ -42,3 +42,100 @@ class PoiDato(Base):
     datos        = Column(Text,               nullable=True)  # JSON con las 277 columnas del Excel
 
     carga = relationship("PoiCarga", back_populates="datos")
+
+
+# ═════════════════════════════════════════════════════════════════
+#  SEGUIMIENTO DE INDICADORES PP 0117
+#  Una carga = un archivo fuente de un indicador para un mes de corte.
+#  El archivo es acumulado: cada carga es una foto completa del corte.
+# ═════════════════════════════════════════════════════════════════
+
+class SegCarga(Base):
+    __tablename__ = "seg_cargas"
+    __table_args__ = (
+        UniqueConstraint("indicador", "mes", "anio", name="uq_seg_ind_mes_anio"),
+    )
+
+    id            = Column(String(36), primary_key=True, default=_new_id)
+    indicador     = Column(String(10), nullable=False)          # ej. '4390'
+    mes           = Column(Integer,    nullable=False)          # mes de corte
+    anio          = Column(Integer,    nullable=False)
+    nombreArchivo = Column(_qn('nombreArchivo'), String(300), nullable=True)
+    totalFilas    = Column(_qn('totalFilas'),    Integer,     nullable=True)
+    totalSesiones = Column(_qn('totalSesiones'), Integer,     nullable=True)
+    numerador     = Column(Integer, nullable=True)
+    denominador   = Column(Integer, nullable=True)
+    cargadoPor    = Column(_qn('cargadoPor'),    String(200), nullable=True)
+    createdAt     = Column(_qn('createdAt'),     DateTime,    default=datetime.utcnow)
+
+
+class SegPiasNna(Base):
+    """Indicador 4390 — una fila por NNA de la hoja 'Nominal' del archivo PIAS."""
+    __tablename__ = "seg_pias_nna"
+    __table_args__ = (
+        Index("ix_seg_pias_nna_carga", "cargaId"),
+    )
+
+    id                = Column(String(36), primary_key=True, default=_new_id)
+    cargaId           = Column(_qn('cargaId'), String(36), ForeignKey("seg_cargas.id", ondelete="CASCADE"), nullable=False)
+    nroFila           = Column(_qn('nroFila'),           Integer,     nullable=True)   # N°
+    periodo           = Column(String(20),                            nullable=True)   # PERIODO (texto)
+    mesIngreso        = Column(_qn('mesIngreso'),        Integer,     nullable=True)   # PERIODO como número
+    entidad           = Column(String(50),                            nullable=True)   # ENTIDAD
+    lineaIntervencion = Column(_qn('lineaIntervencion'), String(300), nullable=True)   # LIN_INTERV
+    tipoIntervencion  = Column(_qn('tipoIntervencion'),  String(30),  nullable=True)   # TIP_INT
+    servicio          = Column(String(100),                           nullable=True)   # NOM_SERV
+    ubigeo            = Column(String(6),                             nullable=True)   # UBIGEO
+    departamento      = Column(String(100),                           nullable=True)   # DEPAR_CA
+    provincia         = Column(String(150),                           nullable=True)   # PROVIN_CA
+    distrito          = Column(String(150),                           nullable=True)   # DISTR_CA
+    centroPoblado     = Column(_qn('centroPoblado'),     String(200), nullable=True)   # CCPP_CA
+    area              = Column(String(20),                            nullable=True)   # AREA_RES_CA
+    cuencaPias        = Column(_qn('cuencaPias'),        String(100), nullable=True)   # NOM_CA
+    edad              = Column(Integer,                               nullable=True)   # EDAD_NNA
+    sexo              = Column(String(1),                             nullable=True)   # SEXO_NNA (M/H)
+    numZarpe          = Column(_qn('numZarpe'),          Integer,     nullable=True)   # N_Z
+    numSesiones       = Column(_qn('numSesiones'),       Integer,     nullable=True)   # Num_ses
+    cumpleMinimo      = Column(_qn('cumpleMinimo'),      Integer,     nullable=True)   # NNA_ACT_FOR (0/1)
+    fec2              = Column(Date,                                  nullable=True)   # FEC2 (tal cual)
+    fecPrimera        = Column(_qn('fecPrimera'),        Date,        nullable=True)   # calculada
+    fecTercera        = Column(_qn('fecTercera'),        Date,        nullable=True)   # calculada
+
+
+class SegPiasSesion(Base):
+    """Indicador 4390 — una fila por fecha de sesión (columnas FEC_*)."""
+    __tablename__ = "seg_pias_sesion"
+    __table_args__ = (
+        Index("ix_seg_pias_ses_carga", "cargaId"),
+        Index("ix_seg_pias_ses_nna", "nnaId"),
+    )
+
+    id            = Column(String(36), primary_key=True, default=_new_id)
+    nnaId         = Column(_qn('nnaId'),   String(36), ForeignKey("seg_pias_nna.id", ondelete="CASCADE"), nullable=False)
+    cargaId       = Column(_qn('cargaId'), String(36), nullable=False)
+    nroSesion     = Column(_qn('nroSesion'), Integer, nullable=True)   # orden cronológico 1..n
+    fecha         = Column(Date,    nullable=False)
+    mes           = Column(Integer, nullable=False)
+    columnaOrigen = Column(_qn('columnaOrigen'), String(40), nullable=True)
+
+
+class SegMeta(Base):
+    """Metas de los indicadores PP 0117 por año.
+    tipoMeta 'MEF'  : meta MEF contra la que se evalúa el semáforo. mes = 0 rige para todos los
+                      meses; mes 1-12 la reemplaza solo en ese mes.
+    tipoMeta 'ANUAL': meta anual de referencia (mes = 0). Si no hay meta MEF, el esperado del mes
+                      es meta anual × mes / 12 (tabla del documento REGLA)."""
+    __tablename__ = "seg_metas"
+    __table_args__ = (
+        UniqueConstraint("indicador", "anio", "tipoMeta", "mes", name="uq_seg_meta"),
+    )
+
+    id             = Column(String(36), primary_key=True, default=_new_id)
+    indicador      = Column(String(10), nullable=False)
+    anio           = Column(Integer,    nullable=False)
+    tipoMeta       = Column(_qn('tipoMeta'), String(10), nullable=False, default="ANUAL")
+    mes            = Column(Integer,    nullable=False, default=0)
+    valor          = Column(Float,      nullable=False)
+    fuente         = Column(String(300), nullable=True)   # documento que sustenta la meta
+    actualizadoPor = Column(_qn('actualizadoPor'), String(200), nullable=True)
+    updatedAt      = Column(_qn('updatedAt'), DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

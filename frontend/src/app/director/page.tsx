@@ -262,7 +262,7 @@ export default function DirectorPage() {
     })
 
     filtrados.forEach(a => {
-      if (a.abogadoId) {
+      if (a.abogadoId && a.estado !== 'No Corresponde') {
         if (!abMap[a.abogadoId]) {
           abMap[a.abogadoId] = {
             model: a.abogado || {

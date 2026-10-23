@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { AppSidebar } from '@/components/app-sidebar'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useMe } from '@/lib/use-me'
 import { toast } from 'sonner'
 import {
     Scale, Menu, Plus, RefreshCw,
-    Layers, User, ArrowRight
+    Layers, User, ArrowRight, Search, X
 } from 'lucide-react'
 
 interface AbogadoData {
@@ -35,6 +36,7 @@ interface RecienteData {
     esMayor500: boolean
     criterio: string
     asignadoEn: string
+    noCorresponde?: boolean
 }
 
 interface TableroData {
@@ -63,6 +65,7 @@ export default function AsignacionApelacionesPage() {
     const [loadingData, setLoadingData] = useState(true)
     const [tablero, setTablero] = useState<TableroData | null>(null)
     const [abogadoSeleccionado, setAbogadoSeleccionado] = useState<string | null>(null)
+    const [busquedaExpediente, setBusquedaExpediente] = useState('')
 
     // Opciones visuales
     const [verPromedio, setVerPromedio] = useState(true)
@@ -154,9 +157,37 @@ export default function AsignacionApelacionesPage() {
     // Historial filtrable
     const historialFiltrado = useMemo(() => {
         if (!tablero?.recientes) return []
-        if (!abogadoSeleccionado) return tablero.recientes
-        return tablero.recientes.filter(r => r.abogadoId === abogadoSeleccionado)
-    }, [tablero?.recientes, abogadoSeleccionado])
+        const texto = busquedaExpediente.trim().toLowerCase()
+        return tablero.recientes.filter(r =>
+            (!abogadoSeleccionado || r.abogadoId === abogadoSeleccionado) &&
+            (!texto || (r.numeroExpediente || '').toLowerCase().includes(texto))
+        )
+    }, [tablero?.recientes, abogadoSeleccionado, busquedaExpediente])
+
+    // Abogadas disponibles para el filtro (incluye las que solo tienen casos vinculados)
+    const opcionesAbogadas = useMemo(() => {
+        const mapa = new Map<string, string>()
+        tablero?.abogados?.forEach(a => mapa.set(a.abogado.id, a.abogado.nombre))
+        tablero?.recientes?.forEach(r => { if (!mapa.has(r.abogadoId)) mapa.set(r.abogadoId, r.abogadoNombre) })
+        return Array.from(mapa, ([id, nombre]) => ({ id, nombre }))
+    }, [tablero?.abogados, tablero?.recientes])
+
+    const nombreAbogadaFiltro = opcionesAbogadas.find(a => a.id === abogadoSeleccionado)?.nombre
+    const hayFiltros = !!abogadoSeleccionado || busquedaExpediente.trim() !== ''
+
+    const resaltar = (valor: string) => {
+        const texto = busquedaExpediente.trim()
+        if (!texto || !valor) return valor
+        const i = valor.toLowerCase().indexOf(texto.toLowerCase())
+        if (i < 0) return valor
+        return (
+            <>
+                {valor.slice(0, i)}
+                <mark className="bg-yellow-200 text-inherit rounded-sm px-0.5">{valor.slice(i, i + texto.length)}</mark>
+                {valor.slice(i + texto.length)}
+            </>
+        )
+    }
 
     // Estadísticas para las columnas
     const maxCasosCol = Math.max(...(tablero?.abogados?.map(a => a.total) || [1]), 1)
@@ -528,22 +559,13 @@ export default function AsignacionApelacionesPage() {
                             {/* HISTORIAL OFICIAL DE ASIGNACIONES (Solo visible para Registrador y Administrador) */}
                             {!esAbogadoApelaciones && (
                                 <div className="pt-2">
-                                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-3">
+                                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-2">
                                         <div>
                                             <h2 className="text-base font-extrabold tracking-tight text-slate-900">
                                                 Historial Oficial de Asignaciones (Nueva Modalidad)
                                             </h2>
                                             <p className="text-xs text-slate-500">
-                                                {abogadoSeleccionado ? (
-                                                    <>
-                                                        Filtrado por: <strong className="text-slate-800">{tablero.abogados.find(a => a.abogado.id === abogadoSeleccionado)?.abogado.nombre}</strong> ·{' '}
-                                                        <button onClick={() => setAbogadoSeleccionado(null)} className="text-blue-600 hover:underline font-semibold">
-                                                            Quitar filtro
-                                                        </button>
-                                                    </>
-                                                ) : (
-                                                    'Haz clic en la tarjeta de cualquier abogada para filtrar sus expedientes asignados.'
-                                                )}
+                                                Filtra por expediente o abogada (también puedes hacer clic en su tarjeta).
                                             </p>
                                         </div>
 
@@ -557,6 +579,60 @@ export default function AsignacionApelacionesPage() {
                                             <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
                                             <span>Refrescar datos</span>
                                         </Button>
+                                    </div>
+
+                                    {/* Barra de filtros del historial */}
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 mb-2 bg-slate-50 border border-slate-200 rounded-lg">
+                                        <div className="relative flex-1 min-w-0">
+                                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                                            <Input
+                                                value={busquedaExpediente}
+                                                onChange={(e) => setBusquedaExpediente(e.target.value)}
+                                                placeholder="Buscar expediente: UPEAREQUIPA2026…"
+                                                className="pl-8 h-9 text-xs bg-white"
+                                                aria-label="Buscar por número de expediente"
+                                            />
+                                        </div>
+                                        <select
+                                            value={abogadoSeleccionado ?? ''}
+                                            onChange={(e) => setAbogadoSeleccionado(e.target.value || null)}
+                                            className="h-9 sm:w-56 rounded-md border border-slate-200 bg-white px-2.5 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                                            aria-label="Filtrar por abogada"
+                                        >
+                                            <option value="">Todas las abogadas</option>
+                                            {opcionesAbogadas.map(a => (
+                                                <option key={a.id} value={a.id}>{a.nombre}</option>
+                                            ))}
+                                        </select>
+                                        {hayFiltros && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => { setBusquedaExpediente(''); setAbogadoSeleccionado(null) }}
+                                                className="h-9 text-xs gap-1 text-slate-600"
+                                            >
+                                                <X className="h-3.5 w-3.5" /> Limpiar
+                                            </Button>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-1.5 mb-3 text-xs text-slate-500">
+                                        <span>Mostrando <strong className="text-slate-800">{historialFiltrado.length}</strong> de {tablero.recientes?.length ?? 0}</span>
+                                        {abogadoSeleccionado && (
+                                            <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 text-blue-700 px-2 py-0.5 font-semibold">
+                                                Abogada: {nombreAbogadaFiltro}
+                                                <button onClick={() => setAbogadoSeleccionado(null)} aria-label="Quitar filtro de abogada" className="hover:text-blue-900">
+                                                    <X className="h-3 w-3" />
+                                                </button>
+                                            </span>
+                                        )}
+                                        {busquedaExpediente.trim() && (
+                                            <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 text-blue-700 px-2 py-0.5 font-semibold">
+                                                Expediente: “{busquedaExpediente.trim()}”
+                                                <button onClick={() => setBusquedaExpediente('')} aria-label="Quitar búsqueda de expediente" className="hover:text-blue-900">
+                                                    <X className="h-3 w-3" />
+                                                </button>
+                                            </span>
+                                        )}
                                     </div>
 
                                     <Card className="border-slate-200 overflow-hidden shadow-xs">
@@ -578,7 +654,9 @@ export default function AsignacionApelacionesPage() {
                                                     {historialFiltrado.length === 0 ? (
                                                         <tr>
                                                             <td colSpan={8} className="py-8 text-center text-slate-400">
-                                                                Aún no existen registros en la nueva modalidad.
+                                                                {hayFiltros && (tablero.recientes?.length ?? 0) > 0
+                                                                    ? 'Ningún expediente coincide con los filtros.'
+                                                                    : 'Aún no existen registros en la nueva modalidad.'}
                                                             </td>
                                                         </tr>
                                                     ) : (
@@ -601,7 +679,7 @@ export default function AsignacionApelacionesPage() {
                                                                         #{r.secuencia}
                                                                     </td>
                                                                     <td className="py-2.5 px-3 font-medium text-slate-900">
-                                                                        {r.numeroExpediente || `EXP-${r.secuencia}`}
+                                                                        {r.numeroExpediente ? resaltar(r.numeroExpediente) : `EXP-${r.secuencia}`}
                                                                     </td>
                                                                     <td className="py-2.5 px-3">
                                                                         <div className="flex items-center gap-1.5">
@@ -625,6 +703,11 @@ export default function AsignacionApelacionesPage() {
                                                                     </td>
                                                                     <td className="py-2.5 px-3 text-slate-600">
                                                                         {r.criterio}
+                                                                        {r.noCorresponde && (
+                                                                            <span className="ml-2 inline-block rounded-md bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-600" title="Estado No Corresponde: no se contabiliza para la abogada">
+                                                                                No corresponde · no cuenta
+                                                                            </span>
+                                                                        )}
                                                                     </td>
                                                                     <td className="py-2.5 px-3 text-slate-400">
                                                                         {fechaFmt}

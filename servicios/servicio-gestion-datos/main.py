@@ -13,6 +13,9 @@ from infrastructure.api.router_upe import router as router_upe
 
 Base.metadata.create_all(bind=engine)
 
+from infrastructure.db.car_schema_upgrade import asegurar_columnas_indicadores
+asegurar_columnas_indicadores(engine)
+
 app = FastAPI(
     title="Servicio Gestión de Datos — DGNNA",
     description="Microservicio de catálogo de datasets y suite analítica DSLD/CAR/DA/DPE",

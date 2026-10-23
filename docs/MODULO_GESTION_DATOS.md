@@ -119,3 +119,27 @@ Todas las bandejas cuentan con un botón de **Exportación a Excel (`.xlsx`)** i
 
 * **Acceso por Perfil:** Protegido mediante middleware de sesión (`useMe`) y tokens JWT con algoritmo `HS256`.
 * **Sincronización:** Los endpoints están mapeados en el API Gateway (`:8000`) y resueltos por el microservicio `gestion-datos-service` (`:8014`).
+
+## Situación CAR (DPNNA) — Indicadores priorizados PP0117 (oct-2026)
+
+Pestaña **Resumen general**, al final: cuadros de los indicadores 4397 y 4398 (CAR Básico y Especializado, INABIF).
+
+- Endpoint: `GET /api/gestion-datos/dpnna/indicadores-priorizados` (servicio-gestion-datos, `domain/services/car_indicadores.py`).
+- Junio–Agosto 2026 provienen del *Reporte de seguimiento mensual a indicadores priorizados PP0117* (constante `HISTORICO_OFICIAL`). Desde el siguiente corte cargado (EDNE CAR BÁSICO / EDNE CAR ESP) se calculan automáticamente. Se muestran los últimos 4 meses.
+- Nuevas columnas en `CAR_NNA_CORTES` (se crean al arrancar el servicio o con `infrastructure/db/car_01_indicadores_priorizados.sql`): `res_eva_tem`, `nna_prom`, `nna_est`, `tip_act_soc_1`, `tip_act_soc_2`, `fec_apr_est`, `pti_consensuado`, `plan_vida_ind`, `fec_vid_ind`, `por_cum_met`, `rango_6_meses`.
+- Cortes cargados antes de esta versión: `POST /api/gestion-datos/dpnna/indicadores-priorizados/reprocesar` (lee la capa RAW).
+
+| Indicador | Numerador | Denominador |
+|---|---|---|
+| Taller psicológico | `RES_EVA_TEM` = En proceso / Logrado | Activos 6–17 años |
+| Promovidos | `NNA_PROM` = SI | Activos 6–17 años |
+| Actividad social | `TIP_ACT_SOC_1` o `TIP_ACT_SOC_2` con dato | Activos 6–17 años |
+| Estrategia | `FEC_APR_EST` con fecha | Activos 6–17 años |
+| PTI | `PTI_CONSENSUADO2` = SÍ | Activos hasta 18 años |
+| Matriculados | `NNA_EST` = SI | Activos 14–18 años con `rango 6`/`Rango2` = R2 (>6 meses) |
+| Promovidos adolescentes | `NNA_PROM` = SI | ídem |
+| PVI oportuno | Ingreso en el año del corte: `FEC_VID_IND` − `FEC_ING` ≤ 90 días; ingreso anterior: `FEC_VID_IND` ≤ 31-mar del año | ídem |
+| Metas PVI ≥ 60% | `POR_CUM_MET` ≥ 60 | ídem |
+
+Semáforo (último mes vs. anterior): sube > 1 p.p. verde, baja > 1 p.p. rojo, otro caso ámbar (`UMBRAL_ESTABLE_PP`).
+Las fechas en texto del RENE se leen como dd/mm/aaaa.

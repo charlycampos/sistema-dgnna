@@ -30,6 +30,8 @@ from infrastructure.db.models import (
     CarNnaCorteModel,
 )
 
+from domain.services.car_indicadores import extraer_variables_indicadores, fecha_flexible
+
 logger = logging.getLogger("car_etl")
 
 
@@ -48,6 +50,9 @@ def _parse_date(val):
         return val.date()
     if isinstance(val, date):
         return val
+    if isinstance(val, str):
+        # Texto del RENE en formato dd/mm/aaaa o ISO; evita leer 05/04 como 4-may.
+        return fecha_flexible(val)
     try:
         dt = pd.to_datetime(val, errors="coerce")
         if pd.notna(dt):
@@ -335,7 +340,8 @@ def importar_nna_car(filepath: str, tipo_car: str, periodo_corte: str, db: Sessi
             movimientoPoblacional=mov_pob,
             fechaEgreso=fec_egreso,
             motivoEgreso=motivo_egreso,
-            especificarTraslado=traslado
+            especificarTraslado=traslado,
+            **extraer_variables_indicadores(lambda *c: get_col(row, *c)),
         )
         cortes.append(corte_nna)
 

@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bandeja de Seguimiento y Cumplimiento de Metas MEF 2026 · PP 0117</title>
+  <style>
+    /* ═════════════════════════════════════════════════════════════════
+       ESTILOS PUROS AUTOCONTENIDOS (SIN DEPENDER DE CDN NI INTERNET)
+       ═════════════════════════════════════════════════════════════════ */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+    .font-mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    /* Topbar */
+    .topbar {
+      background-color: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 14px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .topbar-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .breadcrumb {
+      font-size: 11px;
+      color: #64748b;
+      margin-bottom: 3px;
+    }
+    .breadcrumb span {
+      margin: 0 4px;
+    }
+    .page-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .badge-pill {
+      background-color: #e0f2fe;
+      color: #0369a1;
+      padding: 2px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* Botones Topbar */
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      border: 1px solid transparent;
+    }
+    .btn-secondary {
+      background-color: #ffffff;
+      border-color: #cbd5e1;
+      color: #334155;
+    }
+    .btn-secondary:hover {
+      background-color: #f1f5f9;
+      border-color: #94a3b8;
+    }
+    .btn-primary {
+      background-color: #1d4ed8;
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background-color: #1e40af;
+    }
+
+    /* Container Principal */
+    .container {
+      max-width: 1400px;
+      margin: 20px auto;
+      padding: 0 20px 40px 20px;
+    }
+
+    /* Tarjetas KPI Superiores */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .kpi-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #64748b;
+    }
+    .kpi-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.1;
+      margin: 4px 0 2px 0;
+    }
+    .kpi-sub {
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .kpi-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    /* Contenedor Panel */
+    .panel {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      overflow: hidden;
+    }
+
+    /* Barra de Pestañas */
+    .panel-header {
+      background-color: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 8px 16px 0 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .tabs-nav {
+      display: flex;
+      gap: 4px;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 10px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-top-left-radius: 6px;
+      border-top-right-radius: 6px;
+      transition: all 0.15s ease;
+    }
+    .tab-btn:hover {
+      color: #0f172a;
+      background-color: #f8fafc;
+    }
+    .tab-btn.active {
+      color: #1d4ed8;
+      border-bottom: 2px solid #1d4ed8;
+      background-color: #eff6ff;
+      font-weight: 700;
+    }
+
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: #475569;
+      padding-bottom: 8px;
+    }
+    .select-filter {
+      padding: 5px 8px;
+      font-size: 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background-color: #f8fafc;
+      color: #1e293b;
+      font-weight: 600;
+      outline: none;
+    }
+
+    /* Selector Horizontal de Meses */
+    .months-strip {
+      background-color: #f1f5f9;
+      padding: 6px;
+      border-radius: 8px;
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      margin: 16px;
+      border: 1px solid #e2e8f0;
+    }
+    .month-pill {
+      flex: 1;
+      min-width: 60px;
+      text-align: center;
+      padding: 7px 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      background: none;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .month-pill:hover {
+      background-color: #ffffff;
+      color: #0f172a;
+    }
+    .month-pill.active {
+      background-color: #1e3a8a;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    }
+
+    /* Tabla */
+    .table-container {
+      margin: 0 16px 16px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 12px;
+    }
+    thead th {
+      background-color: #f8fafc;
+      color: #475569;
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      padding: 10px 12px;
+      border-bottom: 1px solid #cbd5e1;
+      white-space: nowrap;
+    }
+    tbody tr {
+      border-bottom: 1px solid #f1f5f9;
+      transition: background-color 0.1s ease;
+    }
+    tbody tr:hover {
+      background-color: #f8fafc;
+    }
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+    tbody td {
+      padding: 10px 12px;
+      vertical-align: middle;
+    }
+
+    /* Semáforos y Badges */
+    .semaphore-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      font-weight: 700;
+      font-size: 11px;
+      font-family: ui-monospace, monospace;
+    }
+    .sem-verde {
+      background-color: #dcfce7;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+    .sem-ambar {
+      background-color: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+    .sem-rojo {
+      background-color: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+    .sem-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .dot-verde { background-color: #16a34a; }
+    .dot-ambar { background-color: #d97706; }
+    .dot-rojo { background-color: #dc2626; }
+
+    .tag-product {
+      font-size: 11px;
+      font-weight: 600;
+      color: #334155;
+    }
+    .tag-detail {
+      display: block;
+      font-size: 10px;
+      color: #64748b;
+      font-weight: 400;
+      margin-top: 1px;
+    }
+
+    /* Acciones */
+    .btn-action-primary {
+      background-color: #2563eb;
+      color: #ffffff;
+      padding: 4px 9px;
+      border-radius: 5px;
+      font-size: 10px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-action-primary:hover {
+      background-color: #1d4ed8;
+    }
+    .btn-action-ghost {
+      background-color: #f1f5f9;
+      color: #475569;
+      padding: 4px 9px;
+      border-radius: 5px;
+      font-size: 10px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-action-ghost:hover {
+      background-color: #e2e8f0;
+      color: #0f172a;
+    }
+
+    /* Heatmap Grid */
+    .heatmap-cell {
+      padding: 8px 4px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 11px;
+      font-family: ui-monospace, monospace;
+    }
+    .hm-green { background-color: #dcfce7; color: #166534; }
+    .hm-green-strong { background-color: #22c55e; color: #ffffff; }
+    .hm-amber { background-color: #fef3c7; color: #92400e; }
+    .hm-red { background-color: #fee2e2; color: #991b1b; }
+    .hm-empty { background-color: #ffffff; color: #cbd5e1; font-weight: 400; }
+    .hm-active-month {
+      border-left: 2px solid #2563eb;
+      border-right: 2px solid #2563eb;
+    }
+
+    .table-footer {
+      padding: 8px 16px 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #64748b;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    /* Helper Ocultar */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div>
+        <div class="breadcrumb">
+          PP 0117 <span>&rsaquo;</span> Seguimiento Físico <span>&rsaquo;</span> <strong>Bandeja de Metas MEF</strong>
+        </div>
+        <div class="page-title">
+          <span>Matriz de Seguimiento Mensual de Metas Físicas MEF · 2026</span>
+          <span class="badge-pill">10 Indicadores Priorizados</span>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-secondary">
+          <span>📊</span> Exportar a Excel
+        </button>
+        <button class="btn btn-primary">
+          <span>📄</span> Generar Informe MEF (PDF)
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTAINER -->
+  <main class="container">
+
+    <!-- 4 KPI CARDS CONSOLIDADAS DEL MES SELECCIONADO -->
+    <div class="kpi-grid">
+      <!-- KPI 1 -->
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-title">Eficacia Global del Mes</div>
+          <div class="kpi-value font-mono">66.4%</div>
+          <div class="kpi-sub" style="color: #b45309;">⚠️ Desempeño Parcial (Setiembre)</div>
+        </div>
+        <div class="kpi-icon" style="background-color: #eff6ff; color: #1d4ed8; border: 1px solid #dbeafe;">🎯</div>
+      </div>
+
+      <!-- KPI 2 -->
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-title" style="color: #15803d;">Metas Cumplidas</div>
+          <div class="kpi-value font-mono" style="color: #15803d;">1 <span style="font-size: 13px; color: #94a3b8; font-weight: 500;">/ 10</span></div>
+          <div class="kpi-sub" style="color: #16a34a;">Indicador 4390 (PIAS 55.98%)</div>
+        </div>
+        <div class="kpi-icon" style="background-color: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7;">✓</div>
+      </div>
+
+      <!-- KPI 3 -->
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-title" style="color: #b45309;">En Alerta / En Trámite</div>
+          <div class="kpi-value font-mono" style="color: #b45309;">2 <span style="font-size: 13px; color: #94a3b8; font-weight: 500;">/ 10</span></div>
+          <div class="kpi-sub" style="color: #b45309;">4399 (Adopción) · 5138 (Post-Adopción)</div>
+        </div>
+        <div class="kpi-icon" style="background-color: #fffbeb; color: #d97706; border: 1px solid #fef3c7;">!</div>
+      </div>
+
+      <!-- KPI 4 -->
+      <div class="kpi-card">
+        <div>
+          <div class="kpi-title" style="color: #b91c1c;">Pendientes de Registro</div>
+          <div class="kpi-value font-mono" style="color: #b91c1c;">7 <span style="font-size: 13px; color: #94a3b8; font-weight: 500;">/ 10</span></div>
+          <div class="kpi-sub" style="color: #64748b;">Cierres semestrales / anuales</div>
+        </div>
+        <div class="kpi-icon" style="background-color: #fef2f2; color: #dc2626; border: 1px solid #fee2e2;">⏳</div>
+      </div>
+    </div>
+
+    <!-- PANEL PRINCIPAL CON PESTAÑAS -->
+    <div class="panel">
+      
+      <!-- HEADER CON SELECTOR DE VISTA -->
+      <div class="panel-header">
+        <div class="tabs-nav">
+          <button onclick="switchView('corte')" id="tab-corte" class="tab-btn active">
+            <span>📋</span> Vista 1: Bandeja del Corte Mensual
+          </button>
+          <button onclick="switchView('matriz')" id="tab-matriz" class="tab-btn">
+            <span>🗓️</span> Vista 2: Matriz Anual Dinámica (Heatmap Ene &rarr; Dic)
+          </button>
+        </div>
+
+        <div class="filter-bar">
+          <span>Filtrar Semáforo:</span>
+          <select id="filtroSemaforo" onchange="filterRows()" class="select-filter">
+            <option value="todos">Todos los Estados (10)</option>
+            <option value="verde">🟢 Cumple Meta MEF (&ge; 100%)</option>
+            <option value="ambar">🟠 En Alerta (50% - 99%)</option>
+            <option value="rojo">🔴 Crítico / Pendiente (&lt; 50%)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ═════════════════════════════════════════════════════════════ -->
+      <!-- VISTA 1: BANDEJA MENSUAL DETALLADA (CORTE SELECCIONADO)      -->
+      <!-- ═════════════════════════════════════════════════════════════ -->
+      <div id="view-corte">
+        
+        <!-- SELECTOR DE 12 MESES -->
+        <div class="months-strip">
+          <button onclick="selectMonth('Ene', this)" class="month-pill">Ene</button>
+          <button onclick="selectMonth('Feb', this)" class="month-pill">Feb</button>
+          <button onclick="selectMonth('Mar', this)" class="month-pill">Mar</button>
+          <button onclick="selectMonth('Abr', this)" class="month-pill">Abr</button>
+          <button onclick="selectMonth('May', this)" class="month-pill">May</button>
+          <button onclick="selectMonth('Jun', this)" class="month-pill">Jun</button>
+          <button onclick="selectMonth('Jul', this)" class="month-pill">Jul</button>
+          <button onclick="selectMonth('Ago', this)" class="month-pill">Ago</button>
+          <button onclick="selectMonth('Set', this)" class="month-pill active">Set 2026</button>
+          <button onclick="selectMonth('Oct', this)" class="month-pill">Oct</button>
+          <button onclick="selectMonth('Nov', this)" class="month-pill">Nov</button>
+          <button onclick="selectMonth('Dic', this)" class="month-pill">Dic</button>
+        </div>
+
+        <!-- TABLA DE INDICADORES -->
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 55px;">Cód.</th>
+                <th>Indicador Priorizado PP 0117</th>
+                <th>Producto / Servicio</th>
+                <th style="text-align: right;">Numerador</th>
+                <th style="text-align: right;">Denominador</th>
+                <th style="text-align: right; background-color: #f1f5f9; color: #0f172a;">Avance Logrado</th>
+                <th style="text-align: right;">Meta MEF (Mes)</th>
+                <th style="text-align: right;">Meta Anual</th>
+                <th style="text-align: center; width: 140px;">Semáforo / Eficacia</th>
+                <th style="text-align: center; width: 100px;">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tablaIndicadores">
+              
+              <!-- 4390 -->
+              <tr data-status="verde">
+                <td class="font-mono" style="font-weight: 700; color: #1e3a8a;">4390</td>
+                <td>
+                  <strong>% NNA que reciben al menos 3 sesiones de autoprotección</strong>
+                  <span class="tag-detail">Plataformas Itinerantes de Acción Social (PIAS)</span>
+                </td>
+                <td>
+                  <span class="tag-product">DGNNA · PIAS</span>
+                  <span class="tag-detail">Población rural dispersa</span>
+                </td>
+                <td style="text-align: right;" class="font-mono" style="color: #15803d; font-weight: 700;"><strong>6,208</strong></td>
+                <td style="text-align: right;" class="font-mono">11,089</td>
+                <td style="text-align: right; background-color: #f8fafc; font-weight: 800; color: #1e3a8a;" class="font-mono">55.98%</td>
+                <td style="text-align: right; font-weight: 700;" class="font-mono">46.10%</td>
+                <td style="text-align: right; color: #64748b;" class="font-mono">40.00%</td>
+                <td style="text-align: center;">
+                  <span class="semaphore-pill sem-verde">
+                    <span class="sem-dot dot-verde"></span> 121.4%
+                  </span>
+                  <span style="display: block; font-size: 9px; color: #15803d; font-weight: 600; margin-top: 2px;">
+                    Supera Meta (+9.88 pp)
+                  </span>
+                </td>
+                <td style="text-align: center;">
+                  <a href="/poi-pp117/seguimiento/dashboard" class="btn-action-primary">Ver Analítica &rarr;</a>
+                </td>
+              </tr>
+
+              <!-- 4391 -->
+              <tr data-status="rojo">
+                <td class="font-mono" style="font-weight: 700; color: #475569;">4391</td>
+                <td>
+                  <strong>% NNA facilitados para acceso a servicios del Estado</strong>
+                  <span class="tag-detail">Identificación, salud y educación</span>
+                </td>
+                <td>
+                  <span class="tag-product">DGNNA · PIAS</span>
+                  <span class="tag-detail">Articulación multisectorial</span>
+                </td>
+                <td style="text-align: right; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; background-color: #f8fafc; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; font-weight: 700;" class="font-mono">3.50%</td>
+                <td style="text-align: right; color: #64748b;" class="font-mono">1.46%</td>
+                <td style="text-align: center;">
+                  <span class="semaphore-pill sem-rojo">
+                    <span class="sem-dot dot-rojo"></span> 0.0%
+                  </span>
+                  <span style="display: block; font-size: 9px; color: #94a3b8; margin-top: 2px;">Sin datos</span>
+                </td>
+                <td style="text-align: center;">
+                  <a href="/poi-pp117/seguimiento/carga?indicador=4391" class="btn-action-ghost">Cargar</a>
+                </td>
+              </tr>
+
+              <!-- 4392 -->
+              <tr data-status="rojo">
+                <td class="font-mono" style="font-weight: 700; color: #475569;">4392</td>
+                <td>
+                  <strong>% NNA con medidas de protección aplicadas oportunamente</strong>
+                  <span class="tag-detail">Unidades de Protección Especial</span>
+                </td>
+                <td>
+                  <span class="tag-product">DPE · UPE</span>
+                  <span class="tag-detail">Desprotección familiar</span>
+                </td>
+                <td style="text-align: right; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; background-color: #f8fafc; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; font-weight: 700;" class="font-mono">6.80%</td>
+                <td style="text-align: right; color: #64748b;" class="font-mono">49.08%</td>
+                <td style="text-align: center;">
+                  <span class="semaphore-pill sem-rojo">
+                    <span class="sem-dot dot-rojo"></span> 0.0%
+                  </span>
+                  <span style="display: block; font-size: 9px; color: #94a3b8; margin-top: 2px;">Sin datos</span>
+                </td>
+                <td style="text-align: center;">
+                  <a href="/poi-pp117/seguimiento/carga?indicador=4392" class="btn-action-ghost">Cargar</a>
+                </td>
+              </tr>
+
+              <!-- 4393 -->
+              <tr data-status="rojo">
+                <td class="font-mono" style="font-weight: 700; color: #475569;">4393</td>
+                <td>
+                  <strong>% DEMUNA que inician procedimiento por riesgo oportunamente</strong>
+                  <span class="tag-detail">Supervisión e inspección DSLD</span>
+                </td>
+                <td>
+                  <span class="tag-product">DSLD · DEMUNA</span>
+                  <span class="tag-detail">Acreditación municipal</span>
+                </td>
+                <td style="text-align: right; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; background-color: #f8fafc; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; font-weight: 700;" class="font-mono">58.00%</td>
+                <td style="text-align: right; color: #64748b;" class="font-mono">64.00%</td>
+                <td style="text-align: center;">
+                  <span class="semaphore-pill sem-rojo">
+                    <span class="sem-dot dot-rojo"></span> 0.0%
+                  </span>
+                  <span style="display: block; font-size: 9px; color: #94a3b8; margin-top: 2px;">Corte trimestral</span>
+                </td>
+                <td style="text-align: center;">
+                  <a href="/poi-pp117/seguimiento/carga?indicador=4393" class="btn-action-ghost">Cargar</a>
+                </td>
+              </tr>
+
+              <!-- 4395 -->
+              <tr data-status="rojo">
+                <td class="font-mono" style="font-weight: 700; color: #475569;">4395</td>
+                <td>
+                  <strong>% NNA con acogimiento en Familia Acogedora</strong>
+                  <span class="tag-detail">Protección no institucional</span>
+                </td>
+                <td>
+                  <span class="tag-product">DPE · Familias</span>
+                  <span class="tag-detail">Banco de familias</span>
+                </td>
+                <td style="text-align: right; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; background-color: #f8fafc; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; font-weight: 700;" class="font-mono">39.40%</td>
+                <td style="text-align: right; color: #64748b;" class="font-mono">77.64%</td>
+                <td style="text-align: center;">
+                  <span class="semaphore-pill sem-rojo">
+                    <span class="sem-dot dot-rojo"></span> 0.0%
+                  </span>
+                  <span style="display: block; font-size: 9px; color: #94a3b8; margin-top: 2px;">Corte semestral</span>
+                </td>
+                <td style="text-align: center;">
+                  <a href="/poi-pp117/seguimiento/carga?indicador=4395" class="btn-action-ghost">Cargar</a>
+                </td>
+              </tr>
+
+              <!-- 4397 -->
+              <tr data-status="rojo">
+                <td class="font-mono" style="font-weight: 700; color: #475569;">4397</td>
+                <td>
+                  <strong>% NNA en CAR con capacidades fortalecidas</strong>
+                  <span class="tag-detail">Centros de Acogida Residencial</span>
+                </td>
+                <td>
+                  <span class="tag-product">INABIF · CAR</span>
+                  <span class="tag-detail">Población residente</span>
+                </td>
+                <td style="text-align: right; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; background-color: #f8fafc; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; font-weight: 700;" class="font-mono">58.50%</td>
+                <td style="text-align: right; color: #64748b;" class="font-mono">80.13%</td>
+                <td style="text-align: center;">
+                  <span class="semaphore-pill sem-rojo">
+                    <span class="sem-dot dot-rojo"></span> 0.0%
+                  </span>
+                  <span style="display: block; font-size: 9px; color: #94a3b8; margin-top: 2px;">Corte INABIF</span>
+                </td>
+                <td style="text-align: center;">
+                  <a href="/poi-pp117/seguimiento/carga?indicador=4397" class="btn-action-ghost">Cargar</a>
+                </td>
+              </tr>
+
+              <!-- 4398 -->
+              <tr data-status="rojo">
+                <td class="font-mono" style="font-weight: 700; color: #475569;">4398</td>
+                <td>
+                  <strong>% Adolescentes en CAR preparados para vida independiente</strong>
+                  <span class="tag-detail">Egreso y autonomía personal</span>
+                </td>
+                <td>
+                  <span class="tag-product">INABIF · CAR</span>
+                  <span class="tag-detail">Adolescentes 16-17 años</span>
+                </td>
+                <td style="text-align: right; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; background-color: #f8fafc; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; font-weight: 700;" class="font-mono">25.00%</td>
+                <td style="text-align: right; color: #64748b;" class="font-mono">62.30%</td>
+                <td style="text-align: center;">
+                  <span class="semaphore-pill sem-rojo">
+                    <span class="sem-dot dot-rojo"></span> 0.0%
+                  </span>
+                  <span style="display: block; font-size: 9px; color: #94a3b8; margin-top: 2px;">Corte INABIF</span>
+                </td>
+                <td style="text-align: center;">
+                  <a href="/poi-pp117/seguimiento/carga?indicador=4398" class="btn-action-ghost">Cargar</a>
+                </td>
+              </tr>
+
+              <!-- 4399 -->
+              <tr data-status="ambar">
+                <td class="font-mono" style="font-weight: 700; color: #1e3a8a;">4399</td>
+                <td>
+                  <strong>% NNA con adopción que logran ubicación familiar</strong>
+                  <span class="tag-detail">Dirección General de Adopciones</span>
+                </td>
+                <td>
+                  <span class="tag-product">DGA · Adopciones</span>
+                  <span class="tag-detail">Colocación definitiva</span>
+                </td>
+                <td style="text-align: right;" class="font-mono"><strong>54</strong></td>
+                <td style="text-align: right;" class="font-mono">1,000</td>
+                <td style="text-align: right; background-color: #f8fafc; font-weight: 700; color: #1e3a8a;" class="font-mono">5.40%</td>
+                <td style="text-align: right; font-weight: 700;" class="font-mono">12.50%</td>
+                <td style="text-align: right; color: #64748b;" class="font-mono">12.50%</td>
+                <td style="text-align: center;">
+                  <span class="semaphore-pill sem-ambar">
+                    <span class="sem-dot dot-ambar"></span> 43.2%
+                  </span>
+                  <span style="display: block; font-size: 9px; color: #b45309; margin-top: 2px;">En proceso</span>
+                </td>
+                <td style="text-align: center;">
+                  <a href="/poi-pp117/seguimiento/carga?indicador=4399" class="btn-action-ghost">Cargar</a>
+                </td>
+              </tr>
+
+              <!-- 5138 -->
+              <tr data-status="ambar">
+                <td class="font-mono" style="font-weight: 700; color: #1e3a8a;">5138</td>
+                <td>
+                  <strong>% NNA con seguimiento post adoptivo favorable</strong>
+                  <span class="tag-detail">Acompañamiento a 3 años de adopción</span>
+                </td>
+                <td>
+                  <span class="tag-product">DGA · Adopciones</span>
+                  <span class="tag-detail">Bienestar familiar</span>
+                </td>
+                <td style="text-align: right;" class="font-mono"><strong>280</strong></td>
+                <td style="text-align: right;" class="font-mono">1,000</td>
+                <td style="text-align: right; background-color: #f8fafc; font-weight: 700; color: #1e3a8a;" class="font-mono">28.00%</td>
+                <td style="text-align: right; font-weight: 700;" class="font-mono">89.30%</td>
+                <td style="text-align: right; color: #64748b;" class="font-mono">89.30%</td>
+                <td style="text-align: center;">
+                  <span class="semaphore-pill sem-ambar">
+                    <span class="sem-dot dot-ambar"></span> 31.4%
+                  </span>
+                  <span style="display: block; font-size: 9px; color: #b45309; margin-top: 2px;">En trámite</span>
+                </td>
+                <td style="text-align: center;">
+                  <a href="/poi-pp117/seguimiento/carga?indicador=5138" class="btn-action-ghost">Cargar</a>
+                </td>
+              </tr>
+
+              <!-- 5139 -->
+              <tr data-status="rojo">
+                <td class="font-mono" style="font-weight: 700; color: #475569;">5139</td>
+                <td>
+                  <strong>% NNA con restitución de derechos vulnerados</strong>
+                  <span class="tag-detail">Resultado final institucional</span>
+                </td>
+                <td>
+                  <span class="tag-product">DGNNA · Cierre</span>
+                  <span class="tag-detail">Impacto presupuestal</span>
+                </td>
+                <td style="text-align: right; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; background-color: #f8fafc; color: #94a3b8;" class="font-mono">-</td>
+                <td style="text-align: right; font-weight: 700;" class="font-mono">4.50%</td>
+                <td style="text-align: right; color: #64748b;" class="font-mono">4.50%</td>
+                <td style="text-align: center;">
+                  <span class="semaphore-pill sem-rojo">
+                    <span class="sem-dot dot-rojo"></span> 0.0%
+                  </span>
+                  <span style="display: block; font-size: 9px; color: #94a3b8; margin-top: 2px;">Corte anual</span>
+                </td>
+                <td style="text-align: center;">
+                  <a href="/poi-pp117/seguimiento/carga?indicador=5139" class="btn-action-ghost">Cargar</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-footer">
+          <span>* El semáforo de eficacia se calcula dividiendo el <strong>% Logro / Meta MEF del mes</strong>.</span>
+          <span class="font-mono">Directiva MEF N° 002-2026 · Dirección General de Presupuesto Público</span>
+        </div>
+      </div>
+
+      <!-- ═════════════════════════════════════════════════════════════ -->
+      <!-- VISTA 2: MATRIZ ANUAL DINÁMICA (HEATMAP INTERACTIVO 12 MESES) -->
+      <!-- ═════════════════════════════════════════════════════════════ -->
+      <div id="view-matriz" class="hidden" style="padding: 16px;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 10px; flex-wrap: wrap;">
+          <p style="font-size: 11px; color: #475569; max-width: 800px; margin: 0;">
+            Esta matriz consolidada permite a la <strong>Dirección y al MEF</strong> auditar la evolución de los 10 indicadores mes a mes. Detecta rápidamente meses sin reporte, brechas y el camino hacia la meta de cierre anual.
+          </p>
+          <div style="display: flex; gap: 10px; font-size: 11px; font-weight: 600;">
+            <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 2px; background-color: #22c55e;"></span> &ge;100% Meta</span>
+            <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 2px; background-color: #facc15;"></span> 50-99% Alerta</span>
+            <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 2px; background-color: #fca5a5;"></span> &lt;50% Crítico</span>
+            <span style="display: flex; align-items: center; gap: 4px;"><span style="width: 10px; height: 10px; border-radius: 2px; background-color: #f1f5f9; border: 1px solid #cbd5e1;"></span> Sin corte</span>
+          </div>
+        </div>
+
+        <div class="table-container" style="margin: 0;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 55px;">Cód.</th>
+                <th style="width: 250px;">Indicador Priorizado</th>
+                <th style="text-align: center; width: 45px;">Ene</th>
+                <th style="text-align: center; width: 45px;">Feb</th>
+                <th style="text-align: center; width: 45px;">Mar</th>
+                <th style="text-align: center; width: 45px;">Abr</th>
+                <th style="text-align: center; width: 45px;">May</th>
+                <th style="text-align: center; width: 45px;">Jun</th>
+                <th style="text-align: center; width: 45px;">Jul</th>
+                <th style="text-align: center; width: 45px;">Ago</th>
+                <th style="text-align: center; width: 55px; background-color: #dbeafe; color: #1e3a8a; font-weight: 800;">Set</th>
+                <th style="text-align: center; width: 45px;">Oct</th>
+                <th style="text-align: center; width: 45px;">Nov</th>
+                <th style="text-align: center; width: 45px;">Dic</th>
+                <th style="text-align: center; width: 80px; background-color: #f1f5f9;">Meta Anual</th>
+              </tr>
+            </thead>
+            <tbody>
+              
+              <!-- 4390 -->
+              <tr>
+                <td class="font-mono" style="font-weight: 700; color: #1e3a8a; background-color: #f8fafc;">4390</td>
+                <td><strong>PIAS · Sesiones Autoprotección</strong></td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-amber">12%</td>
+                <td class="heatmap-cell hm-amber">28%</td>
+                <td class="heatmap-cell hm-amber">42%</td>
+                <td class="heatmap-cell hm-amber">65%</td>
+                <td class="heatmap-cell hm-amber">78%</td>
+                <td class="heatmap-cell hm-green">102%</td>
+                <td class="heatmap-cell hm-green">115%</td>
+                <td class="heatmap-cell hm-green-strong hm-active-month">121%</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell" style="background-color: #f8fafc; font-weight: 700; color: #0f172a;">40.0%</td>
+              </tr>
+
+              <!-- 4391 -->
+              <tr>
+                <td class="font-mono" style="font-weight: 700; color: #475569; background-color: #f8fafc;">4391</td>
+                <td><strong>PIAS · Facilitación de Acceso</strong></td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-red">0%</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-red hm-active-month">0%</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell" style="background-color: #f8fafc; font-weight: 700; color: #0f172a;">1.46%</td>
+              </tr>
+
+              <!-- 4392 -->
+              <tr>
+                <td class="font-mono" style="font-weight: 700; color: #475569; background-color: #f8fafc;">4392</td>
+                <td><strong>UPE · Medidas de Protección</strong></td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-red">0%</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-red">0%</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-red hm-active-month">0%</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell" style="background-color: #f8fafc; font-weight: 700; color: #0f172a;">49.08%</td>
+              </tr>
+
+              <!-- 4393 -->
+              <tr>
+                <td class="font-mono" style="font-weight: 700; color: #475569; background-color: #f8fafc;">4393</td>
+                <td><strong>DEMUNA · Procedimiento por Riesgo</strong></td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-red">0%</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-red">0%</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-red hm-active-month">0%</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell" style="background-color: #f8fafc; font-weight: 700; color: #0f172a;">64.0%</td>
+              </tr>
+
+              <!-- 4395 -->
+              <tr>
+                <td class="font-mono" style="font-weight: 700; color: #475569; background-color: #f8fafc;">4395</td>
+                <td><strong>DPE · Familias Acogedoras</strong></td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-red">0%</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-red hm-active-month">0%</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell" style="background-color: #f8fafc; font-weight: 700; color: #0f172a;">77.64%</td>
+              </tr>
+
+              <!-- 4397 -->
+              <tr>
+                <td class="font-mono" style="font-weight: 700; color: #475569; background-color: #f8fafc;">4397</td>
+                <td><strong>CAR · Capacidades Fortalecidas</strong></td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-red">0%</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-red hm-active-month">0%</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell" style="background-color: #f8fafc; font-weight: 700; color: #0f172a;">80.13%</td>
+              </tr>
+
+              <!-- 4398 -->
+              <tr>
+                <td class="font-mono" style="font-weight: 700; color: #475569; background-color: #f8fafc;">4398</td>
+                <td><strong>CAR · Vida Independiente</strong></td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-red">0%</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-red hm-active-month">0%</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell" style="background-color: #f8fafc; font-weight: 700; color: #0f172a;">62.30%</td>
+              </tr>
+
+              <!-- 4399 -->
+              <tr>
+                <td class="font-mono" style="font-weight: 700; color: #1e3a8a; background-color: #f8fafc;">4399</td>
+                <td><strong>Adopciones · Ubicación Familiar</strong></td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-amber">43%</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-amber">43%</td>
+                <td class="heatmap-cell hm-amber hm-active-month">43%</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell" style="background-color: #f8fafc; font-weight: 700; color: #0f172a;">12.50%</td>
+              </tr>
+
+              <!-- 5138 -->
+              <tr>
+                <td class="font-mono" style="font-weight: 700; color: #1e3a8a; background-color: #f8fafc;">5138</td>
+                <td><strong>Adopciones · Post Adoptivo</strong></td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-amber">31%</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-amber">31%</td>
+                <td class="heatmap-cell hm-amber hm-active-month">31%</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell" style="background-color: #f8fafc; font-weight: 700; color: #0f172a;">89.30%</td>
+              </tr>
+
+              <!-- 5139 -->
+              <tr>
+                <td class="font-mono" style="font-weight: 700; color: #475569; background-color: #f8fafc;">5139</td>
+                <td><strong>Restitución de Derechos</strong></td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-empty">-</td>
+                <td class="heatmap-cell hm-red hm-active-month">0%</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell hm-empty" style="color: #94a3b8; font-size: 10px;">prog.</td>
+                <td class="heatmap-cell" style="background-color: #f8fafc; font-weight: 700; color: #0f172a;">4.50%</td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    function switchView(view) {
+      const tabCorte = document.getElementById('tab-corte');
+      const tabMatriz = document.getElementById('tab-matriz');
+      const viewCorte = document.getElementById('view-corte');
+      const viewMatriz = document.getElementById('view-matriz');
+
+      if (view === 'corte') {
+        tabCorte.classList.add('active');
+        tabMatriz.classList.remove('active');
+        viewCorte.classList.remove('hidden');
+        viewMatriz.classList.add('hidden');
+      } else {
+        tabMatriz.classList.add('active');
+        tabCorte.classList.remove('active');
+        viewMatriz.classList.remove('hidden');
+        viewCorte.classList.add('hidden');
+      }
+    }
+
+    function selectMonth(mes, btn) {
+      document.querySelectorAll('.month-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function filterRows() {
+      const val = document.getElementById('filtroSemaforo').value;
+      const rows = document.querySelectorAll('#tablaIndicadores tr');
+      rows.forEach(r => {
+        const st = r.getAttribute('data-status');
+        if (val === 'todos' || val === st) {
+          r.style.display = '';
+        } else {
+          r.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

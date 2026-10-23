@@ -17,6 +17,10 @@ from infrastructure.db.models import (
     CarCargaModel,
     CarNnaCorteModel,
 )
+from domain.services.car_indicadores import (
+    calcular_indicadores_priorizados,
+    rellenar_desde_raw,
+)
 from domain.services.car_etl import (
     importar_car_centros,
     importar_nna_car,
@@ -235,6 +239,22 @@ def obtener_resumen_dpnna(
         },
         "metricasComunes": _metricas_comunes(nna_query),
     }
+
+
+@router.get("/indicadores-priorizados")
+def indicadores_priorizados(db: Session = Depends(get_db)):
+    """Indicadores complementarios PP0117 (4397 y 4398) por mes, CAR Básico y Especializado."""
+    return calcular_indicadores_priorizados(db)
+
+
+@router.post("/indicadores-priorizados/reprocesar")
+def reprocesar_variables_indicadores(cargaId: Optional[int] = None, db: Session = Depends(get_db)):
+    """Completa las variables de indicadores en cortes cargados antes de esta versión (desde la capa RAW)."""
+    try:
+        return rellenar_desde_raw(db, carga_id=cargaId)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al reprocesar variables: {str(e)}")
 
 
 @router.get("/centros")

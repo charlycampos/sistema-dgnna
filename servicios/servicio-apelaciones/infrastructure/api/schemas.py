@@ -291,6 +291,7 @@ class DashboardOut(BaseModel):
     casosPendientes:       int
     casosResueltos:        int
     casosAtendidos:        int
+    casosNoCorresponde:    int = 0
     casosConPlazoProximo:  int
     cargaPorAbogado:       List[CargaAbogado]
     casosPorComplejidad:   List[dict]

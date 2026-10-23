@@ -1,0 +1,908 @@
+"""
+Router: Seguimiento de Indicadores PP 0117 (Catálogo de 10 Indicadores Priorizados)
+Endpoints de catálogo de indicadores, histórico de cargas, subida y cálculo,
+eliminación y resumen analítico.
+"""
+
+import calendar
+import math
+from datetime import datetime, date
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
+from sqlalchemy import insert, case, func, text
+from sqlalchemy.orm import Session
+
+from infrastructure.db.database import get_db
+from infrastructure.db.models import SegCarga, SegPiasNna, SegPiasSesion, SegMeta
+from infrastructure.api.router import _nombre_usuario, MESES_NOMBRES
+from infrastructure.seguimiento.pias_parser import parsear_pias, ErrorArchivo
+
+router = APIRouter(prefix="/api/poi-pp117/seguimiento", tags=["poi-pp117-seguimiento"])
+
+# Catálogo oficial de los 10 indicadores priorizados del Programa Presupuestal 0117
+CATALOGO_INDICADORES = [
+    {
+        "codigo": "4390",
+        "nombre": "% NNA que reciben al menos 3 sesiones de fortalecimiento de capacidades de autoprotección",
+        "nombreCorto": "PIAS · Sesiones Autoprotección (≥ 3)",
+        "producto": "3000636 · Fortalecimiento de Capacidades (PIAS)",
+        "metaMefSetiembre": 46.1,
+        "unidad": "%",
+        "frecuencia": "Mensual acumulado",
+        "hoja": "Nominal",
+        "habilitado": True,
+        "descripcion": "Mide el porcentaje de niñas, niños y adolescentes de 3 a 14 años atendidos por las Plataformas Itinerantes de Acción Social (PIAS) que reciben al menos 3 sesiones.",
+    },
+    {
+        "codigo": "4391",
+        "nombre": "% NNA en situación de riesgo o desprotección familiar que acceden a servicios de protección",
+        "nombreCorto": "Acceso a Servicios de Protección",
+        "producto": "3000889 · Servicios de Protección en Riesgo / Desprotección",
+        "unidad": "%",
+        "frecuencia": "Semestral / Anual",
+        "hoja": "Nominal",
+        "habilitado": False,
+        "descripcion": "Porcentaje de NNA en situación de riesgo o desprotección familiar que acceden oportunamente a los servicios de protección del MIMP.",
+    },
+    {
+        "codigo": "4392",
+        "nombre": "% NNA en riesgo o desprotección familiar que cuentan con Plan de Trabajo Individual aprobado",
+        "nombreCorto": "NNA con PTI Aprobado",
+        "producto": "3000889 · Servicios de Protección en Riesgo / Desprotección",
+        "unidad": "%",
+        "frecuencia": "Mensual",
+        "hoja": "Nominal",
+        "habilitado": False,
+        "descripcion": "Seguimiento al cumplimiento de elaboración y aprobación de Planes de Trabajo Individual (PTI) en las UPE y DEMUNAS.",
+    },
+    {
+        "codigo": "4393",
+        "nombre": "% Familias con hijas e hijos en situación de riesgo o desprotección que desarrollaron competencias parentales",
+        "nombreCorto": "Familias con Competencias Parentales",
+        "producto": "3000889 · Servicios de Protección en Riesgo / Desprotección",
+        "unidad": "%",
+        "frecuencia": "Anual",
+        "hoja": "Nominal",
+        "habilitado": False,
+        "descripcion": "Familias que concluyen exitosamente los módulos formativos de pautas de crianza positiva y protección integral.",
+    },
+    {
+        "codigo": "4395",
+        "nombre": "% NNA declarados en desprotección familiar acogidos en una familia acogedora",
+        "nombreCorto": "Acogimiento en Familia Acogedora",
+        "producto": "3000888 · Familias Acogedoras",
+        "unidad": "%",
+        "frecuencia": "Semestral",
+        "hoja": "Nominal",
+        "habilitado": False,
+        "descripcion": "NNA con medida de protección de acogimiento familiar como alternativa prioritaria frente al acogimiento residencial.",
+    },
+    {
+        "codigo": "4397",
+        "nombre": "% NNA en acogimiento residencial que fortalecen sus capacidades personales y sociales",
+        "nombreCorto": "CAR · Fortalecimiento de Capacidades",
+        "producto": "3000890 · Centros de Acogida Residencial (CAR - INABIF)",
+        "unidad": "%",
+        "frecuencia": "Mensual",
+        "hoja": "Nominal",
+        "habilitado": False,
+        "descripcion": "Evaluación multidimensional de NNA en CAR Básico y Especializado (talleres psicológicos, logros educativos, actividades sociales y PTI).",
+    },
+    {
+        "codigo": "4398",
+        "nombre": "% Adolescentes en CAR que adquieren competencias con alternativas para su vida independiente",
+        "nombreCorto": "CAR · Preparación Vida Independiente",
+        "producto": "3000890 · Centros de Acogida Residencial (CAR - INABIF)",
+        "unidad": "%",
+        "frecuencia": "Mensual",
+        "hoja": "Nominal",
+        "habilitado": False,
+        "descripcion": "Adolescentes de 14 a 17 años con permanencia ≥ 6 meses que cuentan con Plan de Vida Independiente (PVI) oportuno.",
+    },
+    {
+        "codigo": "4399",
+        "nombre": "% NNA declarados judicialmente en desprotección familiar protegidos en familia adoptiva",
+        "nombreCorto": "Adopción · Ubicación en Familia Adoptiva",
+        "producto": "3000887 · Adopciones",
+        "unidad": "%",
+        "frecuencia": "Semestral",
+        "hoja": "Nominal",
+        "habilitado": False,
+        "descripcion": "NNA con resolución de adoptabilidad declarada judicialmente que son integrados a una familia por la Dirección de Adopciones.",
+    },
+    {
+        "codigo": "5138",
+        "nombre": "% NNA integrados a familia adoptiva con seguimiento post adoptivo oportuno",
+        "nombreCorto": "Adopción · Seguimiento Post Adoptivo",
+        "producto": "3000887 · Adopciones",
+        "unidad": "%",
+        "frecuencia": "Semestral",
+        "hoja": "Nominal",
+        "habilitado": False,
+        "descripcion": "Supervisión y acompañamiento integral semestral y anual a las familias adoptivas post designación.",
+    },
+    {
+        "codigo": "5139",
+        "nombre": "% NNA en situación de riesgo o desprotección familiar con restitución de derechos oportuna",
+        "nombreCorto": "Restitución Oportuna de Derechos",
+        "producto": "Resultado Específico · PP 0117",
+        "unidad": "%",
+        "frecuencia": "Anual",
+        "hoja": "Nominal",
+        "habilitado": False,
+        "descripcion": "Indicador de resultado final del programa presupuestal que sintetiza la restitución efectiva de derechos vulnerados.",
+    },
+]
+
+
+CODIGOS_INDICADORES = {i["codigo"] for i in CATALOGO_INDICADORES}
+
+
+def _metas_por_indicador(db: Session, anio: int) -> dict:
+    """{indicador: {"metaAnual", "fuente", "metaMef" (todo el año), "metaMefMes": {mes: valor}}}"""
+    res = {}
+    for m in db.query(SegMeta).filter(SegMeta.anio == anio).all():
+        d = res.setdefault(m.indicador, {"metaAnual": None, "fuente": None, "metaMef": None, "metaMefMes": {}})
+        mes = m.mes or 0
+        if m.tipoMeta == "ANUAL":
+            d["metaAnual"] = m.valor
+            d["fuente"] = d["fuente"] or m.fuente
+        elif m.tipoMeta == "MEF":
+            if mes == 0:
+                d["metaMef"] = m.valor
+                d["fuente"] = m.fuente or d["fuente"]
+            elif 1 <= mes <= 12:
+                d["metaMefMes"][mes] = m.valor
+    return res
+
+
+def _meta_mef_mes(metas_ind: dict, mes: int):
+    """Meta MEF vigente para un mes: la específica del mes o, si no hay, la de todo el año."""
+    if not metas_ind:
+        return None
+    return metas_ind.get("metaMefMes", {}).get(mes, metas_ind.get("metaMef"))
+
+
+class MetaIn(BaseModel):
+    indicador: str
+    metaMef: Optional[float] = Field(None, gt=0)
+    metaAnual: Optional[float] = Field(None, gt=0)
+    fuente: Optional[str] = Field(None, max_length=300)
+
+
+class MetasIn(BaseModel):
+    anio: int = Field(..., ge=2020, le=2040)
+    metas: List[MetaIn]
+
+
+@router.get("/metas")
+def listar_metas(
+    anio: int = Query(..., ge=2020, le=2040),
+    db: Session = Depends(get_db),
+    usuario: str = Depends(_nombre_usuario),
+):
+    """Metas anuales registradas para el año (una fila por indicador del catálogo)."""
+    metas = _metas_por_indicador(db, anio)
+    filas = (db.query(SegMeta)
+             .filter(SegMeta.anio == anio, SegMeta.mes == 0)
+             .order_by(SegMeta.updatedAt.asc()).all())
+    info = {f.indicador: f for f in filas}  # queda la más reciente
+    out = []
+    for ind in CATALOGO_INDICADORES:
+        c = ind["codigo"]
+        m = metas.get(c, {})
+        f = info.get(c)
+        out.append({
+            "indicador": c,
+            "anio": anio,
+            "metaMef": m.get("metaMef"),
+            "metaMefMes": {str(k): v for k, v in m.get("metaMefMes", {}).items()},
+            "metaAnual": m.get("metaAnual"),
+            "fuente": m.get("fuente"),
+            "actualizadoPor": f.actualizadoPor if f else None,
+            "updatedAt": f.updatedAt.isoformat() if f and f.updatedAt else None,
+        })
+    return out
+
+
+@router.put("/metas")
+def guardar_metas(
+    body: MetasIn,
+    db: Session = Depends(get_db),
+    usuario: str = Depends(_nombre_usuario),
+):
+    """Registra o actualiza la meta MEF (todo el año) y la meta anual de cada indicador. null elimina la meta."""
+    if not usuario:
+        raise HTTPException(status_code=401, detail="Sesión no válida. Vuelve a iniciar sesión.")
+    desconocidos = [m.indicador for m in body.metas if m.indicador not in CODIGOS_INDICADORES]
+    if desconocidos:
+        raise HTTPException(status_code=400, detail=f"Indicadores no reconocidos: {', '.join(desconocidos)}")
+
+    def _upsert(indicador, tipo, valor, fuente):
+        fila = db.query(SegMeta).filter_by(indicador=indicador, anio=body.anio, tipoMeta=tipo, mes=0).first()
+        if valor is None:
+            if fila:
+                db.delete(fila)
+            return
+        if fila:
+            fila.valor = valor
+            fila.fuente = fuente
+            fila.actualizadoPor = usuario
+            fila.updatedAt = datetime.utcnow()
+        else:
+            db.add(SegMeta(indicador=indicador, anio=body.anio, tipoMeta=tipo, mes=0,
+                           valor=valor, fuente=fuente, actualizadoPor=usuario))
+
+    try:
+        for m in body.metas:
+            fuente = (m.fuente or "").strip() or None
+            _upsert(m.indicador, "MEF", m.metaMef, fuente)
+            _upsert(m.indicador, "ANUAL", m.metaAnual, fuente)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"No se pudieron guardar las metas: {e}")
+
+    return listar_metas(anio=body.anio, db=db, usuario=usuario)
+
+
+def _iso_utc(d):
+    """createdAt se guarda en UTC sin zona; se marca con 'Z' para que el navegador lo convierta a hora local."""
+    return d.isoformat() + "Z" if d else None
+
+
+def _chunked(lista, chunk_size=2000):
+    for i in range(0, len(lista), chunk_size):
+        yield lista[i:i + chunk_size]
+
+
+@router.get("/indicadores")
+def listar_indicadores(
+    anio: Optional[int] = Query(None, ge=2020, le=2040),
+    db: Session = Depends(get_db),
+    usuario: str = Depends(_nombre_usuario),
+):
+    """
+    Retorna el catálogo completo de los 10 indicadores priorizados del PP 0117
+    con el valor del último corte registrado (si existe).
+    """
+    cargas = db.query(SegCarga).order_by(SegCarga.anio.desc(), SegCarga.mes.desc(), SegCarga.createdAt.desc()).all()
+    ultimas_por_ind = {}
+    for c in cargas:
+        if c.indicador not in ultimas_por_ind:
+            ultimas_por_ind[c.indicador] = c
+
+    anio_metas = anio or datetime.now().year
+    metas = _metas_por_indicador(db, anio_metas)
+
+    resultado = []
+    for ind in CATALOGO_INDICADORES:
+        codigo = ind["codigo"]
+        c = ultimas_por_ind.get(codigo)
+        mi = metas.get(codigo, {})
+        ind = {**ind, "metaAnual": mi.get("metaAnual"), "metaMef": mi.get("metaMef"), "anioMeta": anio_metas}
+        if c and c.denominador and c.denominador > 0:
+            pct = round((c.numerador or 0) / c.denominador * 100, 2)
+            corte = f"{MESES_NOMBRES[c.mes - 1]} {c.anio}" if 1 <= c.mes <= 12 else f"{c.mes}/{c.anio}"
+            item = {
+                **ind,
+                "tieneCarga": True,
+                "cargaId": c.id,
+                "valor": pct,
+                "numerador": c.numerador,
+                "denominador": c.denominador,
+                "totalSesiones": c.totalSesiones,
+                "corte": corte,
+                "mes": c.mes,
+                "anio": c.anio,
+                "fechaCarga": _iso_utc(c.createdAt),
+            }
+        else:
+            item = {
+                **ind,
+                "tieneCarga": False,
+                "cargaId": None,
+                "valor": None,
+                "numerador": None,
+                "denominador": None,
+                "totalSesiones": None,
+                "corte": None,
+                "mes": None,
+                "anio": None,
+                "fechaCarga": None,
+            }
+        resultado.append(item)
+
+    return resultado
+
+
+@router.get("/cargas")
+def listar_cargas(
+    indicador: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    usuario: str = Depends(_nombre_usuario),
+):
+    """Lista las cargas registradas ordenadas descendentemente por año, mes y fecha."""
+    q = db.query(SegCarga)
+    if indicador:
+        q = q.filter(SegCarga.indicador == indicador)
+
+    cargas = q.order_by(SegCarga.anio.desc(), SegCarga.mes.desc(), SegCarga.createdAt.desc()).all()
+
+    resultado = []
+    for c in cargas:
+        porcentaje = None
+        if c.denominador and c.denominador > 0:
+            porcentaje = round((c.numerador or 0) / c.denominador * 100, 2)
+
+        mes_nombre = MESES_NOMBRES[c.mes - 1] if 1 <= c.mes <= 12 else str(c.mes)
+
+        resultado.append({
+            "id": c.id,
+            "indicador": c.indicador,
+            "mes": c.mes,
+            "anio": c.anio,
+            "mesNombre": mes_nombre,
+            "nombreArchivo": c.nombreArchivo,
+            "totalFilas": c.totalFilas,
+            "totalSesiones": c.totalSesiones,
+            "numerador": c.numerador,
+            "denominador": c.denominador,
+            "porcentaje": porcentaje,
+            "cargadoPor": c.cargadoPor,
+            "createdAt": _iso_utc(c.createdAt),
+        })
+    return resultado
+
+
+@router.post("/cargar")
+async def cargar_archivo_seguimiento(
+    indicador: str = Query(..., description="Código de indicador, ej. 4390"),
+    mes: int = Query(..., ge=1, le=12, description="Mes de corte (1-12)"),
+    anio: int = Query(..., ge=2020, le=2040, description="Año de corte"),
+    reemplazar: bool = Query(False, description="Reemplazar si ya existe para este mes/año"),
+    archivo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    usuario: str = Depends(_nombre_usuario),
+):
+    """
+    Carga y procesa el archivo Excel de seguimiento mensual.
+    Para el indicador 4390, extrae los NNA y sus sesiones individuales.
+    """
+    if indicador != "4390":
+        raise HTTPException(
+            status_code=400,
+            detail=f"La carga automatizada del indicador '{indicador}' está en desarrollo. Actualmente activo: 4390."
+        )
+
+    existente = db.query(SegCarga).filter_by(indicador=indicador, mes=mes, anio=anio).first()
+    if existente and not reemplazar:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Ya existe una carga para el indicador {indicador} del periodo {MESES_NOMBRES[mes - 1]} {anio}. Confirma si deseas reemplazarla."
+        )
+
+    try:
+        contenido = await archivo.read()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"No se pudo leer el archivo subido: {e}")
+
+    try:
+        data = parsear_pias(contenido)
+    except ErrorArchivo as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error inesperado al procesar el archivo Excel: {e}")
+
+    nna_list = data["nna"]
+    sesiones_list = data["sesiones"]
+    numerador = data["numerador"]
+    denominador = data["denominador"]
+    porcentaje = round((numerador / denominador) * 100, 2) if denominador > 0 else 0.0
+
+    try:
+        if existente:
+            carga_id_vieja = existente.id
+            db.query(SegPiasSesion).filter(SegPiasSesion.cargaId == carga_id_vieja).delete(synchronize_session=False)
+            db.query(SegPiasNna).filter(SegPiasNna.cargaId == carga_id_vieja).delete(synchronize_session=False)
+            db.query(SegCarga).filter(SegCarga.id == carga_id_vieja).delete(synchronize_session=False)
+            db.flush()
+
+        nueva_carga = SegCarga(
+            indicador=indicador,
+            mes=mes,
+            anio=anio,
+            nombreArchivo=archivo.filename,
+            totalFilas=len(nna_list),
+            totalSesiones=len(sesiones_list),
+            numerador=numerador,
+            denominador=denominador,
+            cargadoPor=usuario or "Especialista DGNNA",
+        )
+        db.add(nueva_carga)
+        db.flush()
+
+        for item in nna_list:
+            item["cargaId"] = nueva_carga.id
+
+        for s in sesiones_list:
+            s["cargaId"] = nueva_carga.id
+
+        for chunk in _chunked(nna_list, 2000):
+            db.execute(insert(SegPiasNna), chunk)
+
+        for chunk in _chunked(sesiones_list, 2000):
+            db.execute(insert(SegPiasSesion), chunk)
+
+        db.commit()
+
+        return {
+            "ok": True,
+            "mensaje": "Archivo de seguimiento procesado y almacenado correctamente",
+            "cargaId": nueva_carga.id,
+            "filasGuardadas": len(nna_list),
+            "sesionesGuardadas": len(sesiones_list),
+            "numerador": numerador,
+            "denominador": denominador,
+            "porcentaje": porcentaje,
+            "avisos": data.get("avisos", []),
+        }
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error durante el almacenamiento en base de datos: {str(e)}"
+        )
+
+
+@router.delete("/carga/{carga_id}")
+def eliminar_carga(
+    carga_id: str,
+    db: Session = Depends(get_db),
+    usuario: str = Depends(_nombre_usuario),
+):
+    """Elimina una carga de seguimiento y todos sus registros asociados."""
+    carga = db.query(SegCarga).filter(SegCarga.id == carga_id).first()
+    if not carga:
+        raise HTTPException(status_code=404, detail="Carga no encontrada")
+
+    try:
+        db.query(SegPiasSesion).filter(SegPiasSesion.cargaId == carga_id).delete(synchronize_session=False)
+        db.query(SegPiasNna).filter(SegPiasNna.cargaId == carga_id).delete(synchronize_session=False)
+        db.delete(carga)
+        db.commit()
+        return {"ok": True, "mensaje": "Carga eliminada exitosamente"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al eliminar la carga: {e}")
+
+
+# Indicadores cuya serie mensual puede calcularse desde una carga acumulada (fechas de sesión por NNA)
+INDICADORES_CON_SERIE = {"4390"}
+
+
+@router.get("/serie")
+def serie_mensual(
+    anio: int = Query(..., ge=2020, le=2040),
+    db: Session = Depends(get_db),
+    usuario: str = Depends(_nombre_usuario),
+):
+    """
+    Serie mensual por indicador para el año.
+    - Meses con carga propia: el valor de esa carga (fuente "carga").
+    - Meses anteriores a la última carga del año, sin carga propia: se calculan desde esa última carga
+      (archivo acumulado), con la misma regla del indicador al cierre de cada mes (fuente "calculado").
+      4390: denominador = NNA con mes de ingreso <= mes; numerador = de ellos, NNA con 3ra sesión <= fin de mes.
+    """
+    cargas = db.query(SegCarga).filter(SegCarga.anio == anio).all()
+    por_ind = {}
+    for c in cargas:
+        por_ind.setdefault(c.indicador, []).append(c)
+
+    resultado = {}
+    for indicador, lista in por_ind.items():
+        propias = {c.mes: c for c in lista}
+        ultima = max(lista, key=lambda c: c.mes)
+        serie = []
+        for mes in range(1, ultima.mes + 1):
+            c = propias.get(mes)
+            if c is not None:
+                den = c.denominador or 0
+                num = c.numerador or 0
+                serie.append({"mes": mes, "numerador": num, "denominador": den,
+                              "porcentaje": round(num / den * 100, 2) if den else None,
+                              "fuente": "carga", "cargaMes": mes})
+                continue
+            if indicador not in INDICADORES_CON_SERIE:
+                continue
+            fin_mes = date(anio, mes, calendar.monthrange(anio, mes)[1])
+            den, num = (
+                db.query(
+                    func.count(SegPiasNna.id),
+                    func.sum(case((SegPiasNna.fecTercera <= fin_mes, 1), else_=0)),
+                )
+                .filter(SegPiasNna.cargaId == ultima.id, SegPiasNna.mesIngreso <= mes)
+                .one()
+            )
+            den = int(den or 0)
+            num = int(num or 0)
+            serie.append({"mes": mes, "numerador": num, "denominador": den,
+                          "porcentaje": round(num / den * 100, 2) if den else None,
+                          "fuente": "calculado", "cargaMes": ultima.mes})
+        resultado[indicador] = serie
+    return resultado
+
+
+def _calcular_metricas_4390(db: Session, cid: str, mes_corte: int = 12):
+    import statistics
+
+    # 1. Demografía
+    sexo_counts = dict(
+        db.query(SegPiasNna.sexo, func.count(SegPiasNna.id))
+        .filter(SegPiasNna.cargaId == cid)
+        .group_by(SegPiasNna.sexo)
+        .all()
+    )
+    hombres = sexo_counts.get("H", 0)
+    mujeres = sexo_counts.get("M", 0)
+    tot_sexo = (hombres + mujeres) or 1
+    pct_hombres = round(hombres / tot_sexo * 100, 1)
+    pct_mujeres = round(mujeres / tot_sexo * 100, 1)
+
+    # 2. Sesiones estructura (1 a 6-8 por modalidad)
+    sesiones_data = []
+    for s in [1, 2, 3, 4, 5, 6]:
+        lbl = "6-8" if s == 6 else str(s)
+        cond = SegPiasNna.numSesiones >= 6 if s == 6 else SegPiasNna.numSesiones == s
+        rows = dict(
+            db.query(SegPiasNna.tipoIntervencion, func.count(SegPiasNna.id))
+            .filter(SegPiasNna.cargaId == cid, cond)
+            .group_by(SegPiasNna.tipoIntervencion)
+            .all()
+        )
+        pres = rows.get("Presencial", 0)
+        rem = rows.get("Remoto", 0)
+        mix = rows.get("Mixto", 0)
+        sesiones_data.append({
+            "sesion": lbl,
+            "label": f"{lbl} sesión" if s == 1 else f"{lbl} sesiones",
+            "presencial": pres,
+            "remoto": rem,
+            "mixto": mix,
+            "total": pres + rem + mix,
+        })
+
+    # 3. Continuidad regional: departamentos presentes en la carga (mayor a menor), más el total
+    deps = [d for (d,) in (
+        db.query(SegPiasNna.departamento)
+        .filter(SegPiasNna.cargaId == cid, SegPiasNna.departamento.isnot(None))
+        .group_by(SegPiasNna.departamento)
+        .order_by(func.count(SegPiasNna.id).desc())
+        .all()
+    )]
+    cont_reg = []
+    tot_n1, tot_n3, tot_n5 = 0, 0, 0
+    for d in deps:
+        n1 = db.query(func.count(SegPiasNna.id)).filter(SegPiasNna.cargaId == cid, SegPiasNna.departamento == d, SegPiasNna.numSesiones >= 1).scalar() or 0
+        n3 = db.query(func.count(SegPiasNna.id)).filter(SegPiasNna.cargaId == cid, SegPiasNna.departamento == d, SegPiasNna.numSesiones >= 3).scalar() or 0
+        n5 = db.query(func.count(SegPiasNna.id)).filter(SegPiasNna.cargaId == cid, SegPiasNna.departamento == d, SegPiasNna.numSesiones >= 5).scalar() or 0
+        tot_n1 += n1
+        tot_n3 += n3
+        tot_n5 += n5
+        cont_reg.append({
+            "departamento": d.title(),
+            "nna1": n1,
+            "nna3": n3,
+            "nna5": n5,
+            "tasaRetencion": round(n3 / n1 * 100, 1) if n1 else 0.0,
+            "tasaContinuidad": round(n5 / n3 * 100, 1) if n3 else 0.0,
+            "tasaFinalizacion": round(n5 / n1 * 100, 1) if n1 else 0.0,
+        })
+    cont_reg.append({
+        "departamento": "Total",
+        "nna1": tot_n1,
+        "nna3": tot_n3,
+        "nna5": tot_n5,
+        "tasaRetencion": round(tot_n3 / tot_n1 * 100, 1) if tot_n1 else 0.0,
+        "tasaContinuidad": round(tot_n5 / tot_n3 * 100, 1) if tot_n3 else 0.0,
+        "tasaFinalizacion": round(tot_n5 / tot_n1 * 100, 1) if tot_n1 else 0.0,
+    })
+
+    # 4. Edades comparativa (1 vs >=3 sesiones)
+    edades_comp = []
+    for grp, (e1, e2) in [("3 a 5 años", (3, 5)), ("6 a 8 años", (6, 8)), ("9 a 11 años", (9, 11)), ("12 a 14 años", (12, 14))]:
+        tot = db.query(func.count(SegPiasNna.id)).filter(SegPiasNna.cargaId == cid, SegPiasNna.edad.between(e1, e2)).scalar() or 0
+        c3 = db.query(func.count(SegPiasNna.id)).filter(SegPiasNna.cargaId == cid, SegPiasNna.edad.between(e1, e2), SegPiasNna.numSesiones >= 3).scalar() or 0
+        pct = round(c3 / tot * 100, 1) if tot else 0.0
+        edades_comp.append({"grupo": grp, "total1": tot, "cumplen3": c3, "pct": pct})
+
+    # 5. Curva mensual (sesiones por mes y modalidad)
+    meses_nombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Set", "Oct", "Nov", "Dic"]
+    q_mes = (
+        db.query(
+            SegPiasSesion.mes,
+            SegPiasNna.tipoIntervencion,
+            func.count(SegPiasSesion.id)
+        )
+        .join(SegPiasNna, SegPiasSesion.nnaId == SegPiasNna.id)
+        .filter(SegPiasSesion.cargaId == cid)
+        .group_by(SegPiasSesion.mes, SegPiasNna.tipoIntervencion)
+        .all()
+    )
+    mes_map = {m: {"mes": m, "mesNombre": meses_nombres[m - 1], "presencial": 0, "remoto": 0, "mixto": 0, "total": 0} for m in range(1, 13)}
+    for m, tip, cnt in q_mes:
+        if 1 <= m <= 12:
+            if tip == "Presencial":
+                mes_map[m]["presencial"] += cnt
+            elif tip == "Remoto":
+                mes_map[m]["remoto"] += cnt
+            elif tip == "Mixto":
+                mes_map[m]["mixto"] += cnt
+            mes_map[m]["total"] += cnt
+
+    mes_fin = mes_corte if 1 <= (mes_corte or 0) <= 12 else 12
+    curva_mensual = [mes_map[m] for m in range(1, mes_fin + 1)]
+
+    # 6. Intensidad cuencas
+    q_cuencas = (
+        db.query(
+            SegPiasNna.cuencaPias,
+            func.avg(SegPiasNna.numSesiones).label("prom"),
+            func.count(SegPiasNna.id).label("tot")
+        )
+        .filter(SegPiasNna.cargaId == cid)
+        .group_by(SegPiasNna.cuencaPias)
+        .order_by(func.avg(SegPiasNna.numSesiones).desc())
+        .all()
+    )
+    intensidad_cuencas = [{
+        "cuenca": r[0] or "Sin Cuenca",
+        "promedio": round(float(r[1]), 2),
+        "totalNna": r[2]
+    } for r in q_cuencas]
+
+    # 7. Matriz Region x Edad
+    grupo_case = case(
+        (SegPiasNna.edad.between(3, 5), "3 a 5 años"),
+        (SegPiasNna.edad.between(6, 8), "6 a 8 años"),
+        (SegPiasNna.edad.between(9, 11), "9 a 11 años"),
+        (SegPiasNna.edad.between(12, 14), "12 a 14 años"),
+        else_="Otros"
+    )
+    q_mat = (
+        db.query(
+            SegPiasNna.departamento,
+            grupo_case,
+            func.count(SegPiasNna.id).label("nna1"),
+            func.sum(case((SegPiasNna.numSesiones >= 3, 1), else_=0)).label("nna3"),
+            func.sum(case((SegPiasNna.numSesiones >= 5, 1), else_=0)).label("nna5")
+        )
+        .filter(SegPiasNna.cargaId == cid)
+        .group_by(SegPiasNna.departamento, grupo_case)
+        .all()
+    )
+    matriz_region_edad = []
+    for r in q_mat:
+        if r[1] != "Otros" and r[0] in deps:
+            pct3 = round(r[3] / r[2] * 100, 1) if r[2] else 0.0
+            pct5 = round(r[4] / r[3] * 100, 1) if r[3] else 0.0
+            matriz_region_edad.append({
+                "departamento": r[0].title(),
+                "grupo": r[1],
+                "nna1": r[2],
+                "nna3": r[3],
+                "pct3": pct3,
+                "nna5": r[4],
+                "pct5": pct5,
+            })
+
+    ord_dpto = {d.title(): i for i, d in enumerate(deps)}
+    ord_grp = {"3 a 5 años": 1, "6 a 8 años": 2, "9 a 11 años": 3, "12 a 14 años": 4}
+    matriz_region_edad.sort(key=lambda x: (ord_dpto.get(x["departamento"], 9), ord_grp.get(x["grupo"], 9)))
+
+    # 8. Tiempos proceso
+    dias_list = (
+        db.query(func.trunc(SegPiasNna.fecTercera - SegPiasNna.fecPrimera))
+        .filter(
+            SegPiasNna.cargaId == cid,
+            SegPiasNna.cumpleMinimo == 1,
+            SegPiasNna.fecPrimera.isnot(None),
+            SegPiasNna.fecTercera.isnot(None)
+        )
+        .all()
+    )
+    vals = sorted([int(r[0]) for r in dias_list if r[0] is not None and r[0] >= 0])
+    q_vals = statistics.quantiles(vals, n=4) if len(vals) >= 4 else [0, 0, 0]
+    tiempos_proceso = {
+        "promedio": round(statistics.mean(vals), 1) if vals else 0.0,
+        "mediana": round(statistics.median(vals), 1) if vals else 0.0,
+        "p25": round(q_vals[0], 1) if q_vals else 0.0,
+        "p75": round(q_vals[2], 1) if q_vals else 0.0,
+        "maximo": max(vals) if vals else 0,
+        "minimo": min(vals) if vals else 0,
+        "totalCasos": len(vals),
+        "scatterSample": [[i + 1, vals[i]] for i in range(0, len(vals), max(1, len(vals) // 120))],
+    }
+
+    return {
+        "demografia": {
+            "hombres": hombres,
+            "mujeres": mujeres,
+            "pctHombres": pct_hombres,
+            "pctMujeres": pct_mujeres,
+        },
+        "sesionesEstructura": sesiones_data,
+        "continuidadRegional": cont_reg,
+        "edadesComparativa": edades_comp,
+        "curvaMensual": curva_mensual,
+        "intensidadCuencas": intensidad_cuencas,
+        "matrizRegionEdad": matriz_region_edad,
+        "tiemposProceso": tiempos_proceso,
+    }
+
+
+@router.get("/resumen")
+def obtener_resumen_indicador(
+    indicador: str = Query("4390"),
+    mes: Optional[int] = Query(None, ge=1, le=12),
+    anio: Optional[int] = Query(None, ge=2020, le=2040),
+    db: Session = Depends(get_db),
+    usuario: str = Depends(_nombre_usuario),
+):
+    """
+    Retorna el resumen del indicador seleccionado.
+    Para el 4390 incluye KPI y desgloses por Departamento, Intervención y Edad.
+    """
+    # Buscar metadata en el catálogo
+    meta_info = next((i for i in CATALOGO_INDICADORES if i["codigo"] == indicador), None)
+
+    q = db.query(SegCarga).filter(SegCarga.indicador == indicador)
+    if mes is not None and anio is not None:
+        carga = q.filter(SegCarga.mes == mes, SegCarga.anio == anio).first()
+    else:
+        carga = q.order_by(SegCarga.anio.desc(), SegCarga.mes.desc(), SegCarga.createdAt.desc()).first()
+
+    if not carga:
+        return {
+            "hayDatos": False,
+            "indicador": indicador,
+            "info": meta_info,
+            "mensaje": f"No se han registrado cargas aún para el indicador {indicador}.",
+        }
+
+    cid = carga.id
+    denominador = carga.denominador or 0
+    numerador = carga.numerador or 0
+    porcentaje = round(numerador / denominador * 100, 2) if denominador > 0 else 0.0
+
+    # 1. Desglose por Departamento
+    dep_rows = (
+        db.query(
+            SegPiasNna.departamento,
+            func.count(SegPiasNna.id).label("total"),
+            func.sum(SegPiasNna.cumpleMinimo).label("cumplen"),
+        )
+        .filter(SegPiasNna.cargaId == cid)
+        .group_by(SegPiasNna.departamento)
+        .order_by(func.count(SegPiasNna.id).desc())
+        .all()
+    )
+
+    por_departamento = []
+    for dep, tot, cpl in dep_rows:
+        tot_val = tot or 0
+        cpl_val = int(cpl or 0)
+        pct = round(cpl_val / tot_val * 100, 2) if tot_val > 0 else 0.0
+        por_departamento.append({
+            "departamento": dep or "SIN DEPARTAMENTO",
+            "total": tot_val,
+            "cumplen": cpl_val,
+            "porcentaje": pct,
+        })
+
+    # 2. Desglose por Tipo de Intervención
+    tipo_rows = (
+        db.query(
+            SegPiasNna.tipoIntervencion,
+            func.count(SegPiasNna.id).label("total"),
+            func.sum(SegPiasNna.cumpleMinimo).label("cumplen"),
+        )
+        .filter(SegPiasNna.cargaId == cid)
+        .group_by(SegPiasNna.tipoIntervencion)
+        .order_by(func.count(SegPiasNna.id).desc())
+        .all()
+    )
+
+    por_tipo_intervencion = []
+    for tip, tot, cpl in tipo_rows:
+        tot_val = tot or 0
+        cpl_val = int(cpl or 0)
+        pct = round(cpl_val / tot_val * 100, 2) if tot_val > 0 else 0.0
+        por_tipo_intervencion.append({
+            "tipoIntervencion": tip or "No especificado",
+            "total": tot_val,
+            "cumplen": cpl_val,
+            "porcentaje": pct,
+        })
+
+    # 3. Desglose por Grupo de Edad
+    grupo_edad_case = case(
+        (SegPiasNna.edad.between(3, 5), "3 a 5 años"),
+        (SegPiasNna.edad.between(6, 8), "6 a 8 años"),
+        (SegPiasNna.edad.between(9, 11), "9 a 11 años"),
+        (SegPiasNna.edad.between(12, 14), "12 a 14 años"),
+        else_="Otras edades / Sin dato",
+    )
+
+    edad_rows = (
+        db.query(
+            grupo_edad_case.label("grupoEdad"),
+            func.count(SegPiasNna.id).label("total"),
+            func.sum(SegPiasNna.cumpleMinimo).label("cumplen"),
+        )
+        .filter(SegPiasNna.cargaId == cid)
+        .group_by(grupo_edad_case)
+        .all()
+    )
+
+    orden_edad = {
+        "3 a 5 años": 1,
+        "6 a 8 años": 2,
+        "9 a 11 años": 3,
+        "12 a 14 años": 4,
+        "Otras edades / Sin dato": 5,
+    }
+    por_grupo_edad = []
+    for grp, tot, cpl in sorted(edad_rows, key=lambda r: orden_edad.get(r[0], 99)):
+        tot_val = tot or 0
+        cpl_val = int(cpl or 0)
+        pct = round(cpl_val / tot_val * 100, 2) if tot_val > 0 else 0.0
+        por_grupo_edad.append({
+            "grupoEdad": grp,
+            "total": tot_val,
+            "cumplen": cpl_val,
+            "porcentaje": pct,
+        })
+
+    mes_nombre = MESES_NOMBRES[carga.mes - 1] if 1 <= carga.mes <= 12 else str(carga.mes)
+    metas_ind = _metas_por_indicador(db, carga.anio).get(indicador, {})
+    meta_anual_bd = metas_ind.get("metaAnual")
+    meta_mef_bd = _meta_mef_mes(metas_ind, carga.mes)
+
+    respuesta = {
+        "hayDatos": True,
+        "info": meta_info,
+        "carga": {
+            "id": carga.id,
+            "indicador": carga.indicador,
+            "mes": carga.mes,
+            "anio": carga.anio,
+            "mesNombre": mes_nombre,
+            "nombreArchivo": carga.nombreArchivo,
+            "createdAt": _iso_utc(carga.createdAt),
+            "cargadoPor": carga.cargadoPor,
+        },
+        "kpi": {
+            "numerador": numerador,
+            "denominador": denominador,
+            "porcentaje": porcentaje,
+            "totalSesiones": carga.totalSesiones or 0,
+            "metaMefSetiembre": meta_mef_bd if meta_mef_bd is not None else (meta_info.get("metaMefSetiembre") if (meta_info and carga.mes == 9) else meta_anual_bd),
+            "metaMef": meta_mef_bd,
+            "metaAnual": meta_anual_bd,
+        },
+        "desglose": {
+            "porDepartamento": por_departamento,
+            "porTipoIntervencion": por_tipo_intervencion,
+            "porGrupoEdad": por_grupo_edad,
+        },
+    }
+
+    if carga.indicador == "4390":
+        respuesta["analytics4390"] = _calcular_metricas_4390(db, carga.id, carga.mes)
+
+    return respuesta

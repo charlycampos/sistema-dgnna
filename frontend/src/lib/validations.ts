@@ -48,7 +48,7 @@ export const apelacionBaseSchema = z.object({
     complejidadId: z.string().min(1, "La complejidad jurídica es obligatoria"),
     abogadoId: z.string().min(1, "El abogado asignado es obligatorio"),
     fechaAsignacion: z.date({ message: "La fecha de asignación es obligatoria" }),
-    estado: z.enum(["Pendiente", "Resuelto", "Atendido", "Observado"]),
+    estado: z.enum(["Pendiente", "Resuelto", "Atendido", "Observado", "No Corresponde"]),
     numeroResolucion: z.string().optional(),
     resultadoResolucion: z.enum(RESULTADOS_RESOLUCION.map((item) => item.value) as [
         typeof RESULTADOS_RESOLUCION[number]["value"],

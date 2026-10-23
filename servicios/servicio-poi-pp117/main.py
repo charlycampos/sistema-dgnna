@@ -7,6 +7,7 @@ from sqlalchemy import text
 from infrastructure.db.database import engine, Base
 from infrastructure.db import models  # noqa
 from infrastructure.api.router import router
+from infrastructure.api.seguimiento_router import router as seg_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -38,6 +39,7 @@ app.add_middleware(
 )
 
 app.include_router(router)
+app.include_router(seg_router)
 
 
 @app.get("/")

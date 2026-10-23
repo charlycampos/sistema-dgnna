@@ -430,6 +430,19 @@ class CarNnaCorteModel(Base):
     diasPermanencia        = Column("dias_permanencia", Integer)
     mayor18Meses           = Column("mayor_18_meses", String(10)) # SI / NO
 
+    # Variables de indicadores priorizados PP0117 (4397 y 4398) — RENE CAR INABIF
+    resEvaTem              = Column("res_eva_tem", String(50))        # RES_EVA_TEM: En proceso / Logrado / No logrado
+    nnaProm                = Column("nna_prom", String(20))           # NNA_PROM: SI / NO
+    nnaEst                 = Column("nna_est", String(20))            # NNA_EST: SI / NO / NO APLICA
+    tipActSoc1             = Column("tip_act_soc_1", String(100))     # TIP_ACT_SOC_1
+    tipActSoc2             = Column("tip_act_soc_2", String(100))     # TIP_ACT_SOC_2
+    fecAprEst              = Column("fec_apr_est", Date)              # FEC_APR_EST: aprobación de estrategia
+    ptiConsensuado         = Column("pti_consensuado", String(20))    # PTI_CONSENSUADO2: SÍ / NO
+    planVidaInd            = Column("plan_vida_ind", String(20))      # PLAN_VIDA_IND: SI / NO
+    fecVidInd              = Column("fec_vid_ind", Date)              # FEC_VID_IND: aprobación Plan de Vida Independiente
+    porCumMet              = Column("por_cum_met", Integer)           # POR_CUM_MET: % de metas cumplidas del PVI
+    rango6Meses            = Column("rango_6_meses", String(50))      # "rango 6" / "Rango2": R1 <=6 meses, R2 >6 meses
+
     # Situación Actual y Egreso
     estadoActual           = Column("estado_actual", String(100))
     movimientoPoblacional  = Column("movimiento_poblacional", String(100))

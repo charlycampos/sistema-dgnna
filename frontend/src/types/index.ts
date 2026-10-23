@@ -40,7 +40,7 @@ export interface Revisor {
   updatedAt: Date
 }
 
-export type Estado = 'Pendiente' | 'Resuelto' | 'Atendido' | 'Observado'
+export type Estado = 'Pendiente' | 'Resuelto' | 'Atendido' | 'Observado' | 'No Corresponde'
 
 // Para el dashboard
 export interface CargaAbogado {

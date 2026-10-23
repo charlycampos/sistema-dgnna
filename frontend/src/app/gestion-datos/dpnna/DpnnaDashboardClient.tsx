@@ -45,6 +45,7 @@ import {
   CartesianGrid
 } from 'recharts'
 import * as XLSX from 'xlsx'
+import IndicadoresPriorizados from './IndicadoresPriorizados'
 
 // Tipado del Centro CAR para el Directorio
 export interface CarCentroItem {
@@ -762,6 +763,9 @@ export default function DpnnaDashboardClient() {
               </div>
             </div>
           </div>
+
+          {/* Indicadores priorizados PP0117 (4397 / 4398) — CAR Básico y Especializado */}
+          <IndicadoresPriorizados />
         </div>
       )}
 

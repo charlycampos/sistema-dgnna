@@ -358,7 +358,7 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
     const puntosComplejidad = complejidadSeleccionada?.puntos || 0
     const puntosTotal = puntosExtension + puntosComplejidad
 
-    const getEstadoBadgeVariant = (estado: string): 'secondary' | 'default' | 'outline' | 'atendido' => {
+    const getEstadoBadgeVariant = (estado: string): 'secondary' | 'default' | 'outline' | 'atendido' | 'nocorresponde' => {
         switch (estado) {
             case 'Pendiente':
                 return 'secondary'
@@ -368,6 +368,8 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                 return 'atendido'
             case 'Observado':
                 return 'outline'
+            case 'No Corresponde':
+                return 'nocorresponde'
             default:
                 return 'default'
         }
@@ -1418,6 +1420,7 @@ export default function ApelacionDetailPage({ params }: { params: Promise<{ id: 
                                                                         <SelectItem value="Resuelto">Resuelto</SelectItem>
                                                                         <SelectItem value="Atendido">Atendido</SelectItem>
                                                                         <SelectItem value="Observado">Observado</SelectItem>
+                                                                        <SelectItem value="No Corresponde">No Corresponde</SelectItem>
                                                                     </SelectContent>
                                                                 </Select>
                                                                 <FormMessage />
